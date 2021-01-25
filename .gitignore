@@ -1,0 +1,37 @@
+# Ignore hidden files
+.*
+
+# Ignore sequencing data files
+*.bed
+*.bam
+*.bam.bai
+
+# Ignore CNVKit files
+
+*.cnn
+*.cnr
+*.cns
+*.pdf
+*.cnn.1
+*.vcf 
+*cnvkit-gainloss.txt
+*cnvkit-segmetrics.txt
+
+# Ignore ichorCNA files
+*.wig
+*.seg
+*.RData
+*sort*
+*rmduplic*
+
+# Ignore seuqenza files
+*.gz
+*.tbi
+
+# Ignore other data files
+*.csv
+rg_*.txt
+*estimated_tf.txt
+
+# Ignore old folders
+*old*
