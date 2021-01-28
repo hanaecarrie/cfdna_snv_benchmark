@@ -27,6 +27,10 @@
 *.gz
 *.tbi
 
+# VCF tools files
+*.vcf.frq
+*.vcf.log
+
 # Ignore other data files
 *.csv
 *.txt
