@@ -199,3 +199,4 @@ sh.exe.stackdump
 *nohup.out
 .Rhistory
 *.Rout
+data/
