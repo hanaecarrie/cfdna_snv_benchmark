@@ -4,16 +4,20 @@ import pandas as pd
 from tqdm.notebook import tqdm
 
 
-def list_supporting_reads(bamfile_path, vcf_df, verbose=0):
+def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=0.1, verbose=0):
     samfile = pysam.AlignmentFile(bamfile_path, "rb")
 
     # initiate list of reads to remove
     reads2remove = []
-    log_dict = {"position": [], "type": [], "total_reads": [], 'supporting_reads': [],
-                'normal_reads': [], 'alternative_reads': [], "problematic_reads": []}
+    log_dict = {'#CHROM': [], "POS": [], "type": [], 'ID': [], 'REF': [], 'ALT': [],
+                "total_reads": [], 'supporting_reads': [], 'normal_reads': [], 'alternative_reads': [], "problematic_reads": [],
+                "is patient snp": [], "patient snp alt": [], "patient snp vaf": []}
+
+    # list positions in patient
+    listpatientsnps = get_listpatientsnps(patient_snps_df)
 
     # iterate over positions
-    for ci, mutation in tqdm(vcf_df.iterrows(), total=vcf_df.shape[0]):
+    for ci, mutation in tqdm(common_snps_df.iterrows(), total=common_snps_df.shape[0]):
 
         genotype = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'N': 0}
         c = 0  # number of reads supporting the considered mutation
@@ -22,6 +26,7 @@ def list_supporting_reads(bamfile_path, vcf_df, verbose=0):
         n = 0  # number of reads supporting the reference genome
         a = 0  # number of reads with alternative nucleotide (not ref, not alt snp)
         mutation_type = None
+        reads2remove_tmp = []
         # alt = []
 
         # iterate over reads that fall into the mutation position
@@ -95,7 +100,7 @@ def list_supporting_reads(bamfile_path, vcf_df, verbose=0):
                                 cond = True
             if cond:
                 c += 1
-                reads2remove.append(read.query_name)
+                reads2remove_tmp.append(read.query_name)
             elif not cond and (seq[pos:pos+len(mutation['REF'])] == mutation['REF']):
                 n += 1
             elif cigar is not None:
@@ -108,22 +113,44 @@ def list_supporting_reads(bamfile_path, vcf_df, verbose=0):
                 p += 1
         if verbose == 0:
             print(mutation_type, c, round(100*c/t, 2))
-        if verbose > 1:
+        if verbose > 0:
             if mutation_type == 'SNV':
                 print('SNV', mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], genotype, '% VAF:', round(100*c/t, 2))
             else:
                 print(mutation_type,  mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, p, '% VAF:', round(100*c/t, 2))  # , alt)
-        log_dict["position"].append(mutation['POS'])
+
+        if round(c/t, 2) <= max_vaf:  # if VAF <= 10%, few reads supporting variants
+            if mutation['ID'] not in listpatientsnps:  # snps found in healthies is not in patient's snps
+                for r in reads2remove_tmp:
+                    reads2remove.append(r)  # remove rare mutated reads
+            else:
+                # if same variant => do not remove, if other variant => remove
+                if mutation['ALT'] != patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['ALT'].values[0]:
+                    for r in reads2remove_tmp:
+                        reads2remove.append(r)  # remove rare alternative variant
+
+        # if mutation['ID'] in list(listpatientsnps):
+        #     print(mutation_type, c, round(100*c/t, 2), mutation['REF'], mutation['ALT'],
+        #           patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['ALT'].values, patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['VAF'].values)
+
+        log_dict["#CHROM"].append(mutation['#CHROM'])
+        log_dict["POS"].append(mutation['POS'])
         log_dict["type"].append(mutation_type)
         log_dict["total_reads"].append(t)
         log_dict["supporting_reads"].append(c)
         log_dict["normal_reads"].append(n)
         log_dict["alternative_reads"].append(a)
         log_dict["problematic_reads"].append(p)
+        log_dict["ID"].append(mutation['ID'])
+        log_dict["REF"].append(mutation['REF'])
+        log_dict["ALT"].append(mutation['ALT'])
+        log_dict["is patient snp"].append(mutation['ID'] in list(patient_snps_df['ID']))
+        log_dict["patient snp alt"].append(patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['ALT'].values[0]
+                                           if mutation['ID'] in list(patient_snps_df['ID']) else '')
+        log_dict["patient snp vaf"].append(patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['VAF'].values[0]
+                                           if mutation['ID'] in list(patient_snps_df['ID']) else '')
 
     log_pd = pd.DataFrame.from_dict(log_dict)
-    quick_check = sum(log_pd['supporting_reads']) == len(reads2remove)
-    print(quick_check)
     print('# reads to remove: ', len(reads2remove))
     print('% reads to remove: {:2f}%'.format(100*sum(log_pd['supporting_reads'])/sum(log_pd['total_reads'])))
     log_pd['vaf'] = log_pd['supporting_reads'] / log_pd['total_reads']
@@ -135,13 +162,128 @@ def list_supporting_reads(bamfile_path, vcf_df, verbose=0):
     return reads2remove, log_pd
 
 
+def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
+
+    listpatientsnps = get_listpatientsnps(patient_snps_df)
+    bamsurgeon_snv_dict = {'chr': [], 'pos_start': [], 'pos_end': [], 'vaf': [], 'alt': []}  # 1-index based
+    bamsurgeon_indel_dict = {'chr': [], 'pos_start': [], 'pos_end': [], 'vaf': [], 'type': [], 'alt': []}  # 0-index based
+
+    # iterate over mutated loci in the healthies with high VAF (above 10%)
+    for ci, mutation in tqdm(log_pd[log_pd['vaf'] > max_vaf].iterrows(), total=log_pd[log_pd['vaf'] > max_vaf].shape[0]):
+        patient_snp = patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])].squeeze()
+        condA = mutation['ID'] not in listpatientsnps
+        condB = mutation['ID'] in listpatientsnps and mutation['ALT'] != patient_snp['ALT']
+        if condA or condB:
+            # if not in patient's SNPs or a different variant from the patient's snps
+            # bamsurgeon REF genome with VAF = 1
+            bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
+                bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, vaf=1, alt=mutation['REF'])
+
+    # iterate through patients SNPs
+    for pi, patient_snp in tqdm(patient_snps_df.iterrows(), total=patient_snps_df.shape[0]):
+        # bamsurgeon patient genotype with VAF of the patient
+        bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
+            bamsurgeon_snv_dict, bamsurgeon_indel_dict, patient_snp, patient_snp['VAF'], patient_snp['ALT'])
+
+    bamsurgeon_snv_pd = pd.DataFrame.from_dict(bamsurgeon_snv_dict)
+    bamsurgeon_indel_pd = pd.DataFrame.from_dict(bamsurgeon_indel_dict)
+
+    return bamsurgeon_snv_pd, bamsurgeon_indel_pd
+
+
+def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, vaf, alt, type=None):
+    if type is None:
+        mutation_type = get_mutation_type(mutation['REF'], alt)
+    if ',' not in alt:
+        if mutation_type == 'SNV':
+            bamsurgeon_snv_dict['chr'].append(str(mutation['#CHROM']))
+            bamsurgeon_snv_dict['pos_start'].append(mutation['POS'])
+            bamsurgeon_snv_dict['pos_end'].append(mutation['POS'])
+            bamsurgeon_snv_dict['vaf'].append(vaf)
+            bamsurgeon_snv_dict['alt'].append(alt)
+        else:  # mutation is insertion or deletion
+            if mutation_type == 'DEL':
+                len_mut = len(mutation['REF']) - len(alt)  # important for BamSurgeon
+            else:  # mutation_type == 'INS'
+                len_mut = len(alt) - len(mutation['REF'])  # not important for BamSurgeon
+            bamsurgeon_indel_dict['chr'].append(str(mutation['#CHROM']))
+            bamsurgeon_indel_dict['pos_start'].append(mutation['POS']-1)
+            bamsurgeon_indel_dict['pos_end'].append(mutation['POS']+len_mut-1)
+            bamsurgeon_indel_dict['vaf'].append(vaf)
+            bamsurgeon_indel_dict['type'].append(mutation_type)
+            bamsurgeon_indel_dict['alt'].append(alt if mutation_type == 'INS' else '')
+    else:  # multiple variants
+        for mi, mut in enumerate(alt.split(',')):
+            if mutation_type[mi] == 'SNV':
+                bamsurgeon_snv_dict['chr'].append(str(mutation['#CHROM']))
+                bamsurgeon_snv_dict['pos_start'].append(mutation['POS'])
+                bamsurgeon_snv_dict['pos_end'].append(mutation['POS'])
+                bamsurgeon_snv_dict['vaf'].append(vaf.split(',')[mi])
+                bamsurgeon_snv_dict['alt'].append(mut)
+            else:  # mutation is insertion or deletion
+                if mutation_type[mi] == 'DEL':
+                    len_mut = len(mutation['REF']) - len(mut)  # important for BamSurgeon
+                else:  # mutation_type[mi] == 'INS'
+                    len_mut = len(mut) - len(mutation['REF'])  # not important for BamSurgeon
+                bamsurgeon_indel_dict['chr'].append(str(mutation['#CHROM']))
+                bamsurgeon_indel_dict['pos_start'].append(mutation['POS']-1)
+                bamsurgeon_indel_dict['pos_end'].append(mutation['POS']+len_mut-1)
+                bamsurgeon_indel_dict['vaf'].append(vaf.split(',')[mi])
+                bamsurgeon_indel_dict['type'].append(mutation_type[mi])
+                bamsurgeon_indel_dict['alt'].append(mut if mutation_type[mi] == 'INS' else '')
+    return bamsurgeon_snv_dict, bamsurgeon_indel_dict
+
+
+def get_mutation_type(ref, alt):
+    if ',' not in alt:
+        if len(ref) == len(alt):  # mutation_type == 'SNV'
+            mutation_type = 'SNV'
+        elif len(ref) < len(alt):
+            mutation_type = 'INS'
+        elif len(ref) > len(alt):
+            mutation_type = 'DEL'
+        else:
+            raise ValueError('cannot find mutation type of REF={}, ALT={}'.format(ref, alt))
+    else:  # several variants
+        mutation_type = []
+        for mi, mut in enumerate(alt.split(',')):
+            if len(ref) == len(mut):  # mutation_type == 'SNV'
+                mutation_type.append('SNV')
+            elif len(ref) < len(mut):
+                mutation_type.append('INS')
+            elif len(ref) > len(mut):
+                mutation_type.append('DEL')
+            else:
+                raise ValueError('cannot find mutation type of REF={}, ALT={}'.format(ref, mut))
+    return mutation_type
+
+
+def get_listpatientsnps(patient_snps_df):
+    # list positions in patient
+    old_listpatientssnps = list(patient_snps_df['ID'])
+    old_listpatientssnps = [i for i in old_listpatientssnps if i != '.']
+    listpatientssnps = []
+    for ki in old_listpatientssnps:
+        if ';' in ki:
+            for li in ki.split(';'):
+                listpatientssnps.append(li)
+        elif ki != '.':
+            listpatientssnps.append(ki)
+    return listpatientssnps
+
+
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import seaborn as sns
 
     bamfile_path = '../data/healthy_chr22_merged-ready.bam'
     vcf_df = pd.read_csv('../data/common_SNPs/dbsnp_df.csv')
-    reads2remove, log_pd = list_supporting_reads(bamfile_path, vcf_df)
+    patient_snps = pd.read_csv('../data/patient_SNPs/patient_snps.csv')
+
+    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[3700:3750], patient_snps, verbose=1)
+    '''
     plt.figure(figsize=(10, 5))
     plt.title('SNV')
     sns.histplot(data=log_pd[log_pd['type'] == 'SNV'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
@@ -151,3 +293,11 @@ if __name__ == '__main__':
     plt.figure(figsize=(10, 5))
     plt.title('INS')
     sns.histplot(data=log_pd[log_pd['type'] == 'INS'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
+    plt.show()
+    '''
+
+    bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps, log_pd, max_vaf=0.1)
+    print(bamsurgeon_snv_pd.head(10))
+    print(bamsurgeon_indel_pd.head(10))
+
+
