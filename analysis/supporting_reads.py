@@ -162,16 +162,15 @@ def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
     return bamsurgeon_snv_pd, bamsurgeon_indel_pd
 
 
-def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, vaf, alt, type=None):
-    if type is None:
-        mutation_type = get_mutation_type(mutation['REF'], alt)
+def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, vaf, alt):
+    mutation_type = get_mutation_type(mutation['REF'], alt)
     if ',' not in alt:
         if mutation_type == 'SNV':
             bamsurgeon_snv_dict['chr'].append(str(mutation['#CHROM']))
             bamsurgeon_snv_dict['pos_start'].append(mutation['POS'])
             bamsurgeon_snv_dict['pos_end'].append(mutation['POS'])
             bamsurgeon_snv_dict['vaf'].append(vaf)
-            bamsurgeon_snv_dict['alt'].append(alt)
+            bamsurgeon_snv_dict['alt'].append(alt[0])
         else:  # mutation is insertion or deletion
             if mutation_type == 'DEL':
                 len_mut = len(mutation['REF']) - len(alt)  # important for BamSurgeon
@@ -190,7 +189,7 @@ def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mut
                 bamsurgeon_snv_dict['pos_start'].append(mutation['POS'])
                 bamsurgeon_snv_dict['pos_end'].append(mutation['POS'])
                 bamsurgeon_snv_dict['vaf'].append(vaf.split(',')[mi])
-                bamsurgeon_snv_dict['alt'].append(mut)
+                bamsurgeon_snv_dict['alt'].append(mut[0])
             else:  # mutation is insertion or deletion
                 if mutation_type[mi] == 'DEL':
                     len_mut = len(mutation['REF']) - len(mut)  # important for BamSurgeon
@@ -208,6 +207,10 @@ def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mut
 def get_mutation_type(ref, alt):
     if ',' not in alt:
         if len(ref) == len(alt):  # mutation_type == 'SNV'
+            if len(alt) != 1:
+                print('lengths of ref {} and alt {} are equal but not single nucleotide base'.format(ref, alt))
+                if not (alt[0] != ref[0] and alt[1:] == ref[1:]):
+                    raise ValueError('lengths of ref {} and alt {} are equal but not single nucleotide base change'.format(ref, alt))
             mutation_type = 'SNV'
         elif len(ref) < len(alt):
             mutation_type = 'INS'
@@ -219,6 +222,10 @@ def get_mutation_type(ref, alt):
         mutation_type = []
         for mi, mut in enumerate(alt.split(',')):
             if len(ref) == len(mut):  # mutation_type == 'SNV'
+                if len(mut) != 1:
+                    print('lengths of ref {} and alt {} are equal but not single nucleotide base'.format(ref, mut))
+                    if not (mut[0] != ref[0] and mut[1:] == ref[1:]):
+                        raise ValueError('lengths of ref {} and alt {} are equal but not single nucleotide base change'.format(ref, mut))
                 mutation_type.append('SNV')
             elif len(ref) < len(mut):
                 mutation_type.append('INS')
