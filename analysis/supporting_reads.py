@@ -16,20 +16,20 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=
     # list positions in patient
     listpatientsnps = get_listpatientsnps(patient_snps_df)
 
-    # iterate over positions
+    # iterate over known snps positions
     for ci, mutation in tqdm(common_snps_df.iterrows(), total=common_snps_df.shape[0]):
 
-        genotype = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'N': 0}
+        genotype = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'N': 0}  # genotype if SNV
         c = 0  # number of reads supporting the considered mutation
         t = 0  # total number of reads at that position
         p = 0  # number pf reads with issues
         n = 0  # number of reads supporting the reference genome
         a = 0  # number of reads with alternative nucleotide (not ref, not alt snp)
-        mutation_type = None
-        reads2remove_tmp = []
-        # alt = []
+        mutation_type = get_mutation_type(mutation['REF'], mutation['ALT'])  # determine mutation type
+        reads2remove_tmp = []  # temporary list of reads to remove at that locus, check VAF before adding to final list
 
         # iterate over reads that fall into the mutation position
+        # /!\ the vcf file is 1-index based but pysam is 0-index based
         for read in samfile.fetch(str(mutation['#CHROM']), mutation['POS']-1, mutation['POS']):
             t += 1
             seq = read.query_alignment_sequence
@@ -37,29 +37,10 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=
             cigar = read.cigarstring
             cond = False
 
-            # guess mutation type
-            if ',' in mutation['ALT']:  # several possible variants
-                if sum([len(muts) - len(mutation['REF']) == 0 for muts in mutation['ALT'].split(',')]):
-                    mutation_type = 'SNV'
-                elif sum([len(muts) - len(mutation['REF']) > 0 for muts in mutation['ALT'].split(',')]):
-                    mutation_type = 'INS'
-                elif sum([len(muts) - len(mutation['REF']) < 0 for muts in mutation['ALT'].split(',')]):
-                    mutation_type = 'DEL'
-                else:
-                    raise ValueError('cannot identify mutation type: REF: ', mutation['REF'], 'ALT: ', mutation['ALT'])
-            else:
-                if len(mutation['ALT']) - len(mutation['REF']) == 0:
-                    mutation_type = 'SNV'
-                elif len(mutation['ALT']) - len(mutation['REF']) > 0:
-                    mutation_type = 'INS'
-                elif len(mutation['ALT']) - len(mutation['REF']) < 0:
-                    mutation_type = 'DEL'
-                else:
-                    raise ValueError('cannot identify mutation type: REF: ', mutation['REF'], 'ALT: ', mutation['ALT'])
-
             ######## SNV ##########
             if mutation_type == 'SNV':
                 # cond = sequence matching
+                # the mutation position needs to account for the reads indels
                 if cigar is not None:
                     cigar_pos = re.split('M|I|D|N|S|H|P|=|X', cigar)[:-1]
                     cigar_states = re.split('[0-9]+', cigar)[1:]
@@ -81,7 +62,7 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=
                         cond = True
 
             ######## INSERTION / DELETION ##########
-            elif (mutation_type == 'INS') or (mutation_type == 'DEL'):  # indel
+            elif (mutation_type == 'INS') or (mutation_type == 'DEL'):
                 # cond = cigar string indicates a deletion at this position
                 if cigar is not None:
                     cigar_pos = re.split('M|I|D|N|S|H|P|=|X',cigar)[:-1]
@@ -98,40 +79,30 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=
                         else:
                             if sum(cigar_pos[:indexINDEL]) == pos + 1:
                                 cond = True
-            if cond:
+            if cond:  # read supporting known variant
                 c += 1
                 reads2remove_tmp.append(read.query_name)
-            elif not cond and (seq[pos:pos+len(mutation['REF'])] == mutation['REF']):
+            elif not cond and (seq[pos:pos+len(mutation['REF'])] == mutation['REF']):  # normal read
                 n += 1
-            elif cigar is not None:
+            elif cigar is not None:  # read supporting an unknown variant
                 a += 1
-                # alt.append(cond)
-                # alt.append(pos)
-                # alt.append(cigar)
-                # alt.append(seq[pos:pos+max(len(mutation['ALT']), len(mutation['REF']))])
-            else:
+            else:  # problematic read that does not have a cigar string, unmapped
                 p += 1
-        if verbose == 0:
-            print(mutation_type, c, round(100*c/t, 2))
-        if verbose > 0:
+        if verbose > -1:
             if mutation_type == 'SNV':
-                print('SNV', mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], genotype, '% VAF:', round(100*c/t, 2))
+                print('SNV', mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], genotype, c, n, t, p, '% VAF:', round(100*c/t, 2))
             else:
-                print(mutation_type,  mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, p, '% VAF:', round(100*c/t, 2))  # , alt)
-
-        if round(c/t, 2) <= max_vaf:  # if VAF <= 10%, few reads supporting variants
-            if mutation['ID'] not in listpatientsnps:  # snps found in healthies is not in patient's snps
-                for r in reads2remove_tmp:
-                    reads2remove.append(r)  # remove rare mutated reads
-            else:
-                # if same variant => do not remove, if other variant => remove
-                if mutation['ALT'] != patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['ALT'].values[0]:
+                print(mutation_type,  mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, p, '% VAF:', round(100*c/t, 2))
+        if t > 0:
+            if round(c/t, 2) <= max_vaf:  # if VAF <= 10% (default), few reads supporting variants
+                if mutation['ID'] not in listpatientsnps:  # snps found in healthies is not in patient's snps
                     for r in reads2remove_tmp:
-                        reads2remove.append(r)  # remove rare alternative variant
-
-        # if mutation['ID'] in list(listpatientsnps):
-        #     print(mutation_type, c, round(100*c/t, 2), mutation['REF'], mutation['ALT'],
-        #           patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['ALT'].values, patient_snps_df[patient_snps_df['ID'] == mutation['ID']]['VAF'].values)
+                        reads2remove.append(r)  # remove rare mutated reads
+                else:
+                    # if same variant => do not remove, if other variant => remove
+                    if mutation['ALT'] != patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])]['ALT'].values[0]:
+                        for r in reads2remove_tmp:
+                            reads2remove.append(r)  # remove rare alternative variant
 
         log_dict["#CHROM"].append(mutation['#CHROM'])
         log_dict["POS"].append(mutation['POS'])
@@ -172,7 +143,7 @@ def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
     for ci, mutation in tqdm(log_pd[log_pd['vaf'] > max_vaf].iterrows(), total=log_pd[log_pd['vaf'] > max_vaf].shape[0]):
         patient_snp = patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])].squeeze()
         condA = mutation['ID'] not in listpatientsnps
-        condB = mutation['ID'] in listpatientsnps and mutation['ALT'] != patient_snp['ALT']
+        condB = mutation['ID'] in listpatientsnps and mutation['ALT'] in patient_snp['ALT']
         if condA or condB:
             # if not in patient's SNPs or a different variant from the patient's snps
             # bamsurgeon REF genome with VAF = 1
@@ -261,7 +232,8 @@ def get_mutation_type(ref, alt):
 def get_listpatientsnps(patient_snps_df):
     # list positions in patient
     old_listpatientssnps = list(patient_snps_df['ID'])
-    old_listpatientssnps = [i for i in old_listpatientssnps if i != '.']
+    old_listpatientssnps = [i for i in old_listpatientssnps if i != '.'] # remove unknown snps
+    # multiple rsids at the same locus => replace 'rsid1;rsid2' by 'rsid1', 'rsid2'
     listpatientssnps = []
     for ki in old_listpatientssnps:
         if ';' in ki:
