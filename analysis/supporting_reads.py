@@ -1,7 +1,7 @@
 import re
 import pysam
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 
 def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=0.1, verbose=0):
