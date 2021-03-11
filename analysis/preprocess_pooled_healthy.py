@@ -4,7 +4,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('patient', help='string describing the sample : patientid_date')
 parser.add_argument('snp_database', help='either dbsnp or genomead')
-parser.add_argument('chunk_list', help='list of genomead 500,000 size chunks to process')
+parser.add_argument('chunk_start', help='int of genomead 500,000 size chunk to start processing')
+parser.add_argument('chunk_end', help='int of genomead 500,000 size chunk to end processing')
 parser.add_argument('path_data', help='path to the data folder')
 
 args = parser.parse_args()
@@ -39,7 +40,7 @@ elif args.snp_database == 'genomead':
     ci = 0
     for genomad_df_chunk in genomad_df_iterator:
         ci += 1
-        if ci in args.chunk_list:
+        if args.chunk_start <= ci < args.chunk_end:
             print('chunk '+str(ci))
             genomad_df_chunk = genomad_df_chunk.drop('Unnamed: 0', axis=1)
             reads2remove, log_df = list_reads_to_remove(args.path_data+"/data/healthy_chr22_merged-ready.bam",
