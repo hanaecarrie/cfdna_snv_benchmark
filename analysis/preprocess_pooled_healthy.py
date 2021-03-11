@@ -48,7 +48,8 @@ elif args.snp_database == 'genomead':
             # save list of reads to remove and log dataframe
             log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.csv', index=False)
             with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.txt', "w") as output:
-                output.write(str(reads2remove))
+                for r in reads2remove:
+                    output.write(str(r) + "\n")
 
             bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps_df, log_df, max_vaf=0.1)
             # save file
