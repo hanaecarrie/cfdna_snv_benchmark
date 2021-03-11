@@ -75,14 +75,9 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, max_vaf=
                             for idxINDEL in indexINDEL:
                                 if sum(cigar_pos[:idxINDEL]) == pos + 1:
                                     cond = True
-                            #if not cond and mutation_type == 'DEL':
-                            print(cigar, cigar_pos, indexINDEL, sum(cigar_pos[:indexINDEL]), pos,  cond, mutation_type)
-
                         else:
-
                             if sum(cigar_pos[:indexINDEL]) == pos + 1:
                                 cond = True
-                            print(cigar, cigar_pos, indexINDEL, sum(cigar_pos[:indexINDEL]), pos,  cond, mutation_type)
 
 
             ######## other mutations SVs or MNV #######
