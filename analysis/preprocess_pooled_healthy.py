@@ -40,7 +40,7 @@ elif args.snp_database == 'genomead':
     ci = 0
     for genomad_df_chunk in genomad_df_iterator:
         ci += 1
-        if args.chunk_start <= ci < args.chunk_end:
+        if int(args.chunk_start) <= ci < int(args.chunk_end):
             print('chunk '+str(ci))
             genomad_df_chunk = genomad_df_chunk.drop('Unnamed: 0', axis=1)
             reads2remove, log_df = list_reads_to_remove(args.path_data+"/data/healthy_chr22_merged-ready.bam",
