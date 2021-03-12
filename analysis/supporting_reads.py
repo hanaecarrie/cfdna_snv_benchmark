@@ -210,37 +210,48 @@ def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mut
     return bamsurgeon_snv_dict, bamsurgeon_indel_dict
 
 
-def get_mutation_type(ref, alt):
-    if ',' not in alt:
-        if len(ref) == len(alt):  # mutation_type == 'SNV'
-            mutation_type = 'SNV'
-            if len(alt) != 1:
-                print('lengths of ref {} and alt {} are equal but not single nucleotide base'.format(ref, alt))
-                if not (alt[0] != ref[0] and alt[1:] == ref[1:]):
-                    print('other mutation type SV or MNV')
-                    mutation_type = 'other'
-        elif len(ref) < len(alt):
+def get_mutation_type(ref: str, alt: str):
+    if ',' in alt:
+        mutation_type = []
+        for var in alt:
+            mutation_type.append(get_mutation_type_seq(ref, var))
+    else:
+        mutation_type = get_mutation_type_seq(ref, alt)
+    return mutation_type
+
+
+def get_mutation_type_seq(ref: str, alt: str):
+    if not (check_nucleotide_sequence(ref, seqtype='ref') and check_nucleotide_sequence(alt, seqtype='alt')):
+        raise ValueError('ref {} or alt {} sequences are not valid inputs'.format(ref, alt))
+    if len(ref) == len(alt):  # mutation_type == 'SNV'
+        if len(alt) == 1:
+            if ref == alt:  # ref
+                mutation_type = 'ref'
+            else:
+                mutation_type = 'SNV'
+        else:  # len(alt) != 1
+            print('lengths of ref {} and alt {} are equal but not single nucleotide base'.format(ref, alt))
+            if alt[0] != ref[0] and alt[1:] == ref[1:]:
+                mutation_type = 'SNV'
+            else:
+                print('other mutation type SV or MNV')
+                mutation_type = 'other'
+    elif len(ref) < len(alt):  # mutation_type == 'INS'
+        if len(ref) > 1:
+            raise ValueError('candidate insertion but len ref = {}, > 1'.format(ref))
+        if ref[0] == alt[0]:
             mutation_type = 'INS'
-        elif len(ref) > len(alt):
+        else:
+            print('length of ref {} < length of alt {} but not insertion'.format(ref, alt))
+            mutation_type = 'unknown'
+    else:  # len(ref) > len(alt):  # mutation_type == 'DEL'
+        if len(alt) > 1:
+            raise ValueError('candidate insertion but len alt = {}, > 1'.format(alt))
+        if ref[0] == alt[0]:
             mutation_type = 'DEL'
         else:
-            raise ValueError('cannot find mutation type of REF={}, ALT={}'.format(ref, alt))
-    else:  # several variants
-        mutation_type = []
-        for mi, mut in enumerate(alt.split(',')):
-            if len(ref) == len(mut):  # mutation_type == 'SNV'
-                mutation_type.append('SNV')
-                if len(mut) != 1:
-                    print('lengths of ref {} and alt {} are equal but not single nucleotide base'.format(ref, mut))
-                    if not (mut[0] != ref[0] and mut[1:] == ref[1:]):
-                        print('other mutation type SV or MNV')
-                        mutation_type = 'other'
-            elif len(ref) < len(mut):
-                mutation_type.append('INS')
-            elif len(ref) > len(mut):
-                mutation_type.append('DEL')
-            else:
-                raise ValueError('cannot find mutation type of REF={}, ALT={}'.format(ref, mut))
+            print('length of ref {} > length of alt {} but not insertion'.format(ref, alt))
+            mutation_type = 'unknown'
     return mutation_type
 
 
@@ -257,6 +268,22 @@ def get_listpatientsnps(patient_snps_df):
         elif ki != '.':
             listpatientssnps.append(ki)
     return listpatientssnps
+
+
+def check_nucleotide_sequence(seq: str, seqtype='ref'):
+    if not seq.upper():
+        return False
+    for s in seq:
+        if seqtype == 'ref':
+            if s not in ['A', 'C', 'G', 'T']:
+                return False
+        elif seqtype == 'alt':
+            if s not in ['A', 'C', 'G', 'T', 'N']:
+                return False
+        else:
+            raise ValueError("unknwn type {}, should be 'ref' or 'alt'".format(seqtype))
+    return True
+
 
 
 
