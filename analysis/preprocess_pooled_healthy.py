@@ -36,10 +36,11 @@ if args.snp_database == 'dbsnp':
 
 elif args.snp_database == 'genomead':
     # load known SNPs database
-    genomad_df_iterator = pd.read_csv(args.path_data+'/data/common_SNPs/genomad_df.csv', iterator=True, chunksize=500000)
+    genomad_df_iterator = pd.read_csv(args.path_data+'/data/common_SNPs/genomad_df.csv', iterator=True, chunksize=50000)
     ci = 0
     for genomad_df_chunk in genomad_df_iterator:
         ci += 1
+        print(ci)
         if int(args.chunk_start) <= ci < int(args.chunk_end):
             print('chunk '+str(ci))
             genomad_df_chunk = genomad_df_chunk.drop('Unnamed: 0', axis=1)
