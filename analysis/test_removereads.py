@@ -1,7 +1,7 @@
 import unittest
 import random
 
-from supporting_reads import get_mutation_type
+from supporting_reads import get_mutation_type, assess_mutation
 
 
 class MyTestCase(unittest.TestCase):
@@ -10,6 +10,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_mutation_type(self):
 
+        print('### test input values ###')
         ref, alt, = 'NTG', 'TG'
         self.assertRaises(ValueError, get_mutation_type, ref, alt)
         ref, alt, = 'TG', 'TGa'
@@ -17,12 +18,14 @@ class MyTestCase(unittest.TestCase):
         ref, alt, = 'TG', 'TG,TGB'
         self.assertRaises(ValueError, get_mutation_type, ref, alt)
 
+        print('### test reference ###')
         # reference
         ref = random.choice(self.nucleotides_ref)
         alt = ref
         print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'ref'))
         self.assertEqual(get_mutation_type(ref, alt), 'ref')
 
+        print('### test substitution ###')
         # substitution, SNV with 1 nucleotide
         ref = random.choice(self.nucleotides_ref)
         alt = random.choice([i for i in self.nucleotides_alt if i != ref])
@@ -37,12 +40,17 @@ class MyTestCase(unittest.TestCase):
         print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'SNV'))
         self.assertEqual(get_mutation_type(ref, alt), 'SNV')
 
-        ###
-        #print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'other'))
-        #self.assertEqual(get_mutation_type(ref, alt), 'other')
-
-        # deletion
+        # other, looks like SNV with several nucleotides but other changes in sequence
         lenmut = random.randint(1, 20)
+        initialnucleotide = random.choice(self.nucleotides_ref)
+        ref = initialnucleotide + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
+        alt = random.choice([i for i in self.nucleotides_ref if i != initialnucleotide]) + ref[1:-1] + 'N'
+        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'other'))
+        self.assertEqual(get_mutation_type(ref, alt), 'other')
+
+        print('### test deletion ###')
+        # deletion
+        lenmut = random.randint(2, 20)
         initialnucleotide = random.choice(self.nucleotides_ref)
         ref = initialnucleotide + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
         alt = initialnucleotide
@@ -53,13 +61,15 @@ class MyTestCase(unittest.TestCase):
         alt = initialnucleotide + random.choice(self.nucleotides_alt)
         self.assertRaises(ValueError, get_mutation_type, ref, alt)
 
+        # unknown, looks like deletion but different initial nucleotide
         ref = random.choice([i for i in self.nucleotides_ref if i != initialnucleotide]) + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
         alt = initialnucleotide
-        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'unknown'))
-        self.assertEqual(get_mutation_type(ref, alt), 'unknown')
+        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'other'))
+        self.assertEqual(get_mutation_type(ref, alt), 'other')
 
+        print('### test insertion ###')
         # insertion
-        lenmut = random.randint(1, 20)
+        lenmut = random.randint(2, 20)
         initialnucleotide = random.choice(self.nucleotides_ref)
         ref = initialnucleotide
         alt = initialnucleotide + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
@@ -70,19 +80,21 @@ class MyTestCase(unittest.TestCase):
         alt = initialnucleotide + ''.join([random.choice(self.nucleotides_alt) for _ in range(lenmut)])
         self.assertRaises(ValueError, get_mutation_type, ref, alt)
 
+        # unknown, looks like deletion but different initial nucleotide
         ref = initialnucleotide
         alt = random.choice([i for i in self.nucleotides_alt if i != initialnucleotide]) + ''.join([random.choice(self.nucleotides_alt) for _ in range(lenmut)])
-        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'unknown'))
-        self.assertEqual(get_mutation_type(ref, alt), 'unknown')
+        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'other'))
+        self.assertEqual(get_mutation_type(ref, alt), 'other')
 
-        ###
-        #print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), 'unknown'))
-        #self.assertEqual(get_mutation_type(ref, alt), 'unknown')
+        print('### test list ###')
+        # list
+        ref = 'T'
+        alt = 'TCA,A,AG'
+        print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), ['INS', 'SNV', 'other']))
+        self.assertEqual(get_mutation_type(ref, alt), ['INS', 'SNV', 'other'])
 
-    #def test_mutation_type_list(self):
-    #    lenmuts_ref = [random.randint(1, 5) for _ in range(4)]
-    #    ref = [random.choice(self.nucleotides) for _ in range(lenmut) for lenmut in lenmuts_ref]
-    #    alt = [random.choice(self.nucleotides) for _ in range(lenmut) for lenmut in lenmuts_alt]
+
+    def test_assess_mutation(self):
 
 
 if __name__ == '__main__':
