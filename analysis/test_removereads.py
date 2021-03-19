@@ -1,6 +1,7 @@
 import unittest
 import random
 import pysam
+import re
 import pandas as pd
 
 from supporting_reads import get_mutation_type, assess_mutation
@@ -128,19 +129,26 @@ class MyTestCase(unittest.TestCase):
                         print(cond, mutation_type, mutation['REF'], mutation['ALT'], seq[pos], pos, cigar, genotype)
                         if cond:
                             snv_done = True
+                            self.assertEqual(mutation['ALT'], seq[pos])
+                        else:
+                            self.assertNotEqual(mutation['ALT'], seq[pos])
                     else:
                         print(cond, mutation_type, mutation['REF'], mutation['ALT'], seq[pos:pos+max(len(mutation['REF']), len(mutation['ALT']))], pos, cigar)
                         if mutation_type == 'INS' and cond:
                             ins_done = True
+                            cigar_states = re.split('[0-9]+', cigar)[1:]
+                            cigar_pos = re.split('M|I|D|N|S|H|P|=|X', cigar)[:-1]
+                            cigar_pos = [0 if (cigar_states[i] == 'S') else int(ci) for i, ci in enumerate(cigar_pos)]
+                            self.assertEqual(sum(cigar_pos[:cigar_states.index('I')]), pos+1)
                         elif mutation_type == 'DEL' and cond:
                             del_done = True
-
+                            cigar_states = re.split('[0-9]+', cigar)[1:]
+                            cigar_pos = re.split('M|I|D|N|S|H|P|=|X', cigar)[:-1]
+                            cigar_pos = [0 if (cigar_states[i] == 'S') else int(ci) for i, ci in enumerate(cigar_pos)]
+                            self.assertEqual(sum(cigar_pos[:cigar_states.index('D')]), pos+1)
                 else:
                     pass
                 count_read += 1
-
-
-
 
 
 if __name__ == '__main__':

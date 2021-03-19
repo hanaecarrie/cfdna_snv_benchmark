@@ -36,6 +36,10 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
 
             cond, mutation_type, seq, pos, cigar, genotype = assess_mutation(read, mutation, genotype)
 
+            if type(mutation_type) == list:
+                if len(set(mutation_type)) != 1:
+                    raise ValueError('mutation type {} not only has mutlple variants but also several mutation types'.format(mutation_type))
+
             if cond:  # read supporting known variant
                 c += 1
                 reads2remove_tmp.append(read.query_name)
@@ -181,8 +185,13 @@ def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
         if condA or condB:
             # if not in patient's SNPs or a different variant from the patient's snps
             # bamsurgeon REF genome with VAF = 1
-            bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
-                bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref=mutation['ALT'], alt=mutation['REF'], vaf=1)
+            if not ',' in mutation['ALT']:
+                bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
+                    bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref=mutation['ALT'], alt=mutation['REF'], vaf=1)
+            else:
+                for alt in mutation['ALT'].split(','):
+                    bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
+                        bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref=alt, alt=mutation['REF'], vaf=1)
 
     # iterate through patients SNPs
     for pi, patient_snp in tqdm(patient_snps_df.iterrows(), total=patient_snps_df.shape[0]):
@@ -316,7 +325,7 @@ if __name__ == '__main__':
     patient_snps = pd.read_csv('../data/patient_SNPs/patient_986_snps.csv')
     reffasta_path = '../data/reference_genome/chr22.fa'
 
-    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[1000:10000], patient_snps, reffasta_path, verbose=1)
+    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[5000:10000], patient_snps, reffasta_path, verbose=1)
 
     plt.figure(figsize=(10, 5))
     plt.title('SNV')
@@ -329,8 +338,8 @@ if __name__ == '__main__':
     sns.histplot(data=log_pd[log_pd['type'] == 'INS'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
     plt.show()
 
-    #bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps, log_pd, max_vaf=0.1)
-    #print(bamsurgeon_snv_pd.head(10))
-    #print(bamsurgeon_indel_pd.head(10))
+    bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps, log_pd, max_vaf=0.1)
+    print(bamsurgeon_snv_pd.head(10))
+    print(bamsurgeon_indel_pd.head(10))
 
 
