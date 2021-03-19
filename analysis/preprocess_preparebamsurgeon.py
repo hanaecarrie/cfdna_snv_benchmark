@@ -4,9 +4,6 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('patient', help='string describing the sample : patientid_date')
-parser.add_argument('snp_database', help='either dbsnp or genomead')
-parser.add_argument('chunk_start', help='int of genomead 500,000 size chunk to start processing')
-parser.add_argument('chunk_end', help='int of genomead 500,000 size chunk to end processing')
 parser.add_argument('path_data', help='path to the data folder')
 
 args = parser.parse_args()
@@ -24,7 +21,7 @@ if not os.path.exists(args.path_data+'/data/prepare_pooled_healthy/log_'+patient
         log_df_genomad = pd.read_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+log_path_genomad, index=False)
         log_df = pd.concat([log_df, log_df_genomad])
     log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_total.csv', index=False)
-log_df = pd.read_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+log_path_genomad, index=False)
+log_df = pd.read_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_total.csv', index=False)
 
 # prepare bamsurgeon inputs
 bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps_df, log_df, max_vaf=0.1)
