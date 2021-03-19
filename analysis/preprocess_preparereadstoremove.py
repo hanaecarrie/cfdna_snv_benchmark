@@ -40,7 +40,8 @@ elif args.snp_database == 'genomead':
             print('chunk '+str(ci))
             genomad_df_chunk = genomad_df_chunk.drop('Unnamed: 0', axis=1)
             reads2remove, log_df = list_reads_to_remove(args.path_data+"/data/healthy_chr22_merged-ready.bam",
-                                                        genomad_df_chunk, patient_snps_df, verbose=1)
+                                                        genomad_df_chunk, patient_snps_df, args.path_data+'/data/reference_genome/chr22.fa',
+                                                        verbose=1)
             # save list of reads to remove and log dataframe
             log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.csv', index=False)
             with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.txt', "w") as output:
