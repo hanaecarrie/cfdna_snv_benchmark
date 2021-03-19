@@ -11,7 +11,7 @@ parser.add_argument('path_data', help='path to the data folder')
 args = parser.parse_args()
 print(args)
 
-from supporting_reads import list_reads_to_remove, prepare_bamsurgeon_inputs
+from supporting_reads import list_reads_to_remove
 
 patient_date = args.patient  # '986_100215'
 # load patient's SNPs detected on the deep WGS buffy coat sample with GATK Haplotype
@@ -27,12 +27,6 @@ if args.snp_database == 'dbsnp':
     with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_dbsnp.txt', "w") as output:
         for r in reads2remove:
             output.write(str(r) + "\n")
-    bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps_df, log_df, max_vaf=0.1)
-    # save file
-    bamsurgeon_snv_pd.to_csv(args.path_data+'/data/prepare_pooled_healthy/varfile_snv_'+patient_date.split('_')[0]+'_dbsnp.bed',
-                             sep='\t', header=False, index=False)
-    bamsurgeon_indel_pd.to_csv(args.path_data+'/data/prepare_pooled_healthy/varfile_indel_'+patient_date.split('_')[0]+'_dbsnp.bed',
-                               sep='\t', header=False, index=False)
 
 elif args.snp_database == 'genomead':
     # load known SNPs database
@@ -51,10 +45,3 @@ elif args.snp_database == 'genomead':
             with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.txt', "w") as output:
                 for r in reads2remove:
                     output.write(str(r) + "\n")
-
-            bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps_df, log_df, max_vaf=0.1)
-            # save file
-            bamsurgeon_snv_pd.to_csv(args.path_data+'/data/prepare_pooled_healthy/varfile_snv_'+patient_date.split('_')[0]+'genomad_'+str(ci)+'.bed',
-                                     sep='\t', header=False, index=False)
-            bamsurgeon_indel_pd.to_csv(args.path_data+'/data/prepare_pooled_healthy/varfile_indel_'+patient_date.split('_')[0]+'genomad_'+str(ci)+'.bed',
-                                       sep='\t', header=False, index=False)
