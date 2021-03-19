@@ -21,7 +21,6 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
     # for ci, mutation in tqdm(common_snps_df.iterrows(), total=common_snps_df.shape[0]):
     for ci, mutation in common_snps_df.iterrows():
 
-
         genotype = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'N': 0}  # genotype if SNV
         c = 0  # number of reads supporting the considered mutation
         t = 0  # total number of reads at that position
@@ -158,7 +157,7 @@ def assess_mutation(read, mutation, genotype):
                     if sum(cigar_pos[:indexINDEL]) != sum(cigar_pos_bis[:indexINDEL]):
                         print('CONFLICT WITH CIGAR STRINGS', cond, sum(cigar_pos_bis[:indexINDEL]) == pos + 1, cigar, pos+1)
 
-                #print(cond, cigar, pos+1, mutation['REF'], mutation['ALT'], seq[pos:pos+max(len(mutation['REF']), len(mutation['ALT']))])
+                # print(cond, cigar, pos+1, mutation['REF'], mutation['ALT'], seq[pos:pos+max(len(mutation['REF']), len(mutation['ALT']))])
 
     ######## other mutations SVs or MNV #######
     else:
@@ -199,7 +198,6 @@ def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
 
 
 def add_mutation_bamsurgeon_dict(bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref, alt, vaf):
-    mutation_type = get_mutation_type(ref, alt)
     if ',' not in alt:
         bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict_seq(
             bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref, alt, vaf)
@@ -318,7 +316,7 @@ if __name__ == '__main__':
     patient_snps = pd.read_csv('../data/patient_SNPs/patient_986_snps.csv')
     reffasta_path = '../data/reference_genome/chr22.fa'
 
-    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[2700:4700], patient_snps, reffasta_path, verbose=1)
+    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[1000:10000], patient_snps, reffasta_path, verbose=1)
 
     plt.figure(figsize=(10, 5))
     plt.title('SNV')

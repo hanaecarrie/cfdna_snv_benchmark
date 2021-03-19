@@ -1,5 +1,7 @@
 import unittest
 import random
+import pysam
+import pandas as pd
 
 from supporting_reads import get_mutation_type, assess_mutation
 
@@ -59,7 +61,7 @@ class MyTestCase(unittest.TestCase):
 
         ref = initialnucleotide + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
         alt = initialnucleotide + random.choice(self.nucleotides_alt)
-        self.assertRaises(ValueError, get_mutation_type, ref, alt)
+        self.assertEqual(get_mutation_type(ref, alt), 'DEL')
 
         # unknown, looks like deletion but different initial nucleotide
         ref = random.choice([i for i in self.nucleotides_ref if i != initialnucleotide]) + ''.join([random.choice(self.nucleotides_ref) for _ in range(lenmut)])
@@ -78,7 +80,7 @@ class MyTestCase(unittest.TestCase):
 
         ref = initialnucleotide + random.choice(self.nucleotides_ref)
         alt = initialnucleotide + ''.join([random.choice(self.nucleotides_alt) for _ in range(lenmut)])
-        self.assertRaises(ValueError, get_mutation_type, ref, alt)
+        self.assertEqual(get_mutation_type(ref, alt), 'INS')
 
         # unknown, looks like deletion but different initial nucleotide
         ref = initialnucleotide
@@ -93,8 +95,52 @@ class MyTestCase(unittest.TestCase):
         print('REF: {}, ALT: {}, detected mutation type: {}, expected mutation type: {}'.format(ref, alt, get_mutation_type(ref, alt), ['INS', 'SNV', 'other']))
         self.assertEqual(get_mutation_type(ref, alt), ['INS', 'SNV', 'other'])
 
-
     def test_assess_mutation(self):
+
+        vcf_df = pd.read_csv('../data/common_SNPs/dbsnp_df.csv')
+
+        snv_done, ins_done, del_done = False, False, False
+
+        while not (snv_done and ins_done and del_done):
+            print(snv_done + ins_done + del_done)
+
+            rand_mut = random.randint(0, vcf_df.shape[0])
+            mutation = vcf_df.iloc[rand_mut]
+
+            genotype = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'N': 0}  # initiialise genotype (for SNVs only)
+
+            bamfile_path = '../data/healthy_chr22_merged-ready.bam'
+            samfile = pysam.AlignmentFile(bamfile_path, "rb")
+            print(str(mutation['#CHROM']), mutation['POS']-1, mutation['POS'])
+            for pileupcolumn in samfile.pileup(str(mutation['#CHROM']), mutation['POS']-1, mutation['POS'], min_base_quality=0):
+                if pileupcolumn.pos == mutation['POS']-1:
+                    print("\ndepth of coverage at base %s = %s" % (pileupcolumn.pos, pileupcolumn.n))
+                    depthcov = pileupcolumn.n
+            rand_read = random.randint(0, depthcov+1)  # cov, randint half open intervals [a,b)
+            index_reads = [0, 1, rand_read, depthcov-1, depthcov]
+            print(rand_read)
+            count_read = 0
+
+            for read in samfile.fetch(str(mutation['#CHROM']), mutation['POS']-1, mutation['POS']):
+                if count_read in index_reads:
+                    cond, mutation_type, seq, pos, cigar, genotype = assess_mutation(read, mutation, genotype)
+                    if mutation_type == 'SNV':
+                        print(cond, mutation_type, mutation['REF'], mutation['ALT'], seq[pos], pos, cigar, genotype)
+                        if cond:
+                            snv_done = True
+                    else:
+                        print(cond, mutation_type, mutation['REF'], mutation['ALT'], seq[pos:pos+max(len(mutation['REF']), len(mutation['ALT']))], pos, cigar)
+                        if mutation_type == 'INS' and cond:
+                            ins_done = True
+                        elif mutation_type == 'DEL' and cond:
+                            del_done = True
+
+                else:
+                    pass
+                count_read += 1
+
+
+
 
 
 if __name__ == '__main__':
