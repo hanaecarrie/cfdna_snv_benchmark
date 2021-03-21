@@ -57,10 +57,10 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
                 else:  # problematic read that does not have a cigar string, unmapped
                     p += 1
         if verbose > -1:
-            # if 'SNV' in mutation_type:
+            # if 'SNV' in mutation_type and t > 0:
             #     print('SNV', mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], genotype, c, n, t, p, '% VAF:', round(100*c/t, 2))
             # else:
-            if not 'SNV' in mutation_type:
+            if not 'SNV' in mutation_type and t > 0:
                 print(mutation_type,  mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, a, p, '% VAF:', round(100*c/t, 2))
         if t > 0:
             if round(c/t, 2) <= max_vaf:  # if VAF <= 10% (default), few reads supporting variants
