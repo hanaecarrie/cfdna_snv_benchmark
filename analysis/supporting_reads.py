@@ -11,7 +11,8 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
     # initiate list of reads to remove
     reads2remove = []
     log_dict = {'#CHROM': [], "POS": [], "type": [], 'ID': [], 'REF': [], 'ALT': [],
-                "total_reads": [], 'supporting_reads': [], 'normal_reads': [], 'alternative_reads': [], "problematic_reads": [],
+                "total_reads": [], 'supporting_reads': [], 'normal_reads': [], 'alternative_reads': [],
+                "problematic_reads": [],
                 "is patient snp": [], "patient snp alt": [], "patient snp vaf": []}
 
     # list positions in patient
@@ -31,14 +32,16 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
 
         # iterate over reads that fall into the mutation position
         # /!\ the vcf file is 1-index based but pysam is 0-index based with half-open intervals [start, stop)
-        for read in samfile.fetch(str(mutation['#CHROM']), mutation['POS']-1, mutation['POS']):
+        for read in samfile.fetch(str(mutation['#CHROM']), mutation['POS'] - 1, mutation['POS']):
             t += 1  # new read found at this locus
 
             cond, mutation_type, seq, pos, cigar, genotype = assess_mutation(read, mutation, genotype)
 
             if type(mutation_type) == list:
                 if len(set(mutation_type)) != 1:
-                    raise ValueError('mutation type {} not only has mutlple variants but also several mutation types'.format(mutation_type))
+                    print('mutation at locus {} with type {}, ref = {}, alt = {}, not only has mutlple variants '
+                          'but also several mutation types'.format(mutation['POS'] - 1, mutation_type,
+                                                                   mutation['REF'], mutation['ALT']))
 
             if cond:  # read supporting known variant
                 c += 1
@@ -47,8 +50,9 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
                 aux = mutation['ALT'].split(',')
                 aux.append(mutation['REF'])
                 lenmutation = max([len(iaux) for iaux in aux])
-                ref_seq = reference_genome.fetch('chr'+str(mutation['#CHROM']), mutation['POS']-1, mutation['POS']-1+lenmutation).upper()
-                if seq[pos:pos+lenmutation] == ref_seq[:len(seq[pos:pos+lenmutation])]:  # normal read
+                ref_seq = reference_genome.fetch('chr' + str(mutation['#CHROM']), mutation['POS'] - 1,
+                                                 mutation['POS'] - 1 + lenmutation).upper()
+                if seq[pos:pos + lenmutation] == ref_seq[:len(seq[pos:pos + lenmutation])]:  # normal read
                     n += 1
                 elif cigar is not None:  # read supporting an unknown variant
                     # if 'INS' in mutation_type or 'DEL' in mutation_type:
@@ -61,16 +65,18 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
             #     print('SNV', mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], genotype, c, n, t, p, '% VAF:', round(100*c/t, 2))
             # else:
             if not 'SNV' in mutation_type and t > 0:
-                print(mutation_type,  mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, a, p, '% VAF:', round(100*c/t, 2))
+                print(mutation_type, mutation['POS'], 'REF:', mutation['REF'], 'ALT:', mutation['ALT'], c, n, t, a, p,
+                      '% VAF:', round(100 * c / t, 2))
         if t > 0:
-            if round(c/t, 2) <= max_vaf:  # if VAF <= 10% (default), few reads supporting variants
+            if round(c / t, 2) <= max_vaf:  # if VAF <= 10% (default), few reads supporting variants
                 if mutation['ID'] not in listpatientsnps:  # snps found in healthies is not in patient's snps
                     for r in reads2remove_tmp:
                         reads2remove.append(r)  # remove rare mutated reads
                 else:
                     # if same variant => do not remove, if other variant => remove
                     # NB: patient's snps may contain mutliple variants at one position (thus str.contains)
-                    if mutation['ALT'] != patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])]['ALT'].values[0]:
+                    if mutation['ALT'] != \
+                            patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])]['ALT'].values[0]:
                         for r in reads2remove_tmp:
                             reads2remove.append(r)  # remove rare alternative variant
 
@@ -93,7 +99,7 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
 
     log_pd = pd.DataFrame.from_dict(log_dict)
     print('# reads to remove: ', len(reads2remove))
-    print('% reads to remove: {:2f}%'.format(100*sum(log_pd['supporting_reads'])/sum(log_pd['total_reads'])))
+    print('% reads to remove: {:2f}%'.format(100 * sum(log_pd['supporting_reads']) / sum(log_pd['total_reads'])))
     log_pd['vaf'] = log_pd['supporting_reads'] / log_pd['total_reads']
     log_pd['normal af'] = log_pd['normal_reads'] / log_pd['total_reads']
     log_pd['noisy af'] = log_pd['alternative_reads'] / log_pd['total_reads']
@@ -104,10 +110,9 @@ def list_reads_to_remove(bamfile_path, common_snps_df, patient_snps_df, reffasta
 
 
 def assess_mutation(read, mutation, genotype):
-
     mutation_type = get_mutation_type(mutation['REF'], mutation['ALT'])  # determine mutation type
     seq = read.query_alignment_sequence  # get nucleotide sequence
-    pos = (mutation['POS']-1) - read.reference_start  # get mutation position 0-index based
+    pos = (mutation['POS'] - 1) - read.reference_start  # get mutation position 0-index based
     cigar = read.cigarstring  # get CIGAR string to check on DEL and INS
     cond = False  # initialise boolean condition for mutation assessment
 
@@ -126,7 +131,7 @@ def assess_mutation(read, mutation, genotype):
                         pos += -int(cp)
                     elif cigar_states[i] == 'I':
                         pos += int(cp)
-        genotype[seq[pos]] = genotype[seq[pos]]+1
+        genotype[seq[pos]] = genotype[seq[pos]] + 1
         if ',' in mutation['ALT']:
             for muts in mutation['ALT'].split(','):
                 if seq[pos] == muts:
@@ -154,12 +159,14 @@ def assess_mutation(read, mutation, genotype):
                         if sum(cigar_pos[:idxINDEL]) == pos + 1:
                             cond = True
                         if sum(cigar_pos[:idxINDEL]) != sum(cigar_pos_bis[:idxINDEL]):
-                            print('CONFLICT WITH CIGAR STRINGS', cond, sum(cigar_pos_bis[:idxINDEL]) == pos + 1, cigar, pos+1)
+                            print('CONFLICT WITH CIGAR STRINGS', cond, sum(cigar_pos_bis[:idxINDEL]) == pos + 1, cigar,
+                                  pos + 1)
                 else:
                     if sum(cigar_pos[:indexINDEL]) == pos + 1:
                         cond = True
                     if sum(cigar_pos[:indexINDEL]) != sum(cigar_pos_bis[:indexINDEL]):
-                        print('CONFLICT WITH CIGAR STRINGS', cond, sum(cigar_pos_bis[:indexINDEL]) == pos + 1, cigar, pos+1)
+                        print('CONFLICT WITH CIGAR STRINGS', cond, sum(cigar_pos_bis[:indexINDEL]) == pos + 1, cigar,
+                              pos + 1)
 
                 # print(cond, cigar, pos+1, mutation['REF'], mutation['ALT'], seq[pos:pos+max(len(mutation['REF']), len(mutation['ALT']))])
 
@@ -172,13 +179,14 @@ def assess_mutation(read, mutation, genotype):
 
 
 def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
-
     listpatientsnps = get_listpatientsnps(patient_snps_df)
     bamsurgeon_snv_dict = {'chr': [], 'pos_start': [], 'pos_end': [], 'vaf': [], 'alt': []}  # 1-index based
-    bamsurgeon_indel_dict = {'chr': [], 'pos_start': [], 'pos_end': [], 'vaf': [], 'type': [], 'alt': []}  # 0-index based
+    bamsurgeon_indel_dict = {'chr': [], 'pos_start': [], 'pos_end': [], 'vaf': [], 'type': [],
+                             'alt': []}  # 0-index based
 
     # iterate over mutated loci in the healthies with high VAF (above 10%)
-    for ci, mutation in tqdm(log_pd[log_pd['vaf'] > max_vaf].iterrows(), total=log_pd[log_pd['vaf'] > max_vaf].shape[0]):
+    for ci, mutation in tqdm(log_pd[log_pd['vaf'] > max_vaf].iterrows(),
+                             total=log_pd[log_pd['vaf'] > max_vaf].shape[0]):
         patient_snp = patient_snps_df[patient_snps_df['ID'].str.contains(mutation['ID'])].squeeze()
         condA = mutation['ID'] not in listpatientsnps
         condB = mutation['ID'] in listpatientsnps and mutation['ALT'] in patient_snp['ALT']
@@ -187,7 +195,8 @@ def prepare_bamsurgeon_inputs(patient_snps_df, log_pd, max_vaf=0.1):
             # bamsurgeon REF genome with VAF = 1
             if not ',' in mutation['ALT']:
                 bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
-                    bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref=mutation['ALT'], alt=mutation['REF'], vaf=1)
+                    bamsurgeon_snv_dict, bamsurgeon_indel_dict, mutation, ref=mutation['ALT'], alt=mutation['REF'],
+                    vaf=1)
             else:
                 for alt in mutation['ALT'].split(','):
                     bamsurgeon_snv_dict, bamsurgeon_indel_dict = add_mutation_bamsurgeon_dict(
@@ -232,7 +241,8 @@ def add_mutation_bamsurgeon_dict_seq(bamsurgeon_snv_dict, bamsurgeon_indel_dict,
             len_mut = len(alt) - len(ref)  # not important for BamSurgeon
         bamsurgeon_indel_dict['chr'].append(str(mutation['#CHROM']))
         bamsurgeon_indel_dict['pos_start'].append(mutation['POS'])  # 0-based index but ignore ref nucleotide
-        bamsurgeon_indel_dict['pos_end'].append(mutation['POS']+len_mut)  # important for DEL, pos_end - pos_start = number of nucleotides to remove
+        bamsurgeon_indel_dict['pos_end'].append(
+            mutation['POS'] + len_mut)  # important for DEL, pos_end - pos_start = number of nucleotides to remove
         bamsurgeon_indel_dict['vaf'].append(vaf)
         bamsurgeon_indel_dict['type'].append(mutation_type)
         bamsurgeon_indel_dict['alt'].append(alt[1:] if mutation_type == 'INS' else '')  # do not repeat ref nucleotide
@@ -289,7 +299,7 @@ def get_mutation_type_seq(ref: str, alt: str):
 def get_listpatientsnps(patient_snps_df):
     # list positions in patient
     old_listpatientssnps = list(patient_snps_df['ID'])
-    old_listpatientssnps = [i for i in old_listpatientssnps if i != '.'] # remove unknown snps
+    old_listpatientssnps = [i for i in old_listpatientssnps if i != '.']  # remove unknown snps
     # multiple rsids at the same locus => replace 'rsid1;rsid2' by 'rsid1', 'rsid2'
     listpatientssnps = []
     for ki in old_listpatientssnps:
@@ -325,21 +335,20 @@ if __name__ == '__main__':
     patient_snps = pd.read_csv('../data/patient_SNPs/patient_986_snps.csv')
     reffasta_path = '../data/reference_genome/chr22.fa'
 
-    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[5000:10000], patient_snps, reffasta_path, verbose=1)
+    reads2remove, log_pd = list_reads_to_remove(bamfile_path, vcf_df.iloc[5000:10000], patient_snps, reffasta_path,
+                                                verbose=1)
 
     plt.figure(figsize=(10, 5))
     plt.title('SNV')
-    sns.histplot(data=log_pd[log_pd['type'] == 'SNV'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
+    sns.histplot(data=log_pd[log_pd['type'] == 'SNV'][['vaf', 'normal af', 'noisy af']], bins=100, stat="probability")
     plt.figure(figsize=(10, 5))
     plt.title('DEL')
-    sns.histplot(data=log_pd[log_pd['type'] == 'DEL'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
+    sns.histplot(data=log_pd[log_pd['type'] == 'DEL'][['vaf', 'normal af', 'noisy af']], bins=100, stat="probability")
     plt.figure(figsize=(10, 5))
     plt.title('INS')
-    sns.histplot(data=log_pd[log_pd['type'] == 'INS'][['vaf', 'normal af', 'noisy af']], bins=100,  stat="probability")
+    sns.histplot(data=log_pd[log_pd['type'] == 'INS'][['vaf', 'normal af', 'noisy af']], bins=100, stat="probability")
     plt.show()
 
     bamsurgeon_snv_pd, bamsurgeon_indel_pd = prepare_bamsurgeon_inputs(patient_snps, log_pd, max_vaf=0.1)
     print(bamsurgeon_snv_pd.head(10))
     print(bamsurgeon_indel_pd.head(10))
-
-
