@@ -13,3 +13,5 @@ python3 ~/cfdna_snv_benchmark/analysis/preprocess_preparebamsurgeon.py $patienti
 
 split -l 10000 --numeric-suffixes $path_data/data/prepare_pooled_healthy/varfile_snv_${patient}_total.bed varfile_snv_${patient}_
 split -l 10000 --numeric-suffixes $path_data/data/prepare_pooled_healthy/varfile_indel_${patient}_total.bed varfile_indel_${patient}_
+cd $path_data/data/prepare_pooled_healthy/ || exit
+find . -type f  ! -name "*.*" -exec mv {} {}.bed \;

@@ -19,6 +19,6 @@ python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
   -o $path_data/data/pooled_healthy/healthy_chr22_merged-ready_${patient}_filter_snv.bam \
   --mindepth 0 --maxdepth 200000 --ignoresnp --ignoreref --force --tagreads  \
   --picardjar /mnt/projects/carriehc/cfDNA/utils/picard.jar --aligner mem \
-  --tmpdir $path_data/CRC-${patient}-chunks/addsnv.tmp --skipmerge -p $ncpus --seed 1
+  --tmpdir $path_data/data/pooled_healthy/addsnv_${patient}.tmp --skipmerge -p $ncpus --seed 1
 
 
