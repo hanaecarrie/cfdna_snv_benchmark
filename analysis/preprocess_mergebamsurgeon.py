@@ -5,8 +5,6 @@ from uuid import uuid4
 from shutil import move
 import logging
 
-cd /mnt/projects/carriehc/cfDNA/utils/bamsurgeon
-
 from bamsurgeon.common import *
 from bamsurgeon.markreads import markreads
 import bamsurgeon.replacereads as rr
@@ -42,15 +40,17 @@ def replace(origbamfile, mutbamfile, outbamfile, seed=None):
     outbam.close()
 
 
-outbam_mutsfiles = [f for f in args.outbam_mutsfolder if f.startswith('addsnv.') and f.endswith('.muts.bam')]
+outbam_mutsfiles = [os.path.join(args.outbam_mutsfolder, f) for f in os.listdir(args.outbam_mutsfolder)
+                    if f.startswith('addsnv.') and f.endswith('.muts.bam')]
 print(outbam_mutsfiles)
 
 for outbam_mutsfile in outbam_mutsfiles:
     print(outbam_mutsfile)
     if args.tagreads:
         tmp_tag_bam = 'tag.%s.bam' % str(uuid4())
-        markreads(args.outbam_mutsfile, tmp_tag_bam)
-        move(tmp_tag_bam, args.outbam_mutsfile)
+        print(tmp_tag_bam)
+        markreads(outbam_mutsfile, tmp_tag_bam)
+        move(tmp_tag_bam, outbam_mutsfile)
         logger.info("tagged reads.")
 
         logger.info("done making mutations, merging mutations into %s --> %s" % (args.bamFileName, args.outBamFile))
