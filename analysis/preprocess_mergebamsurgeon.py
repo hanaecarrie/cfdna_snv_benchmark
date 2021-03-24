@@ -5,9 +5,11 @@ from uuid import uuid4
 from shutil import move
 import logging
 
-from /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bamsurgeon.common import *
-from /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bamsurgeon.markreads import markreads
-import /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bamsurgeon.replacereads as rr
+cd /mnt/projects/carriehc/cfDNA/utils/bamsurgeon
+
+from bamsurgeon.common import *
+from bamsurgeon.markreads import markreads
+import bamsurgeon.replacereads as rr
 
 
 parser = argparse.ArgumentParser()
