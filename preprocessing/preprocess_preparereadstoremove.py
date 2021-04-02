@@ -21,10 +21,10 @@ patient = str(args.patient)  # 986
 
 if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv'):
     # Read SNPs detected in cancer patient
-    if os.path.exists('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf'):
-        patient_snps_df = read_vcf('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
+    if os.path.exists(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf'):
+        patient_snps_df = read_vcf(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
     else:
-        patient_snps_df = read_vcf('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf.gz')
+        patient_snps_df = read_vcf(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf.gz')
     print(patient_snps_df.shape)
     patient_snps_df = patient_snps_df[patient_snps_df['#CHROM'] == '22']
     print(patient_snps_df.shape)
@@ -32,7 +32,7 @@ if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snp
     patient_snps_df['VAF'] = patient_snps_df['INFO'].apply(foo_vaf)
     patient_snps_df = patient_snps_df[['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'VAF']]
 
-    patient_snps_df.to_csv('../data/patient_SNPs/patient_'+patient+'_snps.csv', index=False)
+    patient_snps_df.to_csv(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv', index=False)
 
 patient_snps_df = pd.read_csv(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv')
 
