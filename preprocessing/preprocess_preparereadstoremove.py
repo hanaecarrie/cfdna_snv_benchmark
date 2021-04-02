@@ -4,7 +4,6 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('patient', help='string describing the sample : patientid_date')
-parser.add_argument('germline_vcf_name', help='prefix name like buffycoat_CRC-986_chr22_nofilter')
 parser.add_argument('snp_database', help='either dbsnp or genomead')
 parser.add_argument('chunk_start', help='int of genomead 500,000 size chunk to start processing')
 parser.add_argument('chunk_end', help='int of genomead 500,000 size chunk to end processing')
