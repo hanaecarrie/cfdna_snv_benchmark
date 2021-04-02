@@ -1,8 +1,10 @@
+import os
 import pandas as pd
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('patient', help='string describing the sample : patientid_date')
+parser.add_argument('germline_vcf_name', help='prefix name like buffycoat_CRC-986_chr22_nofilter')
 parser.add_argument('snp_database', help='either dbsnp or genomead')
 parser.add_argument('chunk_start', help='int of genomead 500,000 size chunk to start processing')
 parser.add_argument('chunk_end', help='int of genomead 500,000 size chunk to end processing')
@@ -12,9 +14,26 @@ args = parser.parse_args()
 print(args)
 
 from supporting_reads import list_reads_to_remove
+from utils import read_vcf
 
 patient_date = args.patient  # '986_100215'
 # load patient's SNPs detected on the deep WGS buffy coat sample with GATK Haplotype
+
+if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv'):
+    # Read SNPs detected in cancer patient
+    if os.path.exists('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf'):
+        patient_snps_df = read_vcf('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
+    else:
+        patient_snps_df = read_vcf('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf.gz')
+    print(patient_snps_df.shape)
+    patient_snps_df = patient_snps_df[patient_snps_df['#CHROM'] == '22']
+    print(patient_snps_df.shape)
+    foo_vaf = lambda x: pd.Series(x.split(';AF=')[1].split(';')[0])
+    patient_snps_df['VAF'] = patient_snps_df['INFO'].apply(foo_vaf)
+    patient_snps_df = patient_snps_df[['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'VAF']]
+
+    patient_snps_df.to_csv('../data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv', index=False)
+
 patient_snps_df = pd.read_csv(args.path_data+'/data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv')
 
 if args.snp_database == 'dbsnp':
