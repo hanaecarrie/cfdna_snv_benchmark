@@ -12,6 +12,6 @@ export path_data=$5
 
 # STEP 1: preprare reads to remove
 
-python3 ~/cfdna_snv_benchmark/analysis/preprocess_preparereadstoremove.py $patientid_date $snp_database $chunk_start $chunk_end $path_data
+python3 ~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.py $patientid_date $snp_database $chunk_start $chunk_end $path_data
 
 

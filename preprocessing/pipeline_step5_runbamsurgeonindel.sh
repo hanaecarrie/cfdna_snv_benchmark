@@ -12,13 +12,15 @@ echo $patient
 echo $chunk
 echo $ncpus
 
-cd  ~/ || exit
+cd ~/ || exit
 
 python3 ~/bamsurgeon/bin/addindel.py \
   -v $path_data/varfile_indel_${patient}_total.bed \
   -f $path_data/healthy_chr22_merged-ready_${patient}_filter_snv.bam \
   -r $path_data/GRCh37/GRCh37.fa \
   -o $path_data/healthy_chr22_merged-ready_${patient}_filter_snv_indel.bam \
-  --mindepth 0 --maxdepth 100000 --ignoresnp --ignoreref --force --tagreads  \
+  --mindepth 0 --maxdepth 100000 --ignoresnp --ignoreref --force --insane --covdiff 1--tagreads  \
   --picardjar $path_data/picard.jar --aligner mem \
   --tmpdir addsnv_${patient}.tmp -p $ncpus --seed 1
+
+$path_data/healthy_chr22_merged-ready_${patient}_filter_snv_indel.bam

@@ -19,8 +19,8 @@ python3 ~/bamsurgeon/bin/addsnv.py \
   -f $path_data/healthy_chr22_merged-ready_${patient}_filter.bam \
   -r $path_data/GRCh37/GRCh37.fa \
   -o $path_data/healthy_chr22_merged-ready_${patient}_filter_snv.bam \
-  --mindepth 0 --maxdepth 100000 --ignoresnp --ignoreref --force --tagreads  \
+  --mindepth 0 --maxdepth 100000 --ignoresnp --ignoreref --force --insane --covdiff 1 --tagreads  \
   --picardjar $path_data/picard.jar --aligner mem \
   --tmpdir addsnv_${patient}.tmp -p $ncpus --seed 1
 
-
+samtools index $path_data/healthy_chr22_merged-ready_${patient}_filter_snv.bam
