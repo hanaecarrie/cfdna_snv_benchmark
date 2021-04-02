@@ -6,32 +6,32 @@ export path_data=$3 # '/mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healt
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N dbsnp -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_dbsnp_${patient}.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_dbsnp_${patient}.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name dbsnp 0 0 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name dbsnp 0 0 $path_data
 
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_0 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_0.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_0.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 0 10 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 0 10 $path_data
 
-qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_1-m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_1 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_1.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_1.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 10 20 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 10 20 $path_data
 
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_2 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_2.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_2.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 20 30 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 20 30 $path_data
 
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_3 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_3.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_3.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 30 40 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 30 40 $path_data
 
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_4 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_4.o \
 -e $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_4.e  \
-~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 40 50 $oath_data
+~/cfdna_snv_benchmark/preprocessing/preprocess_preparereadstoremove.sh $patient $germline_vcf_name gnomad 40 50 $path_data
 
 qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 -N gnomad_5 -m e -M hanae_camille_carrie_from.tp@gis.a-star.edu.sg \
 -o $path_data/prepare_pooled_healthy/$patient/preprocess_preparereadstoremove_gnomad_${patient}_5.o \
