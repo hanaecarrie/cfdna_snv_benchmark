@@ -16,10 +16,10 @@ print(args)
 from supporting_reads import list_reads_to_remove
 from utils import read_vcf
 
-patient_date = args.patient  # '986_100215'
+patient = str(args.patient)  # 986
 # load patient's SNPs detected on the deep WGS buffy coat sample with GATK Haplotype
 
-if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv'):
+if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv'):
     # Read SNPs detected in cancer patient
     if os.path.exists('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf'):
         patient_snps_df = read_vcf('../data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
@@ -32,9 +32,12 @@ if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient_date.
     patient_snps_df['VAF'] = patient_snps_df['INFO'].apply(foo_vaf)
     patient_snps_df = patient_snps_df[['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'VAF']]
 
-    patient_snps_df.to_csv('../data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv', index=False)
+    patient_snps_df.to_csv('../data/patient_SNPs/patient_'+patient+'_snps.csv', index=False)
 
-patient_snps_df = pd.read_csv(args.path_data+'/data/patient_SNPs/patient_'+patient_date.split('_')[0]+'_snps.csv')
+patient_snps_df = pd.read_csv(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv')
+
+if not os.path.exists(args.path_data+'/data/prepare_pooled_healthy/'+patient):
+    os.mkdir(args.path_data+'/data/prepare_pooled_healthy/'+patient)
 
 if args.snp_database == 'dbsnp':
     # load known SNPs database
@@ -43,14 +46,14 @@ if args.snp_database == 'dbsnp':
                                                 dbsnp_df, patient_snps_df, args.path_data+'/data/reference_genome/chr22.fa',
                                                 verbose=-1)
     # save list of reads to remove and log dataframe
-    log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_dbsnp.csv', index=False)
-    with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_dbsnp.txt', "w") as output:
+    log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/'+patient+'/log_'+patient+'_dbsnp.csv', index=False)
+    with open(args.path_data+'/data/prepare_pooled_healthy/'+patient+'/readfile_'+patient+'_dbsnp.txt', "w") as output:
         for r in reads2remove:
             output.write(str(r) + "\n")
 
-elif args.snp_database == 'genomead':
+elif args.snp_database == 'gnomad':
     # load known SNPs database
-    genomad_df_iterator = pd.read_csv(args.path_data+'/data/common_SNPs/genomad_df.csv', iterator=True, chunksize=50000)
+    genomad_df_iterator = pd.read_csv(args.path_data+'/data/common_SNPs/gnomad_df.csv', iterator=True, chunksize=50000)
     ci = 0
     for genomad_df_chunk in genomad_df_iterator:
         ci += 1
@@ -62,7 +65,7 @@ elif args.snp_database == 'genomead':
                                                         genomad_df_chunk, patient_snps_df, args.path_data+'/data/reference_genome/chr22.fa',
                                                         verbose=1)
             # save list of reads to remove and log dataframe
-            log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/log_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.csv', index=False)
-            with open(args.path_data+'/data/prepare_pooled_healthy/readfile_'+patient_date.split('_')[0]+'_genomad_'+str(ci)+'.txt', "w") as output:
+            log_df.to_csv(args.path_data+'/data/prepare_pooled_healthy/'+patient+'/log_'+patient+'_gnomad_'+str(ci)+'.csv', index=False)
+            with open(args.path_data+'/data/prepare_pooled_healthy/'+patient+'/readfile_'+patient+'_gnomad_'+str(ci)+'.txt', "w") as output:
                 for r in reads2remove:
                     output.write(str(r) + "\n")
