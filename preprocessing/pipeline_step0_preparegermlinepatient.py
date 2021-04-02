@@ -16,10 +16,7 @@ patient = str(args.patient)  # 986
 
 if not os.path.exists(args.path_data+'/data/patient_SNPs/patient_'+patient+'_snps.csv'):
     # Read SNPs detected in cancer patient
-    if os.path.exists(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf'):
-        patient_snps_df = read_vcf(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
-    else:
-        patient_snps_df = read_vcf(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf.gz')
+    patient_snps_df = read_vcf(args.path_data+'/data/2015-07-31_'+args.germline_vcf_name+'/'+args.germline_vcf_name+'-gatk-haplotype-annotated.vcf')
     print(patient_snps_df.shape)
     patient_snps_df = patient_snps_df[patient_snps_df['#CHROM'] == '22']
     print(patient_snps_df.shape)
