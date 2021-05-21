@@ -1,0 +1,9 @@
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 0 10 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 10 20 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 20 30 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 30 40 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 40 50 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 50 60 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 60 70 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 70 80 
+qsub -pe OpenMP 2 -l mem_free=24G,h_rt=24:00:00 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/pooled_healthy_pp/run_pp_pooled_healthy.sh 80 90 

@@ -200,3 +200,5 @@ sh.exe.stackdump
 .Rhistory
 *.Rout
 data/
+*.bam
+*bam.bai
