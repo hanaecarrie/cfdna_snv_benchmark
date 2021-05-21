@@ -33,20 +33,11 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
-#echo $sample_tumor
-#echo $sample_healthy
-#echo $sample_tumor
-#echo $samplename_tumor
-#echo $samplename_healthy
-#echo $dilutionfactor_tumor
-#echo $dilutionfactor_healthy
-#echo $outputdir
 export outputdir=$outputdir/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
-#echo $outputdir
-
+echo $tffile
 
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
-if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d',' -f2 <<<"$line")" ; fi ; done < /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv ;
+if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d',' -f2 <<<"$line")" ; fi ; done < $tffile
 echo $median_tumor_burden
 echo $cov_tumor
 export cov_healthy=187.6145
