@@ -48,6 +48,7 @@ echo $outputdir
 echo $tumordir
 echo $healthydir
 echo $buffycoatdir
+echo $tffile
 
 export sample_tumor_chr=$tumordir/${samplename_tumor}_chr${chr}.bam
 export sample_healthy_chr=$healthydir/${samplename_healthy}_chr${chr}.bam
@@ -111,13 +112,6 @@ if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then  /mnt/projects/skan
 # check buffy coat select chr exists
 if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
 if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
-
-# filter for mutations of the healthy samples
-if [ ! -f $outputdir/${dilutionname}.filtered.sorted.bam ] ; then python3 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/filter_vcf_positions.py $vcffile $outputdir/${dilutionname}.sorted.bam $outputdir/${dilutionname}.filtered.sorted.bam ; fi
-if [ ! -f $outputdir/${dilutionname}.filtered.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $outputdir/${dilutionname}.filtered.sorted.bam ; fi
-if [ ! -f $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ] ; then python3 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/filter_vcf_positions.py $vcffile $buffycoatdir/${samplename_buffycoat}_chr${chr}.bam $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ; fi
-if [ ! -f $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ; fi
-#rm  $outputdir/${dilutionname}.sorted.bam*
 
 # calculate tf and coverage of obtained diluted file
 if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/calculate_tumor_burden.sh -c $config_file ; fi

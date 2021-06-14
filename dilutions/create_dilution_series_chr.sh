@@ -33,36 +33,27 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
-export sample_healthy=$samples_healthy
 echo $sample_healthy
-echo $samples_tumor
-echo  $samples_buffycoat 
+echo $sample_tumor
+echo $sample_buffycoat 
 
-export samplename_healthy=$samplenames_healthy
 echo $samplename_healthy
-echo $samplenames_tumor
-echo $samplenames_buffycoat
+echo $samplename_tumor
+echo $samplename_buffycoat
 
 echo $dilutionfactors
 echo $chr
 echo $outputfolder
+echo $tffile
+
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
-
-# counter
-export c=1
-#echo "${samplenames_tumor[0]}"
-#echo "${samplenames_tumor[$c]}"
-
-for sample_tumor in $samples_tumor ; do
 
 for dilutionfactor in $dilutionfactors ; do
 
-export samplename_tumor=$(echo $samplename_tumor | cut -f $c -d ' ')
-export tumordir=$(echo $tumordir | cut -f $c -d ' ')
-export buffycoatdir=$(echo $buffycaotdirs | cut -f $c -d ' ')
 export dilutionfactor_tumor=$(echo $dilutionfactor | cut -f1 -d-)
 export dilutionfactor_healthy=$(echo $dilutionfactor | cut -f2 -d-)
 export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
+if [ ! -d $outputfolder/dilutions_${samplename_tumor} ] ; then mkdir $outputfolder/dilutions_${samplename_tumor} ; fi
 echo $outputdir
 echo $tumordir
 echo $healthydir
@@ -82,14 +73,13 @@ export rgname=rg_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplen
 echo $dilutionname
 echo $rgname
 
-
-'''
-
 if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 
 # Select chr only
 echo "Select chr ${chr} only for the tumor and the healthy sample..."
+if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
 if [ ! -f $sample_tumor_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
+if [ ! -d $healthydir ] ; then mkdir $healthydir ; fi
 if [ $dilutionfactor_healthy != 0 ] ; 
 then if [ ! -f $sample_healthy_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
 fi 
@@ -134,20 +124,10 @@ if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then  /mnt/projects/skan
 if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
 if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
 
-# filter for mutations of the healthy samples
-if [ ! -f $outputdir/${dilutionname}.filtered.sorted.bam ] ; then python3 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/filter_vcf_positions.py $vcffile $outputdir/${dilutionname}.sorted.bam $outputdir/${dilutionname}.filtered.sorted.bam ; fi
-if [ ! -f $outputdir/${dilutionname}.filtered.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $outputdir/${dilutionname}.filtered.sorted.bam ; fi
-if [ ! -f $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ] ; then python3 /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/filter_vcf_positions.py $vcffile $buffycoatdir/${samplename_buffycoat}_chr${chr}.bam $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ; fi
-if [ ! -f $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $buffycoatdir/${samplename_buffycoat}_chr${chr}.filtered.bam ; fi
-#rm  $outputdir/${dilutionname}.sorted.bam*
-
 # calculate tf and coverage of obtained diluted file
 if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/calculate_tumor_burden.sh -c $config_file ; fi
 if [ ! -f $outputdir/coverage.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/calculate_coverage.sh -c $config_file ; fi
 
-'''
-done
-c=$((c+1))
 done
 
 

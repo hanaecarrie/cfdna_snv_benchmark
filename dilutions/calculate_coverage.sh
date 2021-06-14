@@ -43,9 +43,9 @@ echo $dilutionfactor_healthy
 echo $outputdir
 export outputdir=$outputdir/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
 echo $outputdir
-export outputfile=dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.filtered.sorted.bam
+export outputfile=dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.sorted.bam
 
 export cov=$(samtools depth -a $outputdir/$outputfile | awk '{sum+=$3} END {print sum/NR}')
 echo $cov
-if [ ! -f $outputdir/coverage.txt ] ; then echo $cov >> $outputdir/coverage.txt ; fi  
+if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then echo $cov >> $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ; fi  
 
