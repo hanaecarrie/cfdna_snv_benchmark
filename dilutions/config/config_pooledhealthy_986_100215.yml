@@ -1,7 +1,7 @@
 ##### Config file #####
 
 sample:
-  healthy: "/mnt/projects/carriehc/cfDNA/data/healthy_chr22_merged-ready_986_filter_snv.sorted.bam" #/mnt/projects/carriehc/cfDNA/cfSNV/benchmark/healthy/healthy/healthy_chr22_merged-ready.bam 
+  healthy: "/mnt/projects/carriehc/cfDNA/data/healthy_chr22_merged-ready_986_filter_snv.sorted.bam"
   tumor: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-986_100215-CW-T-ready.bam"
   buffycoat: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-986_100215-CW-N-ready.bam"
 

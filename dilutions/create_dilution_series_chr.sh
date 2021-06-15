@@ -121,12 +121,15 @@ echo "index mixture..."
 if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $outputdir/${dilutionname}.sorted.bam ; fi
 
 # check buffy coat select chr exists
+echo "buffy coat..."
+if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
 if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
 if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
 
 # calculate tf and coverage of obtained diluted file
-if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/calculate_tumor_burden.sh -c $config_file ; fi
-if [ ! -f $outputdir/coverage.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfSNV/benchmark/calculate_coverage.sh -c $config_file ; fi
+echo "tumor burden and coverage..."
+if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/calculate_tumor_burden.sh -c $config_file ; fi
+if [ ! -f $outputdir/coverage.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/calculate_coverage.sh -c $config_file ; fi
 
 done
 

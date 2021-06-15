@@ -33,7 +33,7 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
-export outputdir=$outputdir/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
+export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
 echo $tffile
 
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;

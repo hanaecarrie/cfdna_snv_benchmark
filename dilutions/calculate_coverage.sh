@@ -40,8 +40,8 @@ echo $samplename_tumor
 echo $samplename_healthy
 echo $dilutionfactor_tumor
 echo $dilutionfactor_healthy
-echo $outputdir
-export outputdir=$outputdir/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
+echo $outputfolder
+export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
 echo $outputdir
 export outputfile=dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.sorted.bam
 
