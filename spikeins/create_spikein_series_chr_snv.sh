@@ -61,43 +61,27 @@ for tf in $tfs ;
 do if [ ! -d $outputdir/$subtype/$tf ] ; then mkdir $outputdir/$subtype/$tf ; fi
 
 # prepare bedfile SNV
-#export bedfile_snv=$outputdir/$subtype/$tf/${subtype}_${tf}_snv.bed
-export bedfile_indel=$outputdir/$subtype/$tf/${subtype}_${tf}_indel.bed
-#cp $commonmutationdir/$subtype/chr${chr}_${subtype}_SNV.bed $bedfile_snv
-cp $commonmutationdir/$subtype/chr${chr}_${subtype}_INDEL.bed $bedfile_indel
-#awk -v tfv=$tf '$4=tfv*$4' $bedfile_snv > $outputdir/$subtype/$tf/tmp_snv.bed 
-#sed -e 's/    /\t/g'  $outputdir/$subtype/$tf/tmp_snv.bed  > $bedfile_snv
-awk -v tfv=$tf '$4=tfv*$4' $bedfile_indel > $outputdir/$subtype/$tf/tmp_indel.bed
-sed -e 's/    /\t/g'  $outputdir/$subtype/$tf/tmp_indel.bed  > $bedfile_indel
-#rm $outputdir/$subtype/$tf/tmp_snv.bed
-rm $outputdir/$subtype/$tf/tmp_indel.bed
+export bedfile_snv=$outputdir/$subtype/$tf/${subtype}_${tf}_snv.bed
+cp $commonmutationdir/$subtype/chr${chr}_${subtype}_SNV.bed $bedfile_snv
+awk -v tfv=$tf '$4=tfv*$4' $bedfile_snv > $outputdir/$subtype/$tf/tmp_snv.bed 
+sed -e 's/    /\t/g'  $outputdir/$subtype/$tf/tmp_snv.bed  > $bedfile_snv
+rm $outputdir/$subtype/$tf/tmp_snv.bed
 
 # run bamsurgeon with snv
-#echo 'run bamsurgeon SNV...'
-#if [ ! -f $outputdir/$subtype/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam ] ; then
-#python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
-#    -v $bedfile_snv \
-#    -f $inputsample_dsfile \
-#    -r $refgenome \
-#    -o $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam \
-#    --picardjar $picardjarfile --aligner $aligner --mindepth $mindepth --maxdepth $maxdepth --tagreads \
-#    --tmpdir $outputdir/$subtype/$tf/addsnv.tmp -p 4 --seed 1 ;
-#fi
-#echo 'index output file...'
-#if [ ! -f $outputdir/$subtype/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam.bai ] ;
-#then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $outputdir/$subtype/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam ; fi
-
-# run bamsurgeon with indel 
-echo 'run bamsurgeon INDEL...'
-python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addindel.py \
-    -v $bedfile_indel \
+echo 'run bamsurgeon SNV...'
+if [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam ] && [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam ];
+then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
+    -v $bedfile_snv \
     -f $inputsample_dsfile \
     -r $refgenome \
-    -o $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_indel.bam \
+    -o $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam \
     --picardjar $picardjarfile --aligner $aligner --mindepth $mindepth --maxdepth $maxdepth --tagreads \
-    --tmpdir $outputdir/$subtype/$tf/addindel.tmp -p 4 --seed 1
+    --tmpdir $outputdir/$subtype/$tf/addsnv.tmp -p 4 --seed 1 ;
+fi
 echo 'index output file...'
-/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $outputdir/$subtype/${inputsample_name}_chr${chr}_${subtype}_${tf}_indel.bam
+if [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam ]; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam -@ 4 $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam ; fi
+if [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam ; fi
+rm -r $outputdir/$subtype/$tf/addsnv.tmp
 
 done
 done
