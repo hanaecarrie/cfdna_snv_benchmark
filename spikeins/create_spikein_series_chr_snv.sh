@@ -82,6 +82,6 @@ echo 'index output file...'
 if [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam ]; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam -@ 4 $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam ; fi
 if [ ! -f $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.sorted.bam ; fi
 rm -r $outputdir/$subtype/$tf/addsnv.tmp
-
+rm $outputdir/$subtype/$tf/${inputsample_name}_chr${chr}_${subtype}_${tf}_snv.bam
 done
 done
