@@ -37,6 +37,8 @@ export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_
 echo $tffile
 
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
+echo "DEBUG ECHO A"
+echo $A
 if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d',' -f2 <<<"$line")" ; fi ; done < $tffile
 echo $median_tumor_burden
 echo $cov_tumor
