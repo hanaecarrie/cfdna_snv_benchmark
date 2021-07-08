@@ -1,0 +1,23 @@
+##### Config file #####
+
+sample:
+  healthy: "/mnt/projects/carriehc/cfDNA/data/healthy_chr22_merged-ready_986.bam"
+  tumor: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-986_261016-CW-T-ready.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-986_261016-CW-N-ready.bam"
+
+samplename:
+  healthy: "pooledhealthy"
+  tumor: "CRC-986_261016"
+  buffycoat: "CRC-986_261016-BC"
+
+dilutionfactors: "1-0"
+
+chr: 22
+
+healthydir: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/dilutions_series_chr22/pooledhealthy/"
+tumordir: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/dilutions_series_chr22/NCC_CRC-986_261016-CW-T"
+buffycoatdir: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/dilutions_series_chr22/NCC_CRC-986_261016-CW-N"
+outputfolder: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/dilutions_series_chr22"
+
+tffile: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv"
+covhealthy: 400.814
