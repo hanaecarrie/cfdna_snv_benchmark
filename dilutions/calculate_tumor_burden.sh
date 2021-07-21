@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # def path and environment
-source /home/carriehc/miniconda2/etc/profile.d/conda.sh
+source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
 conda activate default
 
 
@@ -37,12 +37,11 @@ export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_
 echo $tffile
 
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
-echo "DEBUG ECHO A"
 echo $A
 if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d',' -f2 <<<"$line")" ; fi ; done < $tffile
 echo $median_tumor_burden
 echo $cov_tumor
-export cov_healthy=187.6145
+export cov_healthy=$covhealthy
 echo $cov_healthy
 
 cov_t=$(echo "$median_tumor_burden * $cov_tumor * $dilutionfactor_tumor" | bc)

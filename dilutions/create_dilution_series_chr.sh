@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # def path and environment
-source /home/carriehc/miniconda2/etc/profile.d/conda.sh
+source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
 conda activate default
-
 
 # function to parse config file
 function parse_yaml {
@@ -115,10 +114,11 @@ fi
 # sort
 echo "sort mixture..."
 if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${dilutionname}.sorted.bam -@ 4 $outputdir/${dilutionname}.bam ; fi
-#if [  -f $outputdir/${dilutionname}.bam ] ; then rm $outputdir/${dilutionname}.bam ; fi
 # index
 echo "index mixture..."
 if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${dilutionname}.sorted.bam ; fi
+
+if [  -f $outputdir/${dilutionname}.bam ] ; then rm $outputdir/${dilutionname}.bam ; fi
 
 # check buffy coat select chr exists
 echo "buffy coat..."

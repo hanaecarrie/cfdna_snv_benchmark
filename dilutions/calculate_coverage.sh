@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # def path and environment
-source /home/carriehc/miniconda2/etc/profile.d/conda.sh
+source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
 conda activate default
-
 
 # function to parse config file
 function parse_yaml {
