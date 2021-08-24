@@ -30,7 +30,7 @@ if [ ! -f "$outputdir/${saveid}.cna.seg" ] ; then
 --mapWig $ichorcna_extdata/map_hg19_1000kb.wig \
 --centromere $ichorcna_extdata/GRCh37.p13_centromere_UCSC-gapTable.txt \
 --normalPanel $ichorcna_extdata/HD_ULP_PoN_1Mb_median_normAutosome_mapScoreFiltered_median.rds \
---includeHOMD False --chrs "c(1:22, \"X\")" --chrTrain "c(1:22)" \
+--includeHOMD False --chrs "c(1:22)" --chrTrain "c(1:22)" \
 --estimateNormal True --estimatePloidy True --estimateScPrevalence True \
 --scStates "c(1,3)" --txnE 0.9999 --txnStrength 10000 \
 --outDir $outputdir
