@@ -4,6 +4,25 @@ import numpy as np
 import pandas as pd
 
 
+
+def set_display_params(config):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    if config.context == 'talk':
+        sns.set(style=config.context_talk.style, context=config.context_talk.context, rc={"lines.linewidth": config.context_talk.llw, "legend.fontsize": config.context_talk.llw})
+        plt.style.use(config.context_talk.styleuse)
+        plt.rcParams.update({"grid.linewidth": config.context_talk.glw, "grid.alpha": config.context_talk.galpha, 'font.size': config.context_talk.fs})
+        sns.set_palette(config.context_talk.palette)
+    elif config.context == 'paper':
+        print(config.context_paper)
+        sns.set(style=config.context_paper.style, context=config.context_paper.context, rc={"lines.linewidth": config.context_paper.llw, "legend.fontsize": config.context_paper.llw})
+        plt.style.use(config.context_paper.styleuse)
+        plt.rcParams.update({"grid.linewidth": config.context_paper.glw, "grid.alpha": config.context_paper.galpha, 'font.size': config.context_paper.fs})
+        sns.set_palette(config.context_paper.palette)
+    else:
+        raise ValueError("unknown context {}. Should be either 'talk' or 'paper'".format(config.context))
+
+
 def read_vcf(path):
     if not os.path.exists(path) and os.path.exists(path+'.gz'):
         fp = open(path, "wb")
@@ -169,19 +188,4 @@ def get_pr_table():
 def load_files(filenames):
     for filename in filenames:
         yield pd.read_csv(filename, names=['sample_id', 'tumor_burden'])
-
-
-def set_display_params(config):
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    if config.context == 'talk':
-        ctxt = config.context.talk
-    elif config.context == 'paper':
-        ctxt = config.context.paper
-    else:
-        raise ValueError("unknown context {}. Should be either 'talk' or 'paper'".format(config.context))
-    sns.set(style=ctxt.style, context=ctxt.context, rc={"lines.linewidth": ctxt.llw, "legend.fontsize": ctxt.llw})
-    plt.style.use(ctxt.styleuse)
-    plt.rcParams.update({"grid.linewidth": ctxt.glw, "grid.alpha": ctxt.galpha, 'font.size': ctxt.fontsize})
-    sns.set_palette(ctxt.palette)
 
