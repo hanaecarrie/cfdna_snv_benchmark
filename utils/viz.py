@@ -163,4 +163,25 @@ def get_pr_table():
       return(table)
     }
     """
-    pass 
+    pass
+
+
+def load_files(filenames):
+    for filename in filenames:
+        yield pd.read_csv(filename, names=['sample_id', 'tumor_burden'])
+
+
+def set_display_params(config):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    if config.context == 'talk':
+        ctxt = config.context.talk
+    elif config.context == 'paper':
+        ctxt = config.context.paper
+    else:
+        raise ValueError("unknown context {}. Should be either 'talk' or 'paper'".format(config.context))
+    sns.set(style=ctxt.style, context=ctxt.context, rc={"lines.linewidth": ctxt.llw, "legend.fontsize": ctxt.llw})
+    plt.style.use(ctxt.styleuse)
+    plt.rcParams.update({"grid.linewidth": ctxt.glw, "grid.alpha": ctxt.galpha, 'font.size': ctxt.fontsize})
+    sns.set_palette(ctxt.palette)
+
