@@ -13,13 +13,17 @@ from utils.viz import load_files
 
 def get_tf(config, batch='all'):
     if batch == 'deepwgs':
-        tf_df = pd.read_csv(config.tumorfractionfiles.deepwgs, names=['sample_id', 'tumor_burden'])
+        tffile = os.path.join(os.getcwd(), *config.tumorfractionfiles.deepwgs)
+        tf_df = pd.read_csv(tffile, names=['sample_id', 'tumor_burden'])
     elif batch == 'batch1':
-        tf_df = pd.read_csv(config.tumorfractionfiles.batch1, names=['sample_id', 'tumor_burden'])
+        tffile = os.path.join(os.getcwd(), *config.tumorfractionfiles.batch1)
+        tf_df = pd.read_csv(tffile, names=['sample_id', 'tumor_burden'])
     elif batch == 'batch2':
-        tf_df = pd.read_csv(config.tumorfractionfiles.batch2, names=['sample_id', 'tumor_burden'])
+        tffile = os.path.join(os.getcwd(), *config.tumorfractionfiles.batch2)
+        tf_df = pd.read_csv(tffile, names=['sample_id', 'tumor_burden'])
     elif batch == 'all':
-        tf_df = pd.concat(load_files([config.tumorfractionfiles[batch] for batch in config.batches]))
+        tffiles = [os.path.join(os.getcwd(), *config.tumorfractionfiles[batch]) for batch in config.batches]
+        tf_df = pd.concat(load_files(tffiles))
     else:
         raise ValueError("unknown batch {}. batch should be either 'batch1', 'batch2', 'deepwgs or 'all'".format(batch))
     tf_df['patient'] = [int(tf_df['sample_id'].iloc[i].split('-')[1].split('_')[0])
@@ -30,7 +34,7 @@ def get_tf(config, batch='all'):
 
 
 def get_patient_tf_treatment(config, patient):
-
+    patient = int(patient)
     # Tumor burden
     tf_df = get_tf(config, batch='all')
     tf_df['patient'] = [int(tf_df['sample_id'].iloc[i].split('-')[1].split('_')[0])
@@ -40,12 +44,8 @@ def get_patient_tf_treatment(config, patient):
     tf_patient = tf_df[tf_df['patient'] == patient].sort_values('date')
     tf_patient['date'] = tf_patient['date'].astype(str)
 
-    tumorburden_dates = tf_df[tf_df['patient'] == patient]['date'].sort_values().astype(str).unique()
-    print(tumorburden_dates)
-    print(tf_df[tf_df['patient'] == patient].shape[0])
-
     # Treatment file
-    treatment_df = pd.read_csv(config.treatmentfile, sep='\t')
+    treatment_df = pd.read_csv(os.path.join(os.getcwd(), *config.treatmentfile), sep='\t')
     treatment_df['patient'] = treatment_df['patient'].astype(int)
     treatment_df['date'] = pd.to_datetime(treatment_df['date'], format='%Y-%m-%d')
     treatment_df.rename(columns={'value': 'treatment'}, inplace=True)
@@ -59,8 +59,9 @@ def get_patient_tf_treatment(config, patient):
     return df_patient, tf_patient, tf_df
 
 
-def plot_patient_timeline(config, patient, mutations=False):
-
+def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
+    patient = int(patient)
+    print(patient)
     # Display parameter
     lc = 'w' if config.context == 'talk' else 'k'
     if config.context == 'talk':
@@ -73,14 +74,11 @@ def plot_patient_timeline(config, patient, mutations=False):
     # Patient treatment + tumor fraction infos
     df_patient, tf_patient, _ = get_patient_tf_treatment(config, patient)
     alldates = sorted(list(set(list(df_patient['date'].values) + list(tf_patient['date'].values))))
-    print('alldates')
-    print(len(alldates))
-    print(alldates)
     tumorburden_dates = tf_patient[tf_patient['patient'] == patient]['date'].sort_values().astype(str).unique()
 
     # Plot patient timeline
     plt.figure()
-    fig, ax2 = plt.subplots(figsize=(40, 10))
+    fig, ax2 = plt.subplots(figsize=figsize)
     # left y-axis -> treatment information
     sns.stripplot(y='treatment', x='date', hue='treatment', data=df_patient, s=10, ax=ax2)
     ax2.grid(False)
@@ -104,8 +102,8 @@ def plot_patient_timeline(config, patient, mutations=False):
     if not os.path.exists(os.path.join(*config.outputpath, 'timeline_patient')):
         os.mkdir(os.path.join(*config.outputpath, 'timeline_patient'))
     if not os.path.exists(
-            os.path.join(*config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '.png')):
-        plt.savefig(os.path.join(*config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '.png'),
+            os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '.png')):
+        plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '.png'),
                     bbox_inches='tight')
 
     if mutations:  # plot mutations detected in targeted seq
@@ -133,14 +131,25 @@ def plot_patient_timeline(config, patient, mutations=False):
             mutation_df_226.insert(loc=6,
                                    column='helper',
                                    value='hello')
-            mutations_acrosstime_226 = (mutation_df_226.set_index(col[:6] + ['helper'])
-                                        .stack()
-                                        .unstack(-2)
-                                        .ffill(axis=1)
-                                        .bfill(axis=1, downcast='infer')
-                                        .add_prefix('new_')
-                                        .reset_index()
-                                        .rename({'level_6': 'date'}, axis=1))
+            try:
+                mutations_acrosstime_226 = (mutation_df_226.set_index(col[:6] + ['helper'])
+                                            .stack()
+                                            .unstack(-2)
+                                            .ffill(axis=1)
+                                            .bfill(axis=1, downcast='infer')
+                                            .add_prefix('new_')
+                                            .reset_index()
+                                            .rename({'level_6': 'date'}, axis=1))
+            except:
+                mutations_acrosstime_226 = (mutation_df_226.set_index(col[:6] + ['helper'])
+                                            .stack()
+                                            .drop_duplicates()
+                                            .unstack(-2)
+                                            .ffill(axis=1)
+                                            .bfill(axis=1, downcast='infer')
+                                            .add_prefix('new_')
+                                            .reset_index()
+                                            .rename({'level_6': 'date'}, axis=1))
             mutations_acrosstime_226['date'] = mutations_acrosstime_226['date'].str.split('.').str[1]
             mutations_acrosstime_226['date'] = pd.to_datetime(mutations_acrosstime_226['date'], format='%d%m%y').astype(
                 str)
@@ -181,11 +190,15 @@ def plot_patient_timeline(config, patient, mutations=False):
             for ldw in listdeepwgs:
                 ax.get_xticklabels()[labels.index(ldw)].set_color('red')
                 ax2.get_xticklabels()[labels.index(ldw)].set_color('red')
+            if not os.path.exists(
+                    os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png')):
+                plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png'),
+                            bbox_inches='tight')
     plt.show()
 
 
 def get_mutations_stats(config, patient):
-    mutation_df = pd.read_excel(os.path.join(*config.mutationfolder, 'CCG_226_' + str(patient)
+    mutation_df = pd.read_excel(os.path.join(os.getcwd(), *config.mutationfolder, 'CCG_226_' + str(patient)
                                              + '_reGeno.VEP.readable_tiers.xls'))
     col = ['#CHROM', 'POS', 'REF', 'ALT', 'GENE', 'TIERS']
     targeted_lowtf = []
@@ -241,12 +254,12 @@ def get_mutations_stats(config, patient):
             (mutation_lowtftimepoints['date'] == date) & (mutation_lowtftimepoints['VAF'] != 0)].shape[0]
         nmuttrust = mutation_lowtftimepoints[
             (mutation_lowtftimepoints['date'] == date) & (mutation_lowtftimepoints['VAF'] != 0) & (
-                        mutation_lowtftimepoints['TIERS'] == 'Trusted')].shape[0]
+                    mutation_lowtftimepoints['TIERS'] == 'Trusted')].shape[0]
         medianvaf = np.median(mutation_lowtftimepoints[(mutation_lowtftimepoints['date'] == date)]['VAF'].values)
         medianvafn = np.median(mutation_lowtftimepoints[(mutation_lowtftimepoints['date'] == date) & (
-                    mutation_lowtftimepoints['VAF'] != 0)]['VAF'].values)
+                mutation_lowtftimepoints['VAF'] != 0)]['VAF'].values)
         medianvafntrust = np.median(mutation_lowtftimepoints[(mutation_lowtftimepoints['date'] == date) & (
-                    mutation_lowtftimepoints['VAF'] != 0) & (mutation_lowtftimepoints['TIERS'] == 'Trusted')][
+                mutation_lowtftimepoints['VAF'] != 0) & (mutation_lowtftimepoints['TIERS'] == 'Trusted')][
                                         'VAF'].values)
         lowtftimepoints_dict['# mutated genes'].append(nmut)
         lowtftimepoints_dict['# mutated genes TRUSTED'].append(nmuttrust)
@@ -262,12 +275,19 @@ if __name__ == "__main__":
     from utils.config import Config
     from utils.viz import set_display_params
 
-    # Config
-    config = Config("../config/", "config_viz.yaml")
+    # set working directory
+    if not os.getcwd().endswith('cfdna_snv_benchmark'):
+        os.chdir('../')
+    print('Current working directory: {}'.format(os.getcwd()))
+    # set config
+    config = Config("config/", "config_viz.yaml")
+    # example patient 986
     patient = 986
+    # set display params
     set_display_params(config)
-    # tf_df = get_tf(config, batch='all')
-    #plot_patient_timeline(config, patient)
-    #plot_patient_timeline(config, patient, mutations=True)
+    # test functions
+    tf_df = get_tf(config, batch='all')
+    plot_patient_timeline(config, patient)
+    plot_patient_timeline(config, patient, mutations=True)
     lowtftimepoints_pd = get_mutations_stats(config, patient)
     print(lowtftimepoints_pd.dropna())

@@ -3,9 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def check_pileup(pileup_path, genes='all'):
-    # pileup_df = pd.read_csv('../data/raw_data/NCC_CRC-986_300316-CW-T_pileup.txt', sep='\t', header=None)
-    # pileup_df = pd.read_csv('../data/raw_data/NCC_CRC-1014_090516-CW-T_pileup.txt', sep='\t', header=None)
     pileup_df = pd.read_csv(pileup_path, sep='\t', header=None)
     if genes != 'all':  # name of 1 gene
         pileup_df = pileup_df.iloc[pileup_df[(pileup_df[3].str.contains(genes))].index+1]
