@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -69,26 +70,23 @@ def load_calls_from_vcf(vcf_path, methods, chrom='all'):
         sample = res[['CHROM', 'POS', 'REF', 'ALT', 'QUAL', 'FILTER', 'type', *methods]]
         for m in methods:
             if m == 'vardict':  # P-value
-                sample[m + '_score'] = [float(i.split('SSF=')[1].split(';')[0]) if 'SSF' in i else 0 for i in
-                                        res['INFO']]
-                # res['INFO'].apply(lambda x: pd.Series(x.split('SSF=')[1].split(';')[0]).astype(float) if 'SSF' in x else 0)
+                sample[m + '_score'] = [float(i.split('SSF=')[1].split(';')[0]) if 'SSF' in i else np.nan for i in res['INFO']]
+                #res['INFO'].apply(lambda x: pd.Series(x.split('SSF=')[1].split(';')[0]).astype(float) if 'SSF' in x else 0)
             elif m == 'varscan':  # P-value
-                sample[m + '_score'] = [float(i.split('SSC=')[1].split(';')[0]) if 'SSC' in i else 0 for i in
-                                        res['INFO']]
+                sample[m + '_score'] = [float(i.split('SSC=')[1].split(';')[0])/100 if 'SSC' in i else np.nan for i in res['INFO']]
             elif m == 'mutect2':  # logodds to probability score prob = exp(logTLOD)/(1+exp(logTLOD))
-                sample[m + '_score'] = [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (
-                        1 + np.exp(float(i.split('TLOD=')[1].split(';')[0]))) if 'TLOD' in i else 0 for i in
-                                        res['INFO']]
+                sample[m + '_score'] = [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0]))) if 'TLOD' in i else np.nan for i in res['INFO']]
+                 # [float(i.split('TLOD=')[1].split(';')[0]) if 'TLOD' in i else np.nan for i in res['INFO']]
+                # [float(i.split('TLOD=')[1].split(';')[0]) if 'TLOD' in i else np.nan for i in res['INFO']]
+                # [float(i.split('TLOD=')[1].split(';')[0])/(1+float(i.split('TLOD=')[1].split(';')[0])) if 'TLOD' in i else 0 for i in res['INFO']]
                 # [float(i.split('TLOD=')[1].split(';')[0])/(1+float(i.split('TLOD=')[1].split(';')[0])) if 'TLOD' in i else 0 for i in res['INFO']]
             elif m == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
-                sample[m + '_score'] = [np.exp(float(i.split('ODDS=')[1].split(';')[0])) / (
-                        1 + np.exp(float(i.split('ODDS=')[1].split(';')[0]))) if 'ODDS' in i else 0 for i in
-                                        res['INFO']]
+                sample[m + '_score'] = [np.exp(float(i.split('ODDS=')[1].split(';')[0])) / (1 + np.exp(float(i.split('ODDS=')[1].split(';')[0]))) if 'ODDS' in i else np.nan for i in res['INFO']]
+                #[float(i.split('OODS=')[1].split(';')[0]) if 'OODS' in i else np.nan for i in res['INFO']]
                 # [float(i.split('ODDS=')[1].split(';')[0])/(1+float(i.split('ODDS=')[1].split(';')[0])) if 'ODDS' in i else 0 for i in res['INFO']] 
             elif m == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
-                sample[m + '_score'] = [
-                    1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10)) if 'SomaticEVS' in i else 0 for i in
-                    res['INFO']]
+                sample[m + '_score'] =  [float(i.split('SomaticEVS=')[1].split(';')[0]) if 'SomaticEVS' in i else np.nan for i in res['INFO']]
+                # [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10)) if 'SomaticEVS' in i else np.nan for i in res['INFO']]
         sample['CHROM_POS'] = sample['CHROM'].astype('str').str.cat(sample['POS'].astype('str'), sep="_")
         sample.set_index('CHROM_POS', inplace=True)
         if chrom != 'all':
@@ -158,9 +156,10 @@ def count_mutations(samples, methods, samples_tf, mutationtypes=['all', 'INDEL',
 def pr_table(results_df, value_colname, truth_colname, verbose=False, decreasing=False):
     # get PR table of values
     res_df = results_df[[value_colname, truth_colname]]
+    res_df.dropna(inplace=True)
     res_df.columns = ['value', 'truth']
     thresholds = np.sort(np.unique(res_df['value'].values))
-    #print(len(thresholds))
+    # print(len(thresholds))
     thresholds = thresholds[:len(thresholds)]
     if len(thresholds) > 10000:  # TODO
         seq_idx = np.linspace(thresholds[0], len(thresholds), 10000)  # length=1000
@@ -207,7 +206,7 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
     xlabel = "Recall"
     ylabel = "Precision"
     ax.set(xlabel=xlabel, ylabel=ylabel)
-    ax.legend() #loc="lower left")
+    ax.legend()  # loc="lower left")
     f_scores = np.linspace(0.2, 0.8, num=4)
     for f_score in f_scores:
         x = np.linspace(0.01, 1)
@@ -219,43 +218,80 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
 
 
 if __name__ == "__main__":
+    """
     dilutiondirpath = ["..", "data", "dilutions_chr22"]
     bcbiooutputdirpath = ["..", "data", "bcbio_output"]
     prefix = 'dilution_chr22_'
     chrom = '22'
     plasmasample1 = 'CRC-986_100215'
     methods = ['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan']
+    vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_1_pooledhealthy_0",
+                            prefix + plasmasample1 + "_1_pooledhealthy_0-ensemble-annotated.vcf")
+    vcf_ref = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
+    vcf_ref = vcf_ref[vcf_ref['type'] == 'SNV']
+    y_true = pd.DataFrame(vcf_ref[methods].T.sum())
+    y_true.columns = ['truth']
+    y_true['truth'][y_true['truth'] <= 1] = 0
+    y_true = y_true.astype(bool)
+    #y_true['CHROM'] = y_true.index.str.split('_').str[0]
+    #y_true['POS'] = y_true.index.str.split('_').str[1]
+    #print(y_true)
+    #vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_1_pooledhealthy_0",
+    #                        prefix + plasmasample1 + "_1_pooledhealthy_0-ensemble-annotated.vcf")
     vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_1_CRC-986_300316_0.72",
                             prefix + plasmasample1 + "_1_CRC-986_300316_0_72-ensemble-annotated.vcf")
     vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
     vcf_sample = vcf_sample[vcf_sample['type'] == 'SNV']
-    # print(vcf_sample.columns)
-    # print(vcf_sample.head())
-    y_true = pd.DataFrame(vcf_sample[methods].T.sum())
-    # y_true = y_true.groupby(['CHROM_POS']).sum()
-    # print(y_true)
-    y_true[y_true <= 1] = 0
-    y_true = y_true.astype(bool)
-
-    print(len(y_true[y_true[0] == True]), len(y_true))
-    vcf_sample['truth'] = y_true[0]
-    """
-    print(np.unique(vcf_sample['vardict_score'].values))
-    print(vcf_sample.loc[(vcf_sample['vardict_score'] < 0.001)][['vardict_score', 'vardict', 'truth']])
-
-    plt.figure()
-    sns.histplot(vcf_sample['vardict_score'], binwidth=0.01)
-    plt.show()
-    """
-    """
-    prt = pr_table(vcf_sample, 'freebayes_score', 'truth', verbose=True, decreasing=False)
-    print(prt)
-    """
+    print(vcf_sample.shape, y_true.shape)
+    #vcf_sample = pd.merge(vcf_sample, y_true, how='outer', on=["CHROM", "POS"])
+    #df_sample = pd.concat([vcf_sample, y_true], join='outer', axis=1)
+    df_sample = vcf_sample.join(y_true, how='outer') # not concat because duplicated axis
+    # prt = pr_table(vcf_sample, 'freebayes_score', 'truth', verbose=True, decreasing=False)
+    # print(prt)
 
     from sklearn.metrics import precision_recall_curve
-    plt.figure()
+
     fig, ax = plt.subplots()
     for method in methods:
-        precision, recall, thresholds = precision_recall_curve(vcf_sample['truth'], vcf_sample[method+'_score'])
+        df_sample_method = df_sample[['truth', method + '_score']]
+        df_sample_method['truth'].fillna(False, inplace=True)
+        df_sample_method[method + '_score'].fillna(0, inplace=True)
+        print(df_sample_method)
+        precision, recall, thresholds = precision_recall_curve(df_sample_method['truth'], df_sample_method[method + '_score'])
+        plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax))
+    plt.show()
+    """
+
+    dilutiondirpath = ["..", "data", "dilutions_chr22"]
+    bcbiooutputdirpath = ["..", "data", "bcbio_output"]
+    prefix = 'dilution_chr22_'
+    chrom = '22'
+    plasmasample1 = 'CRC-986_100215'
+    methods = ['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan']
+    #vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_1_CRC-986_300316_0.72",
+    #                        prefix + plasmasample1 + "_1_CRC-986_300316_0_72-ensemble-annotated.vcf")
+    vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_0.125_CRC-986_300316_0.875",
+                            prefix + plasmasample1 + "_0_125_CRC-986_300316_0_875-ensemble-annotated.vcf")
+    vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
+    vcf_sample = vcf_sample[vcf_sample['type'] == 'SNV']
+    vcf_path = os.path.join(*bcbiooutputdirpath, prefix + plasmasample1 + "_1_pooledhealthy_0",
+                            prefix + plasmasample1 + "_1_pooledhealthy_0-ensemble-annotated.vcf")
+    vcf_ref = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
+    vcf_ref = vcf_ref[vcf_ref['type'] == 'SNV']
+
+    from sklearn.metrics import precision_recall_curve
+
+    fig, ax = plt.subplots()
+    for method in methods:
+        y_true = vcf_ref[[method]]
+        y_true.columns = ['truth']
+        y_true = y_true.astype(bool)
+        df_sample = vcf_sample.join(y_true, how='outer') # not concat because duplicated axis
+        df_sample_method = df_sample[['truth', method + '_score']]
+        df_sample_method['truth'].fillna(False, inplace=True)
+        df_sample_method[method + '_score'].fillna(0, inplace=True)
+        print(method)
+        print(df_sample_method[method + '_score'].describe())
+        precision, recall, thresholds = precision_recall_curve(df_sample_method['truth'], df_sample_method[method + '_score'])
         plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax))
     plt.show()
