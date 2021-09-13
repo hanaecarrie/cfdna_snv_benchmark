@@ -193,26 +193,26 @@ def pr_table(results_df, value_colname, truth_colname, verbose=False, decreasing
     return table
 
 
-def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=None):
-    line_kwargs = {"drawstyle": "steps-post"}
+def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=None, kwargs={}):
+    kwargs["drawstyle"] = "steps-post"
     if f1_score is not None and estimator_name is not None:
-        line_kwargs["label"] = f"{estimator_name} (F1 = {f1_score:0.2f})"
+        kwargs["label"] = f"{estimator_name} (F1 = {f1_score:0.2f})"
     elif f1_score is not None:
-        line_kwargs["label"] = f"AP = {f1_score:0.2f}"
+        kwargs["label"] = f"AP = {f1_score:0.2f}"
     elif estimator_name is not None:
-        line_kwargs["label"] = estimator_name
+        kwargs["label"] = estimator_name
     fig, ax = figax if figax is not None else plt.subplots()
-    ax.plot(recall, precision, label=estimator_name, drawstyle="steps-post")
+    ax.plot(recall, precision, **kwargs)
     xlabel = "Recall"
     ylabel = "Precision"
     ax.set(xlabel=xlabel, ylabel=ylabel)
     ax.legend()  # loc="lower left")
-    f_scores = np.linspace(0.2, 0.8, num=4)
+    f_scores = np.linspace(0.1, 0.9, num=9)
     for f_score in f_scores:
         x = np.linspace(0.01, 1)
         y = f_score * x / (2 * x - f_score)
-        plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.2)
-        plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02))
+        plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.1)
+        plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02), color='grey')
     plt.xlim([0, 1])
     plt.ylim([0, 1])
 
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         precision, recall, thresholds = precision_recall_curve(df_sample_method['truth'], df_sample_method[method + '_score'])
         plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax))
     plt.show()
-    """
+    
 
     dilutiondirpath = ["..", "data", "dilutions_chr22"]
     bcbiooutputdirpath = ["..", "data", "bcbio_output"]
@@ -294,4 +294,36 @@ if __name__ == "__main__":
         print(df_sample_method[method + '_score'].describe())
         precision, recall, thresholds = precision_recall_curve(df_sample_method['truth'], df_sample_method[method + '_score'])
         plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax))
+    plt.show()
+    """
+    bcbiooutputdirpath = ["..", "data"]
+    methods = ['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan']
+    samples = ['icgc_cll_tumour']# , 'icgc_cll_T40_tumour', 'icgc_cll_T20_tumour']
+    vcf_path = os.path.join(*bcbiooutputdirpath, "SMURF benchmark", "snv-smurf-test20-v7-new5-maxdepth-2.tsv")
+    vcf_samples = pd.read_csv(vcf_path, sep='\t')
+    alpha_dict = {'icgc_cll_tumour': 1, "icgc_cll_T40_tumour": 0.8, 'icgc_cll_T20_tumour': 0.5}
+    color_dict = {'freebayes': 'tab:blue', 'mutect2': 'tab:orange', 'strelka2': 'tab:green', 'vardict': 'tab:red', 'varscan': 'tab:purple' }
+    fig, ax = plt.subplots()
+    for sample in samples:
+        vcf_sample = vcf_samples[vcf_samples['Sample_Name'] == sample]
+        vcf_sample.reset_index(inplace=True)
+        vcf_sample['CHROM_POS'] = vcf_sample['X.CHROM'].astype('str').str.cat(vcf_sample['POS'].astype('str'), sep="_")
+        vcf_sample.set_index('CHROM_POS', inplace=True)
+        vcf_sample['mutect2_score'] = vcf_sample['m2_TLOD']
+        vcf_sample['freebayes_score'] = vcf_sample['f_ODDS']
+        vcf_sample['strelka2_score'] = vcf_sample['s2_SomaticEVS']
+        vcf_sample['varscan_score'] = vcf_sample['vs_SSC']
+        vcf_sample['vardict_score'] = vcf_sample['vd_SSF']
+        from sklearn.metrics import precision_recall_curve
+
+        for method in methods:
+            df_sample_method = vcf_sample[[method+'_score', 'TRUTH']]
+            # df_sample = vcf_sample.join(y_true, how='outer') # not concat because duplicated axis
+            # df_sample_method = df_sample[['truth', method + '_score']]
+            # df_sample_method['truth'].fillna(False, inplace=True)
+            df_sample_method[method + '_score'].fillna(0, inplace=True)
+            print(method)
+            print(df_sample_method[method + '_score'].describe())
+            precision, recall, thresholds = precision_recall_curve(df_sample_method['TRUTH'], df_sample_method[method + '_score'])
+            plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax), color=color_dict[method], alpha=alpha_dict[sample])
     plt.show()
