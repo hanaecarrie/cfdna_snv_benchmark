@@ -57,41 +57,54 @@ def read_vcf(path):
 
 
 def load_calls_from_vcf(vcf_path, methods, chrom='all'):
-    if os.path.exists(vcf_path) or os.path.exists(vcf_path + '.gz'):
-        res = read_vcf(vcf_path)
-        res['callers'] = res['INFO'].apply(lambda x: pd.Series(x.split('CALLERS=')[1].split(';')[0]))
-        res['type'] = np.nan
-        res['type'][res['ALT'].str.len() - res['REF'].str.len() == 0] = 'SNV'
-        res['type'][res['ALT'].str.len() - res['REF'].str.len() > 0] = 'INS'
-        res['type'][res['ALT'].str.len() - res['REF'].str.len() < 0] = 'DEL'
-        res['type'][res['ID'].str.contains('rs')] = 'SNP'
-        for m in methods:
-            res[m] = res['INFO'].str.contains(m)
-        sample = res[['CHROM', 'POS', 'REF', 'ALT', 'QUAL', 'FILTER', 'type', *methods]]
-        for m in methods:
+    sample = None
+    for m in methods:
+        vcf_path_m = vcf_path.split('ensemble')[0] + m + vcf_path.split('ensemble')[1]
+        if os.path.exists(vcf_path_m) or os.path.exists(vcf_path_m + '.gz'):
+            #print(vcf_path_m)
+            res = read_vcf(vcf_path_m)
+            res = res[res['FILTER'] == "PASS"]
+            # res['callers'] = res['INFO'].apply(lambda x: pd.Series(x.split('CALLERS=')[1].split(';')[0]))
+            res['type'] = np.nan
+            res['type'][res['ALT'].str.len() - res['REF'].str.len() == 0] = 'SNV'
+            res['type'][res['ALT'].str.len() - res['REF'].str.len() > 0] = 'INS'
+            res['type'][res['ALT'].str.len() - res['REF'].str.len() < 0] = 'DEL'
+            res['type'][res['ID'].str.contains('rs')] = 'SNP'
+            # for m in methods:
+            #    res[m] = res['INFO'].str.contains(m)
+            info = res['INFO']
+            res = res[['CHROM', 'POS', 'REF', 'ALT', 'QUAL', 'FILTER', 'type']]
+            res.rename(columns={'FILTER': m}, inplace=True)
+            res[m] = True
+            # sample = res[['CHROM', 'POS', 'REF', 'ALT', 'QUAL', 'FILTER', 'type', *methods]]
+            # for m in methods:
             if m == 'vardict':  # P-value
-                sample[m + '_score'] = [float(i.split('SSF=')[1].split(';')[0]) if 'SSF' in i else np.nan for i in res['INFO']]
-                #res['INFO'].apply(lambda x: pd.Series(x.split('SSF=')[1].split(';')[0]).astype(float) if 'SSF' in x else 0)
+                res[m + '_score'] = [float(i.split('SSF=')[1].split(';')[0]) if 'SSF' in i else np.nan for i in info.tolist()]
             elif m == 'varscan':  # P-value
-                sample[m + '_score'] = [float(i.split('SSC=')[1].split(';')[0])/100 if 'SSC' in i else np.nan for i in res['INFO']]
+                res[m + '_score'] = [float(i.split('SSC=')[1].split(';')[0]) if 'SSC' in i else np.nan for i in info.tolist()]
             elif m == 'mutect2':  # logodds to probability score prob = exp(logTLOD)/(1+exp(logTLOD))
-                sample[m + '_score'] = [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0]))) if 'TLOD' in i else np.nan for i in res['INFO']]
-                 # [float(i.split('TLOD=')[1].split(';')[0]) if 'TLOD' in i else np.nan for i in res['INFO']]
-                # [float(i.split('TLOD=')[1].split(';')[0]) if 'TLOD' in i else np.nan for i in res['INFO']]
-                # [float(i.split('TLOD=')[1].split(';')[0])/(1+float(i.split('TLOD=')[1].split(';')[0])) if 'TLOD' in i else 0 for i in res['INFO']]
-                # [float(i.split('TLOD=')[1].split(';')[0])/(1+float(i.split('TLOD=')[1].split(';')[0])) if 'TLOD' in i else 0 for i in res['INFO']]
+                res[m + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0])))) if 'TLOD' in i else np.nan for i in info.to_list()]
+                # [float(i.split('TLOD=')[1].split(';')[0]) if 'TLOD' in i else np.nan for i in info.tolist()]
+                # [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0]))) if 'TLOD' in i else np.nan for i in res['INFO']]
             elif m == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
-                sample[m + '_score'] = [np.exp(float(i.split('ODDS=')[1].split(';')[0])) / (1 + np.exp(float(i.split('ODDS=')[1].split(';')[0]))) if 'ODDS' in i else np.nan for i in res['INFO']]
-                #[float(i.split('OODS=')[1].split(';')[0]) if 'OODS' in i else np.nan for i in res['INFO']]
-                # [float(i.split('ODDS=')[1].split(';')[0])/(1+float(i.split('ODDS=')[1].split(';')[0])) if 'ODDS' in i else 0 for i in res['INFO']] 
+                res[m + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0])))) if 'ODDS' in i else np.nan for i in info.to_list()]
+                    # [float(i.split('ODDS=')[1].split(';')[0]) if 'ODDS' in i else np.nan for i in info.tolist()]
+                # [float(i.split('ODDS=')[1].split(';')[0]) if 'ODDS' in i else np.nan for i in res['INFO']]
+                # [np.exp(float(i.split('ODDS=')[1].split(';')[0])) / (1 + np.exp(float(i.split('ODDS=')[1].split(';')[0]))) if 'ODDS' in i else np.nan for i in res['INFO']]
             elif m == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
-                sample[m + '_score'] =  [float(i.split('SomaticEVS=')[1].split(';')[0]) if 'SomaticEVS' in i else np.nan for i in res['INFO']]
+                res[m + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10)) if 'SomaticEVS' in i else np.nan for i in info.to_list()]
+                # [float(i.split('SomaticEVS=')[1].split(';')[0]) if 'SomaticEVS' in i else np.nan for i in info.tolist()]
                 # [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10)) if 'SomaticEVS' in i else np.nan for i in res['INFO']]
-        sample['CHROM_POS'] = sample['CHROM'].astype('str').str.cat(sample['POS'].astype('str'), sep="_")
-        sample.set_index('CHROM_POS', inplace=True)
-        if chrom != 'all':
-            print('select a single chrom = {} for analysis'.format(chrom))
-            sample = sample[sample['CHROM'] == chrom]
+            res['CHROM_POS'] = res['CHROM'].astype('str').str.cat(res['POS'].astype('str'), sep="_")
+            res.set_index('CHROM_POS', inplace=True)
+            if sample is None:
+                sample = res.copy()
+            else:
+                res.drop(['CHROM', 'POS', 'REF', 'ALT', 'QUAL', 'type'], axis=1, inplace=True)
+                sample = sample.join(res, how='outer')  # pd.concat([sample, res], axis=1)
+    if chrom != 'all' and sample is not None:
+        print('select a single chrom = {} for analysis'.format(chrom))
+        sample = sample[sample['CHROM'] == chrom]
         return sample
     else:
         print("sample is not present with path {}".format(vcf_path))
@@ -211,10 +224,26 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
     for f_score in f_scores:
         x = np.linspace(0.01, 1)
         y = f_score * x / (2 * x - f_score)
-        plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.1)
+        plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.1, lw=1)
         plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02), color='grey')
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
+
+
+def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kwargs={}):
+    kwargs["drawstyle"] = "steps-post"
+    if auc_score is not None and estimator_name is not None:
+        kwargs["label"] = f"{estimator_name} (AUC = {auc_score:0.2f})"
+    elif auc_score is not None:
+        kwargs["label"] = f"AUC = {auc_score:0.2f}"
+    elif estimator_name is not None:
+        kwargs["label"] = estimator_name
+    fig, ax = figax if figax is not None else plt.subplots()
+    ax.plot(fpr, tpr, **kwargs)
+    xlabel = "False Positive Rate"
+    ylabel = "True Positive Rate"
+    ax.set(xlabel=xlabel, ylabel=ylabel)
+    ax.legend(loc="upper right")
+    plt.plot([0, 1], [0, 1], ls='--', color='grey')
+    plt.annotate('baseline', xy=(0.9, 0.9), color='grey')
 
 
 if __name__ == "__main__":
