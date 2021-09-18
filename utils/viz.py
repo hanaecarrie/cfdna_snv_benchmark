@@ -4,8 +4,10 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
 import warnings
+from sklearn.metrics import precision_recall_curve, roc_curve, f1_score, roc_auc_score, precision_score, recall_score, average_precision_score
 
 warnings.filterwarnings("ignore")
 
@@ -206,6 +208,65 @@ def pr_table(results_df, value_colname, truth_colname, verbose=False, decreasing
     return table
 
 
+def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, ground_truth_method=3, refsample='undiluted', chrom='22', muttype='SNV', tumorsample=None):
+    df_table = None
+    if refsample == 'tumor':
+        methods = config.methods_tissue
+    else:
+        methods = config.methods
+    # tumor burden
+    tb_dict = {}
+    for i, d in enumerate(dilutionseries):
+        tb_dict[str(dilutionseries[i])] = \
+            float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_"+plasmasample+"_"+str(dilutionseries[i][0])+"_"+healthysample+"_"+str(dilutionseries[i][1])+".txt")).columns[0])
+    if refsample == 'tumor':
+        if tumorsample is None:
+            raise ValueError("no tumor sample passed while gt_sample='tumor'")
+        vcf_ref_path = os.path.join(*config.bcbiofolder, tumorsample, tumorsample+"-ensemble-annotated.vcf")
+    elif refsample == 'undiluted':
+        vcf_ref_path = os.path.join(*config.bcbiofolder, prefix + plasmasample + "_1_pooledhealthy_0",
+                                prefix + plasmasample + "_1_pooledhealthy_0-ensemble-annotated.vcf")
+    print(vcf_ref_path)
+    vcf_ref = load_calls_from_vcf(vcf_ref_path, methods, chrom=chrom)
+    print(vcf_ref.shape)
+    vcf_ref = vcf_ref[vcf_ref['type'] == muttype]
+    if type(ground_truth_method) == int:  # GROUND TRUTH = consensus across 3 callers in undiluted sample
+        if int(ground_truth_method) <= len(methods):
+            if refsample == 'tumor':
+                y_true = pd.DataFrame(vcf_ref[methods].T.sum())
+            y_true = pd.DataFrame(vcf_ref[methods].T.sum())
+            y_true.columns = ['truth']
+            y_true['truth'][y_true['truth'] < ground_truth_method] = 0
+            y_true = y_true.astype(bool)
+            print(y_true.shape)
+            df_table = y_true.copy()
+            print(df_table.columns)
+        else:
+            print('number of common callers {} asked for consensus is too high. It should be <= {}'.format(ground_truth_method, len(methods)))
+    elif ground_truth_method == 'caller':  # GROUND TRUTH = calls detected by same method in ref sample
+        df_table = vcf_ref[methods]
+        df_table.rename(columns={m: m + '_truth' for m in methods}, inplace=True)
+        df_table = df_table.astype(bool)
+        print(df_table.columns)
+    else:
+        raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+    # Sample of interest
+    for i, d in enumerate(dilutionseries):
+        d0 = str(d[0]).replace('.', '_')
+        d1 = str(d[1]).replace('.', '_')
+        print('vcf_pd_'+str(i), d)
+        vcf_path = os.path.join(*config.bcbiofolder, prefix+plasmasample+"_"+str(d[0])+"_"+healthysample+"_"+str(d[1]),
+                                prefix+plasmasample+"_"+d0+"_"+healthysample+"_"+d1+"-ensemble-annotated.vcf")
+        vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
+        if vcf_sample is not None:
+            vcf_sample = vcf_sample[vcf_sample['type'] == muttype]
+            vcf_sample.rename(columns={m: str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods}, inplace=True)
+            vcf_sample.rename(columns={m+'_score': str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods}, inplace=True)
+            colmerge = [str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods] + [str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods]
+            df_table = pd.concat([df_table, vcf_sample[colmerge]], axis=1)
+    return df_table
+
+
 def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=None, kwargs={}):
     kwargs["drawstyle"] = "steps-post"
     if f1_score is not None and estimator_name is not None:
@@ -226,6 +287,90 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
         y = f_score * x / (2 * x - f_score)
         plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.1, lw=1)
         plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02), color='grey')
+
+
+def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, xy='pr', ground_truth_method=3, refsample='undiluted', muttype='SNV', chrom='22', methods=None, save=True):
+    color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
+    alpha_dict = {str(dilutionseries[i]): 1-0.15*i for i in range(len(dilutionseries))}
+    tb_dict = {}
+    baseline_dict = {}
+    dilutionseries_present = []
+    if methods is None:
+        methods = config.methods
+    for i, d in enumerate(dilutionseries):
+        tb_dict[str(d)] = \
+           float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
+    fig, ax = plt.subplots(figsize=(10, 10))
+    for i, d in enumerate(dilutionseries):
+        for method in methods:
+            if str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score' in list(df_table.columns):
+                if type(ground_truth_method) == int:
+                    truth_name = 'truth'
+                elif ground_truth_method == 'method':
+                    truth_name = method +'_truth'
+                else:
+                    raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+                df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']]
+                df_method[truth_name].fillna(False, inplace=True)
+                df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'].fillna(0, inplace=True)
+                baseline_dict[str(d)] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                if str(d) not in dilutionseries_present:
+                    dilutionseries_present.append(str(d))
+                if xy == 'pr':
+                    precision, recall, thresholds = precision_recall_curve(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'])
+                    if i == 0:
+                        plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax),
+                                      kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+                    else:
+                        plot_pr_curve(precision, recall, estimator_name='', f1_score=None, figax=(fig, ax),
+                                      kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+                elif xy == 'roc':
+                    fpr, tpr, thresholds = roc_curve(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'])
+                    if i == 0:
+                        plot_roc_curve(fpr, tpr, estimator_name=method, auc_score=None, figax=(fig, ax),
+                                       kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+                    else:
+                        plot_roc_curve(fpr, tpr, estimator_name='', auc_score=None, figax=(fig, ax),
+                                       kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+    print(baseline_dict)
+    print(tb_dict)
+    print(dilutionseries_present)
+    list_lines_baseline = []
+    if xy == 'pr':
+        if len(np.unique(baseline_dict.values())) == 1:
+            plt.axhline(y=baseline_dict[str(dilutionseries_present[0])], ls='--', c='k')
+            list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', label="baseline = {:.2f}".format(baseline_dict[str(dilutionseries_present[0])])))
+        else:
+            for d in dilutionseries_present:
+                plt.axhline(y=baseline_dict[str(d)], alpha=alpha_dict[str(d)], ls='--', c='k')
+                list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], abel="baseline tf {:.2f}% = {:.2f}".format(100*tb_dict[str(d)], baseline_dict[str(d)])))
+    handles, labels = plt.gca().get_legend_handles_labels()
+    list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='tumor burden = {:.2f}%'.format(100*tb_dict[str(i)])) for i in dilutionseries_present]
+    if xy == 'pr':
+        legend_list = handles + list_lines + list_lines_baseline
+    else:
+        legend_list = handles + list_lines
+    # Creating legend with color box
+    plt.legend(bbox_to_anchor=(1, 1), loc="upper left", handles=legend_list)
+    if xy == 'pr':
+        plt.title("Precision Recall curve for SNV calling in sample {}".format(plasmasample +'_' + healthysample))
+    elif xy == 'roc':
+        plt.title("Receiver Operation Characteristics curve for SNV calling in sample {}".format(plasmasample +'_' + healthysample))
+    if xy == 'pr':
+        plt.semilogx()
+    plt.xlim([-0.01, 1.01])
+    plt.ylim([-0.01, 1.01])
+
+    if save:
+        if type(ground_truth_method) == int:
+            refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+        else:
+            refname = 'in'+refsample + 'samplebythesamecaller'
+        if methods != config.methods:
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + '_'.join(methods)), bbox_inches='tight')
+        else:
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname), bbox_inches='tight')
+    plt.show()
 
 
 def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kwargs={}):
