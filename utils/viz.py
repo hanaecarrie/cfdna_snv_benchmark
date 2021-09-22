@@ -208,7 +208,7 @@ def pr_table(results_df, value_colname, truth_colname, verbose=False, decreasing
     return table
 
 
-def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, ground_truth_method=3, refsample='undiluted', chrom='22', muttype='SNV', tumorsample=None):
+def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, ground_truth_method=3, refsample='undiluted', chrom='22', muttype='SNV', tumorsample=None, vcf_ref_path=None):
     df_table = None
     if refsample == 'tumor':
         methods = config.methods_tissue
@@ -219,13 +219,14 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
     for i, d in enumerate(dilutionseries):
         tb_dict[str(dilutionseries[i])] = \
             float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_"+plasmasample+"_"+str(dilutionseries[i][0])+"_"+healthysample+"_"+str(dilutionseries[i][1])+".txt")).columns[0])
-    if refsample == 'tumor':
-        if tumorsample is None:
-            raise ValueError("no tumor sample passed while gt_sample='tumor'")
-        vcf_ref_path = os.path.join(*config.bcbiofolder, tumorsample, tumorsample+"-ensemble-annotated.vcf")
-    elif refsample == 'undiluted':
-        vcf_ref_path = os.path.join(*config.bcbiofolder, prefix + plasmasample + "_1_pooledhealthy_0",
-                                prefix + plasmasample + "_1_pooledhealthy_0-ensemble-annotated.vcf")
+    if vcf_ref_path is None:
+        if refsample == 'tumor':
+            if tumorsample is None:
+                raise ValueError("no tumor sample passed while gt_sample='tumor'")
+            vcf_ref_path = os.path.join(*config.bcbiofolder, tumorsample, tumorsample+"-ensemble-annotated.vcf")
+        elif refsample == 'undiluted':
+            vcf_ref_path = os.path.join(*config.bcbiofolder, prefix + plasmasample + "_1_pooledhealthy_0",
+                                    prefix + plasmasample + "_1_pooledhealthy_0-ensemble-annotated.vcf")
     print(vcf_ref_path)
     vcf_ref = load_calls_from_vcf(vcf_ref_path, methods, chrom=chrom)
     print(vcf_ref.shape)
@@ -389,6 +390,89 @@ def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kw
     ax.legend(loc="upper right")
     plt.plot([0, 1], [0, 1], ls='--', color='grey')
     plt.annotate('baseline', xy=(0.9, 0.9), color='grey')
+
+
+def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, metric='auprc', ground_truth_method=3,
+                 refsample='undiluted', muttype='SNV', chrom='22', methods=None, save=True):
+    color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
+    tb_dict = {}
+    dilutionseries_present = []
+    if methods is None:
+        methods = config.methods
+    for i, d in enumerate(dilutionseries):
+        tb_dict[str(d)] = \
+            float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
+    results_df = pd.DataFrame()
+    aux_metric = []
+    aux_metricrelative = []
+    aux_method = []
+    aux_tb = []
+    baseline = {}
+    for i, d in enumerate(dilutionseries):
+        for method in methods:
+            if str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score' in list(df_table.columns):
+                if i != 0:
+                    if type(ground_truth_method) == int:
+                        truth_name = 'truth'
+                    elif ground_truth_method == 'caller':
+                        truth_name = method +'_truth'
+                    else:
+                        raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+                    if metric == 'auprc':
+                        df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']]
+                        df_method[truth_name].fillna(False, inplace=True)
+                    else:
+                        df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method]]
+                        print(df_method.shape)
+                        # df_method.dropna(how='all', inplace=True)
+                        print(df_method.shape)
+                        df_method[truth_name].fillna(False, inplace=True)
+                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method].fillna(False, inplace=True)
+                    if metric == 'auprc':
+                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'].fillna(0, inplace=True)
+                    else:
+                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method].fillna(False, inplace=True)
+                    baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                    if str(d) not in dilutionseries_present:
+                        dilutionseries_present.append(str(d))
+                    if metric == 'auprc':
+                        aux_metric.append(average_precision_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']))
+                        print(baseline[method])
+                        aux_metricrelative.append(average_precision_score(
+                            df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']) - baseline[method])
+                    elif metric == 'precision':
+                        aux_metric.append(precision_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                    elif metric == 'recall':
+                        aux_metric.append(recall_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                    elif metric == 'f1':
+                        aux_metric.append(f1_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                    aux_method.append(method)
+                    aux_tb.append(round(100*tb_dict[str(d)], 3))
+    print(baseline)
+    results_df[metric.upper() + ' score'] = aux_metric
+    if metric == 'auprc':
+        results_df[metric.upper() + ' score - baseline ' + metric.upper() + ' score'] = aux_metricrelative
+    print(aux_tb)
+    results_df['tumor burden'] = aux_tb
+    results_df['caller'] = aux_method
+    sns.set_style("whitegrid")
+    sns.catplot(x="tumor burden", y=metric.upper() + " score", hue="caller",
+                capsize=.2, height=4, aspect=1.5, kind="point", order=sorted(results_df['tumor burden'].unique(),
+                                                                             reverse=True), data=results_df)
+    plt.title(metric.upper() + " score curve for SNV calling in sample {}".format(plasmasample))
+    if metric == 'f1':
+        plt.ylim([0, 0.5])
+    if metric == 'auprc':
+        if len(np.unique(baseline.values())) == 1:
+            plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
+        else:
+            for method in config.methods:
+                plt.axhline(y=baseline[method], color=color_dict[method], linestyle='--')
+        sns.catplot(x="tumor burden", y=metric.upper() + " score - baseline " + metric.upper() + " score",
+                    hue="caller", capsize=.2, height=4, aspect=1.5, kind="point",
+                    order=sorted(results_df['tumor burden'].unique(), reverse=True), data=results_df)
+        plt.title(metric.upper() + " score curve for SNV calling in sample {}".format(plasmasample))
+        plt.axhline(y=0, color='k', linestyle='--')
 
 
 if __name__ == "__main__":
