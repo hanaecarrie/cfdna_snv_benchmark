@@ -20,13 +20,21 @@ def load_files(filenames):
 def set_display_params(config):
     import seaborn as sns
     import matplotlib.pyplot as plt
-    if config.context == 'talk':
+    if config.context == 'darktalk':
         sns.set(style=config.context_talk.style, context=config.context_talk.context,
                 rc={"lines.linewidth": config.context_talk.llw, "legend.fontsize": config.context_talk.llw})
         plt.style.use(config.context_talk.styleuse)
         plt.rcParams.update({"grid.linewidth": config.context_talk.glw, "grid.alpha": config.context_talk.galpha,
                              'font.size': config.context_talk.fs})
         sns.set_palette(config.context_talk.palette)
+    elif config.context == 'whitetalk':
+        print(config.context_paper)
+        sns.set(style=config.context_paper.style, context=config.context_paper.context,
+                rc={"lines.linewidth": config.context_paper.llw, "legend.fontsize": config.context_paper.llw})
+        plt.style.use(config.context_paper.styleuse)
+        plt.rcParams.update({"grid.linewidth": config.context_paper.glw, "grid.alpha": config.context_paper.galpha,
+                             'font.size': config.context_paper.fs})
+        sns.set_palette(config.context_paper.palette)
     elif config.context == 'paper':
         print(config.context_paper)
         sns.set(style=config.context_paper.style, context=config.context_paper.context,
@@ -36,7 +44,7 @@ def set_display_params(config):
                              'font.size': config.context_paper.fs})
         sns.set_palette(config.context_paper.palette)
     else:
-        raise ValueError("unknown context {}. Should be either 'talk' or 'paper'".format(config.context))
+        raise ValueError("unknown context {}. Should be either 'whitetalk', 'darktalk' or 'paper'".format(config.context))
 
 
 def read_vcf(path):
@@ -210,10 +218,7 @@ def pr_table(results_df, value_colname, truth_colname, verbose=False, decreasing
 
 def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, ground_truth_method=3, refsample='undiluted', chrom='22', muttype='SNV', tumorsample=None, vcf_ref_path=None):
     df_table = None
-    if refsample == 'tumor':
-        methods = config.methods_tissue
-    else:
-        methods = config.methods
+    methods = config.methods
     # tumor burden
     tb_dict = {}
     for i, d in enumerate(dilutionseries):
@@ -228,14 +233,16 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
             vcf_ref_path = os.path.join(*config.bcbiofolder, prefix + plasmasample + "_1_pooledhealthy_0",
                                     prefix + plasmasample + "_1_pooledhealthy_0-ensemble-annotated.vcf")
     print(vcf_ref_path)
-    vcf_ref = load_calls_from_vcf(vcf_ref_path, methods, chrom=chrom)
+    if refsample == 'tumor':
+        methods_ref = config.methods_tissue
+    else:
+        methods_ref = config.methods
+    vcf_ref = load_calls_from_vcf(vcf_ref_path, methods_ref, chrom=chrom)
     print(vcf_ref.shape)
     vcf_ref = vcf_ref[vcf_ref['type'] == muttype]
     if type(ground_truth_method) == int:  # GROUND TRUTH = consensus across 3 callers in undiluted sample
-        if int(ground_truth_method) <= len(methods):
-            if refsample == 'tumor':
-                y_true = pd.DataFrame(vcf_ref[methods].T.sum())
-            y_true = pd.DataFrame(vcf_ref[methods].T.sum())
+        if int(ground_truth_method) <= len(methods_ref):
+            y_true = pd.DataFrame(vcf_ref[methods_ref].T.sum())
             y_true.columns = ['truth']
             y_true['truth'][y_true['truth'] < ground_truth_method] = 0
             y_true = y_true.astype(bool)
@@ -243,10 +250,10 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
             df_table = y_true.copy()
             print(df_table.columns)
         else:
-            print('number of common callers {} asked for consensus is too high. It should be <= {}'.format(ground_truth_method, len(methods)))
+            print('number of common callers {} asked for consensus is too high. It should be <= {}'.format(ground_truth_method, len(methods_ref)))
     elif ground_truth_method == 'caller':  # GROUND TRUTH = calls detected by same method in ref sample
-        df_table = vcf_ref[methods]
-        df_table.rename(columns={m: m + '_truth' for m in methods}, inplace=True)
+        df_table = vcf_ref[methods_ref]
+        df_table.rename(columns={m: m + '_truth' for m in methods_ref}, inplace=True)
         df_table = df_table.astype(bool)
         print(df_table.columns)
     else:
@@ -264,6 +271,31 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
             vcf_sample.rename(columns={m: str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods}, inplace=True)
             vcf_sample.rename(columns={m+'_score': str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods}, inplace=True)
             colmerge = [str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods] + [str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods]
+            df_table = pd.concat([df_table, vcf_sample[colmerge]], axis=1)
+    return df_table
+
+
+def get_call_table_spikein(config, prefix, sample, bed_ref_path, dilutionseries, msstatus='MSS', chrom='22', muttype='SNV'):
+    methods = config.methods
+    y_true = pd.read_csv(bed_ref_path, sep='\t', header=None)
+    y_true.columns = ['CHROM', 'POS', 'POSend', 'VAF', 'ALT']
+    y_true['CHROM_POS'] = [str(y_true['CHROM'][i]) + '_' + str(y_true['POS'][i]) for i in range(y_true.shape[0])]
+    y_true.set_index('CHROM_POS', inplace=True)
+    y_true.drop(['CHROM', "POS", 'POSend'], axis=1, inplace=True)
+    df_table = y_true.copy()
+
+    for i, d in enumerate(dilutionseries):
+        print(d)
+        ds = str(d).replace('.', '_')
+        vcf_path = os.path.join(*config.bcbiofolder, sample+prefix+msstatus+"_"+str(d)+"_"+muttype.lower(),
+                                sample+prefix+msstatus+"_"+ds+"_"+muttype.lower()+"-ensemble-annotated.vcf")
+        vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
+        if vcf_sample is not None:
+            vcf_sample = vcf_sample[(vcf_sample['type'] == muttype) | (vcf_sample['type'] == 'SNP')]
+            vcf_sample.rename(columns={m: 'vaf_' + str(d) + '_' + m for m in methods}, inplace=True)
+            vcf_sample.rename(columns={m+'_score': 'vaf_' + str(d) + '_' + m + '_score' for m in methods}, inplace=True)
+            colmerge = ['vaf_' + str(d) + '_' + m for m in methods] + ['vaf_' + str(d) + '_' + m + '_score' for m in methods]
+            vcf_sample = vcf_sample.groupby(vcf_sample.index).first()  # keep first variant, different SNP variants may exist
             df_table = pd.concat([df_table, vcf_sample[colmerge]], axis=1)
     return df_table
 
@@ -394,14 +426,18 @@ def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kw
 
 def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, metric='auprc', ground_truth_method=3,
                  refsample='undiluted', muttype='SNV', chrom='22', methods=None, save=True):
-    color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
     tb_dict = {}
     dilutionseries_present = []
     if methods is None:
         methods = config.methods
-    for i, d in enumerate(dilutionseries):
-        tb_dict[str(d)] = \
-            float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
+    color_dict = {}
+    for i, m in enumerate(config.methods):
+        if m in methods:
+            color_dict[m] = config.colors[i]
+    if healthysample is not None:
+        for i, d in enumerate(dilutionseries):
+            tb_dict[str(d)] = \
+                float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -409,70 +445,96 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     aux_tb = []
     baseline = {}
     for i, d in enumerate(dilutionseries):
+        if healthysample is not None:
+            factorprefix = str(round(100*tb_dict[str(d)], 3))
+        else:
+            factorprefix = 'vaf_' + str(d)
         for method in methods:
-            if str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score' in list(df_table.columns):
-                if i != 0:
+            if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                if i != 0 or healthysample is None:
                     if type(ground_truth_method) == int:
                         truth_name = 'truth'
                     elif ground_truth_method == 'caller':
                         truth_name = method +'_truth'
+                    elif ground_truth_method == 'spikein':
+                        truth_name = 'VAF'
                     else:
                         raise ValueError('unknown ground truth {}'.format(ground_truth_method))
                     if metric == 'auprc':
-                        df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']]
+                        df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
+                        #df_method.dropna(how='all', inplace=True)
                         df_method[truth_name].fillna(False, inplace=True)
+                        df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
+                        df_method.drop(factorprefix + '_' + method, axis=1, inplace=True)
                     else:
-                        df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method]]
-                        print(df_method.shape)
-                        # df_method.dropna(how='all', inplace=True)
-                        print(df_method.shape)
+                        df_method = df_table[[truth_name, factorprefix + '_' + method]]
+                        #df_method.dropna(how='all', inplace=True)
                         df_method[truth_name].fillna(False, inplace=True)
-                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method].fillna(False, inplace=True)
-                    if metric == 'auprc':
-                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'].fillna(0, inplace=True)
-                    else:
-                        df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method].fillna(False, inplace=True)
+                        df_method[factorprefix + '_' + method].fillna(False, inplace=True)
+                    if healthysample is None:
+                        df_method[truth_name][df_method[truth_name] != False] = True
+                        df_method[truth_name] = df_method[truth_name].astype(bool)
                     baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                    print(df_method.head(6))
                     if str(d) not in dilutionseries_present:
                         dilutionseries_present.append(str(d))
                     if metric == 'auprc':
-                        aux_metric.append(average_precision_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']))
-                        print(baseline[method])
+                        aux_metric.append(average_precision_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
                         aux_metricrelative.append(average_precision_score(
-                            df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']) - baseline[method])
+                            df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
                     elif metric == 'precision':
-                        aux_metric.append(precision_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                        aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
                     elif metric == 'recall':
-                        aux_metric.append(recall_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                        aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                     elif metric == 'f1':
-                        aux_metric.append(f1_score(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method]))
+                        aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                     aux_method.append(method)
-                    aux_tb.append(round(100*tb_dict[str(d)], 3))
+                    if healthysample is not None:
+                        aux_tb.append(round(100*tb_dict[str(d)], 3))
+                    else:
+                        aux_tb.append(d)
     print(baseline)
     results_df[metric.upper() + ' score'] = aux_metric
     if metric == 'auprc':
         results_df[metric.upper() + ' score - baseline ' + metric.upper() + ' score'] = aux_metricrelative
     print(aux_tb)
-    results_df['tumor burden'] = aux_tb
+    if healthysample is not None:
+        results_df['tumor burden'] = aux_tb
+    else:
+        results_df['VAF'] = aux_tb
     results_df['caller'] = aux_method
-    sns.set_style("whitegrid")
-    sns.catplot(x="tumor burden", y=metric.upper() + " score", hue="caller",
-                capsize=.2, height=4, aspect=1.5, kind="point", order=sorted(results_df['tumor burden'].unique(),
-                                                                             reverse=True), data=results_df)
-    plt.title(metric.upper() + " score curve for SNV calling in sample {}".format(plasmasample))
-    if metric == 'f1':
-        plt.ylim([0, 0.5])
+    if config.context == 'paper':
+        sns.set_style("whitegrid")
+    else:
+        sns.set_style("darkgrid")
+    if healthysample is not None:
+        sns.catplot(x="tumor burden", y=metric.upper() + " score", hue="caller",
+                    capsize=.1, height=6, aspect=1.5, kind="point",
+                    order=sorted(results_df['tumor burden'].unique(), reverse=True),
+                    palette=sns.color_palette(list(color_dict.values())), data=results_df)
+    else:
+        sns.catplot(x="VAF", y=metric.upper() + " score", hue="caller",
+                    capsize=.1, height=6, aspect=1.5, kind="point",
+                    order=sorted(results_df['VAF'].unique(), reverse=True),
+                    palette=sns.color_palette(list(color_dict.values())), data=results_df)
+    plt.title(metric.upper() + " score for {} calling in {} - chr{}".format(muttype, plasmasample, chrom))
+
+    if metric != 'auprc':
+        plt.ylim([0, max(0.5, max(aux_metric))])
     if metric == 'auprc':
         if len(np.unique(baseline.values())) == 1:
             plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
+    if save:
+        if type(ground_truth_method) == int:
+            refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
         else:
-            for method in config.methods:
-                plt.axhline(y=baseline[method], color=color_dict[method], linestyle='--')
-        sns.catplot(x="tumor burden", y=metric.upper() + " score - baseline " + metric.upper() + " score",
-                    hue="caller", capsize=.2, height=4, aspect=1.5, kind="point",
-                    order=sorted(results_df['tumor burden'].unique(), reverse=True), data=results_df)
-        plt.title(metric.upper() + " score curve for SNV calling in sample {}".format(plasmasample))
-        plt.axhline(y=0, color='k', linestyle='--')
+            refname = 'in'+refsample + 'samplebythesamecaller'
+        if methods != config.methods:
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods)), bbox_inches='tight')
+        else:
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname), bbox_inches='tight')
+    plt.show()
 
 
 if __name__ == "__main__":
