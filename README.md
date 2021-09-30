@@ -1,17 +1,28 @@
 # cfdna_snv_benchmark
 
+## Requirements
 
 
-## Create dilution series
+## Install
+
+
+add the repository to your Python path
+export PYTHONPATH=$PYTHONPATH:"/Users/hanae/Repositories/cfdna_snv_benchmark/"
+
+## Demo
 
 
 
-## Create spikein series
+### Create dilution series
 
 
 
-## Prepare bcbio input
+### Create spikein series
 
 
 
-## Run bcbio pipeline in Aquila
+### Prepare bcbio input
+
+
+
+### Run bcbio pipeline in Aquila
