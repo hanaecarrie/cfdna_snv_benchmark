@@ -20,6 +20,7 @@ default_colors = [
     for i in default_colors
 ]
 
+
 def draw_ellipse(fig, ax, x, y, w, h, a, fillcolor):
     e = patches.Ellipse(
         xy=(x, y),
@@ -28,6 +29,7 @@ def draw_ellipse(fig, ax, x, y, w, h, a, fillcolor):
         angle=a,
         color=fillcolor)
     ax.add_patch(e)
+
 
 def draw_triangle(fig, ax, x1, y1, x2, y2, x3, y3, fillcolor):
     xy = [
@@ -41,6 +43,7 @@ def draw_triangle(fig, ax, x1, y1, x2, y2, x3, y3, fillcolor):
         color=fillcolor)
     ax.add_patch(polygon)
 
+
 def draw_text(fig, ax, x, y, text, color=[0, 0, 0, 1], fontsize=14, ha="center", va="center"):
     ax.text(
         x, y, text,
@@ -48,6 +51,7 @@ def draw_text(fig, ax, x, y, text, color=[0, 0, 0, 1], fontsize=14, ha="center",
         verticalalignment=va,
         fontsize=fontsize,
         color="black")
+
 
 def draw_annotate(fig, ax, x, y, textx, texty, text, color=[0, 0, 0, 1], arrowcolor=[0, 0, 0, 0.3]):
     plt.annotate(
@@ -62,6 +66,7 @@ def draw_annotate(fig, ax, x, y, textx, texty, text, color=[0, 0, 0, 1], arrowco
         horizontalalignment='center',
         verticalalignment='center'
     )
+
 
 def get_labels(data, fill=["number"]):
     """
@@ -117,6 +122,7 @@ def get_labels(data, fill=["number"]):
 
     return labels
 
+
 def venn2(labels, names=['A', 'B'], **options):
     """
     plots a 2-set Venn diagram
@@ -157,6 +163,7 @@ def venn2(labels, names=['A', 'B'], **options):
     leg.get_frame().set_alpha(0.5)
 
     return fig, ax
+
 
 def venn3(labels, names=['A', 'B', 'C'], **options):
     """
@@ -204,6 +211,7 @@ def venn3(labels, names=['A', 'B', 'C'], **options):
     leg.get_frame().set_alpha(0.5)
 
     return fig, ax
+
 
 def venn4(labels, names=['A', 'B', 'C', 'D'], **options):
     """
@@ -261,6 +269,7 @@ def venn4(labels, names=['A', 'B', 'C', 'D'], **options):
     leg.get_frame().set_alpha(0.5)
 
     return fig, ax
+
 
 def venn5(labels, names=['A', 'B', 'C', 'D', 'E'], **options):
     """
@@ -336,6 +345,7 @@ def venn5(labels, names=['A', 'B', 'C', 'D', 'E'], **options):
     leg.get_frame().set_alpha(0.5)
 
     return fig, ax
+
 
 def venn6(labels, names=['A', 'B', 'C', 'D', 'E'], **options):
     """
