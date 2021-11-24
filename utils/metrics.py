@@ -75,9 +75,9 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                     else:
                         plot_roc_curve(fpr, tpr, estimator_name='', auc_score=None, figax=(fig, ax),
                                        kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
-    print(baseline_dict)
-    print(tb_dict)
-    print(dilutionseries_present)
+    # print(baseline_dict)
+    # print(tb_dict)
+    # print(dilutionseries_present)
     list_lines_baseline = []
     if xy == 'pr':
         if len(np.unique(baseline_dict.values())) == 1:
@@ -96,9 +96,9 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     # Creating legend with color box
     plt.legend(bbox_to_anchor=(1, 1), loc="upper left", handles=legend_list)
     if xy == 'pr':
-        plt.title("Precision Recall curve for SNV calling in sample {}".format(plasmasample +'_' + healthysample))
+        plt.title("Precision Recall curve for SNV calling in sample {}".format(plasmasample + '_' + healthysample))
     elif xy == 'roc':
-        plt.title("Receiver Operation Characteristics curve for SNV calling in sample {}".format(plasmasample +'_' + healthysample))
+        plt.title("Receiver Operation Characteristics curve for SNV calling in sample {}".format(plasmasample + '_' + healthysample))
     if xy == 'pr':
         plt.semilogx()
     plt.xlim([-0.01, 1.01])
@@ -172,20 +172,20 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                         raise ValueError('unknown ground truth {}'.format(ground_truth_method))
                     if metric == 'auprc':
                         df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
-                        #df_method.dropna(how='all', inplace=True)
+                        # df_method.dropna(how='all', inplace=True)
                         df_method[truth_name].fillna(False, inplace=True)
                         df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
                         df_method.drop(factorprefix + '_' + method, axis=1, inplace=True)
                     else:
                         df_method = df_table[[truth_name, factorprefix + '_' + method]]
-                        #df_method.dropna(how='all', inplace=True)
+                        # df_method.dropna(how='all', inplace=True)
                         df_method[truth_name].fillna(False, inplace=True)
                         df_method[factorprefix + '_' + method].fillna(False, inplace=True)
                     if healthysample is None:
                         df_method[truth_name][df_method[truth_name] != False] = True
                         df_method[truth_name] = df_method[truth_name].astype(bool)
+                    df_method[truth_name] = df_method[truth_name].fillna(False)
                     baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
-                    print(df_method.head(6))
                     if str(d) not in dilutionseries_present:
                         dilutionseries_present.append(str(d))
                     if metric == 'auprc':
@@ -194,7 +194,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                             df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
                     elif metric == 'precision':
                         aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
-                        print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
+                        # print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
                     elif metric == 'recall':
                         aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                     elif metric == 'f1':
@@ -204,11 +204,11 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                         aux_tb.append(round(100*tb_dict[str(d)], 3))
                     else:
                         aux_tb.append(d)
-    print(baseline)
+    # print(baseline)
     results_df[metric.upper() + ' score'] = aux_metric
     if metric == 'auprc':
         results_df[metric.upper() + ' score - baseline ' + metric.upper() + ' score'] = aux_metricrelative
-    print(aux_tb)
+    # print(aux_tb)
     if healthysample is not None:
         results_df['tumor burden'] = aux_tb
     else:
@@ -235,16 +235,23 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     if metric == 'auprc':
         if len(np.unique(baseline.values())) == 1:
             plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
+    if type(ground_truth_method) == int:
+        refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+    else:
+        refname = 'in'+refsample + 'samplebythesamecaller'
     if save:
-        if type(ground_truth_method) == int:
-            refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
-        else:
-            refname = 'in'+refsample + 'samplebythesamecaller'
         if methods != config.methods:
             plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods)), bbox_inches='tight')
         else:
             plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname), bbox_inches='tight')
     plt.show()
+    summary_df = results_df.copy()
+    summary_df['plasma sample'] = plasmasample
+    summary_df['healthy sample'] = healthysample
+    summary_df['mutation type'] = muttype
+    summary_df['metric'] = metric
+    summary_df['mutation type'] = refname
+    return summary_df
 
 
 if __name__ == "__main__":

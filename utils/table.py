@@ -87,7 +87,6 @@ def load_calls_from_vcf(vcf_path, methods, chrom='all'):
 def load_calls_from_vcf_dilutionseries(dirpath, plasmasample, reference, dilutionseries, methods,
                                        prefix='dilution_chr22', chrom='all'):
     vcf_samples_dict = {}
-    samples_dict = {}
     ci = 0
     dilutionseries_new = []
     for i, d in enumerate(dilutionseries):
@@ -117,8 +116,10 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
     # tumor burden
     tb_dict = {}
     for i, d in enumerate(dilutionseries):
-        tb_dict[str(dilutionseries[i])] = \
-            float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_"+plasmasample+"_"+str(dilutionseries[i][0])+"_"+healthysample+"_"+str(dilutionseries[i][1])+".txt")).columns[0])
+        tb_path = os.path.join(*config.dilutionfolder, "estimated_tf_chr22_"+plasmasample+"_"+str(dilutionseries[i][0])+"_"+healthysample+"_"+str(dilutionseries[i][1])+".txt")
+        if d == (1, 0) and not os.path.exists(tb_path):
+            tb_path = [os.path.join(*config.dilutionfolder, f) for f in os.listdir(os.path.join(*config.dilutionfolder)) if ("estimated_tf_chr22_"+plasmasample) and (f.endswith('_0.txt'))][0]
+        tb_dict[str(dilutionseries[i])] = float(pd.read_csv(tb_path).columns[0])
     if vcf_ref_path is None:
         if refsample == 'tumor':
             if tumorsample is None:
@@ -160,6 +161,11 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
         print('vcf_pd_'+str(i), d)
         vcf_path = os.path.join(*config.bcbiofolder, prefix+plasmasample+"_"+str(d[0])+"_"+healthysample+"_"+str(d[1]),
                                 prefix+plasmasample+"_"+d0+"_"+healthysample+"_"+d1+"-ensemble-annotated.vcf")
+        if d == (1, 0) and not os.path.exists(vcf_path):
+            vcf_path_dir = [f for f in os.listdir(os.path.join(*config.bcbiofolder))
+                        if (f.startswith(prefix+plasmasample+"_"+str(d[0])+"_")) and (f.endswith("_"+str(d[1])))]
+            if vcf_path_dir:
+                vcf_path = os.path.join(*config.bcbiofolder, vcf_path_dir[0], vcf_path_dir[0]+"-ensemble-annotated.vcf")
         vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
         if vcf_sample is not None:
             vcf_sample = vcf_sample[vcf_sample['type'] == muttype]
