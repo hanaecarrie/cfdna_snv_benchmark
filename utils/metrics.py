@@ -146,7 +146,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             color_dict[m] = config.colors[i]
     if healthysample is not None:
         for i, d in enumerate(dilutionseries):
-            tb_dict[str(d)] = \
+            if ground_truth_method == 'spikein':
+                tb_dict[str(d)] = \
                 float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
     results_df = pd.DataFrame()
     aux_metric = []
@@ -167,7 +168,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                     elif ground_truth_method == 'caller':
                         truth_name = method +'_truth'
                     elif ground_truth_method == 'spikein':
-                        truth_name = 'VAF'
+                        truth_name = 'TRUTH'
                     else:
                         raise ValueError('unknown ground truth {}'.format(ground_truth_method))
                     if metric == 'auprc':

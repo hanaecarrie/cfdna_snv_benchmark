@@ -135,7 +135,11 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
         methods_ref = config.methods
     vcf_ref = load_calls_from_vcf(vcf_ref_path, methods_ref, chrom=chrom)
     print(vcf_ref.shape)
-    vcf_ref = vcf_ref[vcf_ref['type'] == muttype]
+    if muttype != 'INDEL':
+        vcf_ref = vcf_ref[vcf_ref['type'] == muttype]
+    elif muttype == 'INDEL':
+        vcf_ref = vcf_ref[(vcf_ref['type'] == 'INS')]
+    print(vcf_ref.shape)
     if type(ground_truth_method) == int:  # GROUND TRUTH = consensus across 3 callers in undiluted sample
         if int(ground_truth_method) <= len(methods_ref):
             y_true = pd.DataFrame(vcf_ref[methods_ref].T.sum())
@@ -168,7 +172,12 @@ def get_call_table(config, prefix, plasmasample, healthysample, dilutionseries, 
                 vcf_path = os.path.join(*config.bcbiofolder, vcf_path_dir[0], vcf_path_dir[0]+"-ensemble-annotated.vcf")
         vcf_sample = load_calls_from_vcf(vcf_path, methods, chrom=chrom)
         if vcf_sample is not None:
-            vcf_sample = vcf_sample[vcf_sample['type'] == muttype]
+            print(vcf_sample.shape)
+            if muttype != 'INDEL':
+                vcf_sample = vcf_sample[vcf_sample['type'] == muttype]
+            elif muttype == 'INDEL':
+                vcf_sample = vcf_sample[(vcf_sample['type'] == 'INS')]
+            print(vcf_sample.shape)
             vcf_sample.rename(columns={m: str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods}, inplace=True)
             vcf_sample.rename(columns={m+'_score': str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods}, inplace=True)
             colmerge = [str(round(100*tb_dict[str(d)], 3)) + '_' + m for m in methods] + [str(round(100*tb_dict[str(d)], 3)) + '_' + m + '_score' for m in methods]
@@ -184,6 +193,8 @@ def get_call_table_spikein(config, prefix, sample, bed_ref_path, dilutionseries,
     y_true.set_index('CHROM_POS', inplace=True)
     y_true.drop(['CHROM', "POS", 'POSend'], axis=1, inplace=True)
     df_table = y_true.copy()
+    df_table['TRUTH'] = True
+    print(df_table)
 
     for i, d in enumerate(dilutionseries):
         print(d)
@@ -198,6 +209,7 @@ def get_call_table_spikein(config, prefix, sample, bed_ref_path, dilutionseries,
             colmerge = ['vaf_' + str(d) + '_' + m for m in methods] + ['vaf_' + str(d) + '_' + m + '_score' for m in methods]
             vcf_sample = vcf_sample.groupby(vcf_sample.index).first()  # keep first variant, different SNP variants may exist
             df_table = pd.concat([df_table, vcf_sample[colmerge]], axis=1)
+    df_table['TRUTH'].fillna(False, inplace=True)
     return df_table
 
 
