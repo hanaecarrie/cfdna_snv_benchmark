@@ -110,9 +110,9 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         else:
             refname = 'in'+refsample + 'samplebythesamecaller'
         if methods != config.methods:
-            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + '_'.join(methods)), bbox_inches='tight')
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + '_'.join(methods) + '_' + config.context), bbox_inches='tight')
         else:
-            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname), bbox_inches='tight')
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + config.context), bbox_inches='tight')
     plt.show()
 
 
@@ -146,8 +146,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             color_dict[m] = config.colors[i]
     if healthysample is not None:
         for i, d in enumerate(dilutionseries):
-            if ground_truth_method == 'spikein':
-                tb_dict[str(d)] = \
+            #if ground_truth_method == 'spikein':
+            tb_dict[str(d)] = \
                 float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
     results_df = pd.DataFrame()
     aux_metric = []
@@ -242,9 +242,9 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         refname = 'in'+refsample + 'samplebythesamecaller'
     if save:
         if methods != config.methods:
-            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods)), bbox_inches='tight')
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + config.context), bbox_inches='tight')
         else:
-            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname), bbox_inches='tight')
+            plt.savefig(os.path.join(*config.outputpath, 'liquid_benchmark_chr'+str(chrom), plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + config.context), bbox_inches='tight')
     plt.show()
     summary_df = results_df.copy()
     summary_df['plasma sample'] = plasmasample
