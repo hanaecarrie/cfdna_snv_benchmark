@@ -46,3 +46,7 @@ bash prepare_bcbio_config_spikein.sh \
 /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/dilutions_series_chr22/NCC_CRC-986_261016-CW-N/CRC-986_261016-BC_chr22.bam \
 /mnt/projects/skanderupamj/wgs/data/cfdna.crc/mix.samples/mix.samples.nofilters.yaml \
 bcbio_config.tsv
+
+sed -e 's/ /\t/g' bcbio_config.tsv > bcbio_config_tmp.tsv
+rm bcbio_config.tsv
+mv bcbio_config_tmp.tsv bcbio_config.tsv

@@ -18,5 +18,5 @@ export dilfile=${dilname}.sorted.bam
 export bcdir=$(dirname $bcpath)
 export bcfile=$(basename $bcpath)
 
-echo "$dilname	symlink::$dildir	$dilfile	symlink::$bcdir	$bcfile	MIX	NA	NA	$bcbioconfigpath" >> $bcbiooutput
+echo "$dilname symlink::$dildir $dilfile symlink::$bcdir $bcfile MIX NA NA $bcbioconfigpath" >> $bcbiooutput
 done

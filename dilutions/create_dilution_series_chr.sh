@@ -130,6 +130,8 @@ if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/b
 echo "tumor burden and coverage..."
 if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/calculate_tumor_burden.sh -c $config_file ; fi
 if [ ! -f $outputdir/coverage.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/calculate_coverage.sh -c $config_file ; fi
+echo "ichorCNA..."
+bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/run_ichorcna_chr.sh  $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr 
 
 done
 

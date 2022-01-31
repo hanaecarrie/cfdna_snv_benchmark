@@ -38,7 +38,7 @@ echo $tffile
 
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
 echo $A
-if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d',' -f2 <<<"$line")" ; fi ; done < $tffile
+if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d ',' -f2 <<<"$line")" ; fi ; done < $tffile
 echo $median_tumor_burden
 echo $cov_tumor
 export cov_healthy=$covhealthy
