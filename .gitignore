@@ -202,3 +202,5 @@ sh.exe.stackdump
 data/
 *.bam
 *bam.bai
+logs/*.sh.e*
+logs/*.sh.o*

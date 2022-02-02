@@ -1,0 +1,25 @@
+##### Config file #####
+
+sample:
+  healthy: "/mnt/projects/skanderupamj/wgs/data/cfdna.crc/NCC_CRC-1014_090516-CW/bcbio_work/align/NCC_CRC-1014_090516-CW-T/NCC_CRC-1014_090516-CW-T-sort.bam"
+  tumor: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-1014_110116-CW-T-ready.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-1014_110116-CW-N-ready.bam"
+
+samplename:
+  healthy: "CRC-1014_090516"
+  tumor: "CRC-1014_110116"
+  buffycoat: "CRC-1014_110116-BC"
+
+dilutionfactors: "1-0 1-0.72 0.75-0.765 0.5-0.81 0.25-0.855 0.125-0.875 0.0625-0.88 1-0.86 1-1"
+
+chr: 1
+
+healthydir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-1014_090516-CW-T"
+tumordir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-1014_110116-CW-T"
+buffycoatdir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-1014_110116-CW-N"
+outputfolder: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1"
+
+tffile: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv"
+covhealthy: 155.991
+tfheatlhy:  0.05282
+ichorcnaextdata: "/mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/lib/R/library/ichorCNA/extdata"
