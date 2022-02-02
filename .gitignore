@@ -211,3 +211,12 @@ callers/ABEMUS/PaCBAM_outdir/*
 callers/ABEMUS/homo_sapiens-chr22_edited.vcf
 callers/ABEMUS/pacbam_data_bychrom/*
 
+# ignore cfSNV files
+callers/cfSNV/DESCRIPTION
+callers/cfSNV/LICENSE
+callers/cfSNV/NAMESPACE
+callers/cfSNV/R/
+callers/cfSNV/README.md
+callers/cfSNV/inst/
+callers/cfSNV/man/
+callers/cfSNV/src/
