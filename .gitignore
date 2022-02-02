@@ -204,3 +204,10 @@ data/
 *bam.bai
 logs/*.sh.e*
 logs/*.sh.o*
+
+# ignore abemus data files
+callers/ABEMUS/BaseErrorModel/*
+callers/ABEMUS/PaCBAM_outdir/*
+callers/ABEMUS/homo_sapiens-chr22_edited.vcf
+callers/ABEMUS/pacbam_data_bychrom/*
+
