@@ -14,12 +14,17 @@ echo $saveid
 echo $outputdir
 echo $ichorcna_extdata  # /mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/lib/R/library/ichorCNA/extdata/
 
+export $outputdir=$outputdir/ichorcna/
+
+if [ ! -f $outputdir ] ; then mkdir $outputdir ; fi
+
 if [ ! -f "$outputdir/${saveid}.wig" ] ; then
 echo "Create WIG file $outputdir/${saveid}.wig"
 # Create WIG Files
 /mnt/projects/carriehc/cfDNA/utils/hmmcopy_utils/bin/readCounter --window 1000000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
 echo "Done WIG file"
 fi
+
 
 # ichorCNA run
 echo "ichorCNA processing $outputdir/${saveid}.wig"
