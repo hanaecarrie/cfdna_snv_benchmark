@@ -32,6 +32,7 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
+echo $config_file
 echo $sample_healthy
 echo $sample_tumor
 echo $sample_buffycoat 
@@ -144,14 +145,29 @@ if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
 if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
 if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
 
-# calculate tf and coverage of obtained diluted file
-echo "tumor burden and coverage..."
-if [ ! -f $outputdir/estimated_tf.txt ] ; then bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/calculate_tumor_burden.sh -c $config_file ; fi
+echo "estimate tumor burden by calculation..."
+if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then 
+echo $tffile
+while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
+echo $A
+if [ $A == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ; export cov_tumor="$(cut -d ',' -f2 <<<"$line")" ; fi ; done < $tffile
+echo $median_tumor_burden
+cov_t=$(echo "$median_tumor_burden * $tumor_cov * $dilutionfraction_tumor" | bc)
+echo $cov_t
+cov_tot=$(echo "$healthy_cov * $dilutionfraction_healthy + $tumor_cov * $dilutionfraction_tumor" | bc)
+echo $cov_tot
+mixed_sample_tf=$(echo "$cov_t / $cov_tot" | bc -l)
+echo $mixed_sample_tf
+echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt
+fi
+
+echo "calculate coverage..."
 if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then 
 export cov=$(/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools depth -a $outputdir/${dilutionname}.sorted.bam | awk '{sum+=$3} END {print sum/NR}') 
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt  ; fi
-echo "ichorCNA..."
-bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/run_ichorcna_chr.sh  $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr 
+
+echo "estimate tumor burden by ichorCNA..."
+bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/run_ichorcna_chr.sh $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr 
 
 done
 

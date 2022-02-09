@@ -50,5 +50,5 @@ cov_tot=$(echo "$cov_healthy * $dilutionfactor_healthy + $cov_tumor * $dilutionf
 echo $cov_tot
 mixed_sample_tf=$(echo "$cov_t / $cov_tot" | bc -l)
 echo $mixed_sample_tf
-if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then echo $mixed_sample_tf >> $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ; fi  
+if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ; fi  
 
