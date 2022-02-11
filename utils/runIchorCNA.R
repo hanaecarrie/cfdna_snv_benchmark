@@ -234,7 +234,7 @@ for (i in 1:numSamples) {
 	write.table(outMat, file=outFile, row.names=F, col.names=T, quote=F, sep="\t")
 
 } ## end of for each sample
-print("hello")
+
 chrInd <- as.character(seqnames(tumour_copy[[1]])) %in% chrTrain
 ## get positions that are valid
 valid <- tumour_copy[[1]]$valid
