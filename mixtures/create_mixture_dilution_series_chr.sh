@@ -83,7 +83,7 @@ if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/b
 
 for dilutionfactor in $dilutionfactors ;
 
-do qsub -pe OpenMP 4 -l mem_free=48G,h_rt=24:00:00 -o /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/logs/ -e /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/create_dilution_chr.sh -c $config_file -d $dilutionfactor
+do qsub -pe OpenMP 4 -l mem_free=48G,h_rt=24:00:00 -o /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/logs/ -e /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/create_mixture_dilution_chr.sh -c $config_file -d $dilutionfactor
 
 done
 
