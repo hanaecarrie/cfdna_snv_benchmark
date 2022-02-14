@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# def path and environment
+source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
+conda activate default
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
