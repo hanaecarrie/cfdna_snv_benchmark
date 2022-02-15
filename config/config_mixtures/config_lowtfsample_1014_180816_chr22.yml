@@ -10,7 +10,7 @@ samplename:
   tumor: "CRC-1014_180816"
   buffycoat: "CRC-1014_180816-BC"
 
-dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-130 70-180 70-230"
+dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-30 70-130 70-180"
 
 chr: 22
 
@@ -20,3 +20,4 @@ buffycoatdir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_serie
 outputfolder: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22"
 
 tffile: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv"
+ichorcnaextdata: "/mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/lib/R/library/ichorCNA/extdata/"

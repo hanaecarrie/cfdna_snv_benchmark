@@ -10,14 +10,13 @@ samplename:
   tumor: "CRC-986_100215"
   buffycoat: "CRC-986_100215-BC"
 
-dilutionfactors: "1-0 1-0.72 0.75-0.765 0.5-0.81 0.25-0.855 0.125-0.875 0.0625-0.88 1-0.86 1-1"
+dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-130 70-180 70-230"
 
-chr: 1
+chr: 22
 
-healthydir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-986_300316-CW-T"
-tumordir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-986_100215-CW-T"
-buffycoatdir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1/NCC_CRC-986_100215-CW-N"
-outputfolder: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series_chr1"
+healthydir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22/NCC_CRC-986_300316-CW-T"
+tumordir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22/NCC_CRC-986_100215-CW-T"
+buffycoatdir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22/NCC_CRC-986_100215-CW-N"
+outputfolder: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22"
 
 tffile: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv"
-covhealthy: 232.933

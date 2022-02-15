@@ -1,14 +1,82 @@
+#!/bin/bash
 
-export i=$1
-echo $i
+cd /home/ubuntu/sinvict
 
-java -Xmx16G -jar /home/ubuntu/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar --in /data/buffycoat_chr22/CRC-986_100215-BC_chr22.bam,/data/dilutions_chr22/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted.bam --out /data/sinvict_outdir/abra/CRC-986_100215-BC_chr22_${i}.abra.bam,/data/sinvict_outdir/abra/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted_${i}.abra.bam --ref /data/GRCh37/GRCh37.fa --threads 8 --targets /data/chr22_data/wholegenome_chr22_hg19_${i}.bed  --tmpdir /data/sinvict_outdir/tmp/ > /data/sinvict_outdir/abra/abra_${i}.log
+# function to parse config file
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
 
-#/usr/bin/samtools index /data/sinvict_outdir/abra/CRC-986_100215-BC_chr22_${i}.abra.bam
-/usr/bin/samtools index /data/sinvict_outdir/abra/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted_${i}.abra.bam
+while getopts ":c:" opt; do
+  case $opt in
+    c) config_file=${OPTARG} ;;
+  esac
+done
 
-#/home/ubuntu/bin/bam-readcount/build/bin/bam-readcount -f /data/GRCh37/GRCh37.fa /data/sinvict_outdir/abra/CRC-986_100215-BC_chr22.abra.bam -l /data/sinvict_outdir/exome_chr22_hg19.bed >  /data/sinvict_outdir/bam-readcount/CRC-986_100215-BC_chr22_${i}.tsv
-/home/ubuntu/bin/bam-readcount/build/bin/bam-readcount -f /data/GRCh37/GRCh37.fa /data/sinvict_outdir/abra/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted_${i}.abra.bam -l /data/chr22_data/exome_chr22_hg19.bed >  /data/sinvict_outdir/bam-readcount/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted_${i}.tsv
+# parse config file
+eval $(parse_yaml $config_file)
 
-#/home/ubuntu/sinvict/sinvict -t /data/sinvict_outdir/bam-readcount -o /data/sinvict_outdir/results
+echo $config_file
+echo $dilutionseriesfolder
+echo $buffycoatbam
+echo $chr
+echo $extdata
+echo $outdir
 
+####### generate info file #######
+if [ ! -d $outdir ] ; then mkdir $outdir ; fi
+cp $config_file $outdir/
+
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>$outdir/log.out 2>&1
+# Everything below will go to the file 'log.out'
+
+###### prepare bedfile ######
+# Download reference genome (here all with hg19)
+# Index it
+# Create dictionary
+# Create bed file chr
+#export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
+#echo $nbbasechr
+if [ ! -d $extdata/wholegenome_bed ] ; then mkdir $extdata/wholegenome_bed ; fi
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ] ;
+then touch $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ;
+for ((i = 1; i <= $nbbasechr; i+=1000)) ; 
+do echo -e "$chr\t$i\t$(($i+999))" >> $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ; done
+fi
+# Split bed file chr by chunks of 5,000 lines
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_ ; fi
+
+###### run SINVICT per chunk in parallel ######
+#export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
+#echo $nchunk
+echo "dilfolder ${dilutionseriesfolder}"
+for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+	echo "plasma ${plasma}" ;
+	export outdirplasma=$outdir/$(basename $plasma .bam)
+        echo $outdirplasma
+	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	for n in $(seq -f "%02g" 0 1) ; do #$nchunk
+		echo "run sinvict on chunk ${n}"
+		if [ "$n" -eq "01" ] ; then echo $n ; echo "bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma & "
+		else echo "last chunk" ; echo "bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma"
+		fi
+	done
+	### SINVICT ###
+	#if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
+	#/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
+done
