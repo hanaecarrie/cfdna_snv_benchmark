@@ -1,48 +1,22 @@
 #!/usr/bin/python
 
-import os
+import numpy as np
 from pyliftover import LiftOver
 
-def liftMeOver(chainfile, infile, outfile):
 
-
+def liftover(coords, chainfile):
+    # coords = chrom_startpos_endpos
     lo = LiftOver(chainfile)
-    with open(infile, 'r') as ifile, open(outfile, 'w') as ofile:
-        ofile.write(ifile.readline())
-
-        for row in ifile:
-            row = row.rstrip('\n').strip()
-            data = row.split('\t')
-
-            chrom = data[1]
-            spos = int(data[2])
-            epos = int(data[3])
-
-            spos_hg38 = lo.convert_coordinate(chrom, spos)
-            epos_hg38 = lo.convert_coordinate(chrom, epos)
-    
-            if len(spos_hg38) > 0 and len(epos_hg38):
-                start_tuple = spos_hg38[0]
-                end_tuple = epos_hg38[0]
-
-                sposition = start_tuple[1]
-                eposition = end_tuple[1]
-
-                if sposition < eposition:
-                
-                    data[2] = str(sposition)
-                    data[3] = str(eposition)
-
-                else:
-                    data[2] = str(eposition)
-                    data[3] = str(sposition)
-
-                    
-                # I need to remove chr
-                chrom = chrom.replace("chr", "")
-                
-                nrow = "\t".join(data)
-                ofile.write("%s\n" %(nrow))
-
-
-    
+    chrom, startpos, endpos = coords.split('_')
+    startpos = int(startpos)
+    endpos = int(endpos)
+    startpos_new = lo.convert_coordinate(chrom, startpos)
+    endpos_new = lo.convert_coordinate(chrom, endpos)
+    if (startpos_new != np.nan) and (endpos_new != np.nan) and (startpos_new != []) and (endpos_new != []):
+        chrom_new = startpos_new[0][0].replace("chr", "")
+        startpos_new = startpos_new[0][1]
+        endpos_new = endpos_new[0][1]
+        coords_new = str(chrom_new) + '_' + str(startpos_new) + '_' + str(endpos_new)
+        return coords_new
+    else:
+        return 'nan_nan_nan'
