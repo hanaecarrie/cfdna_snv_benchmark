@@ -33,8 +33,8 @@ done
 eval $(parse_yaml $config_file)
 
 echo $config_file
-echo $dilutionseries_folder
-echo $buffycoat_bam
+echo $dilutionseriesfolder
+echo $buffycoatbam
 echo $chr
 echo $extdata
 echo $outdir
@@ -46,12 +46,12 @@ cp $config_file $outdir/
 
 if [ ! -f $outdir/infofile.tsv ] ; then touch $outdir/infofile.tsv ; fi
 
-export patientid=$($(basename $dilutionseries_folder) | cut -d 'dilutions_' -f1)'chr'$(dirname $dilutionseries_folder | cut -d 'dilutions_series_')
+export patientid=$($(basename $dilutionseriesfolder) | cut -d 'dilutions_' -f1)'chr'$(dirname $dilutionseriesfolder | cut -d 'dilutions_series_')
 echo $patientid
 
-for dil in $dilutionseries_folder/*.bam ;
+for dil in $dilutionseriesfolder/*.bam ;
 do echo $dil ;
-        echo -e $patientid'\t'$(basename $dil .bam)'\t'$dil'\t'$(basename $buffycoat_bam .bam)'\t'$buffycoat_bam >> $outdir/infofile.tsv ;
+        echo -e $patientid'\t'$(basename $dil .bam)'\t'$dil'\t'$(basename $buffycoatbam .bam)'\t'$buffycoatbam >> $outdir/infofile.tsv ;
 done
 
 
@@ -77,9 +77,11 @@ if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then sp
 # $ wget https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh37_latest/refseq_identifiers/GRCh37_latest_dbSNP_all.vcf.gz
 # $ tabix GRCh37_latest_dbSNP_all.vcf.gz
 # # to get correspondance refs and chromosome: https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.13/
-# $ bcftools annotate --rename-chrs /data/extdata/GRCh37/convert_chrom_names.txt -o dbSNP.vcf.gz GRCh37_latest_dbSNP_all.vcf.gz
+# $ bcftools annotate --rename-chrs /data/extdata/GRCh37/convert_chrom_names.txt -o dbSNP.vcf GRCh37_latest_dbSNP_all.vcf.gz
+# $ bcftools view dbSNP.vcf -Oz -o dbSNP.vcf.gz
+# $ bcftools index dbSNP.vcf.gz
 # 2. Split per chromosome
-# XXX > $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf
+# $ bcftools filter -r chr${chr} $extdata/dbsnp_vcf/dbSNP.vcf.gz -o $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf
 # 3. Edit vcf to keep only SNPs with one Alt base
 if [ -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 
@@ -87,10 +89,20 @@ if [ -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_
 ###### run ABEMUS per chunk in parallel ######
 export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
-for n in {00..$nchunk} ; do echo 'run abemus on chunk $n' ; bash run_abemus_i.sh $config_file $n & ; done
+for ((n=00; i<$nchunk; n++)) ; do echo "run abemus on chunk ${n}" ; bash run_abemus_i.sh $config_file $n & ; done
+bash run_abemus_i.sh $config_file $nchunk 
+for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do
+	echo "run abemus on chunk ${n}"
+        export npid=$((${n#0} + 1))
+        bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
+done
+# wait for all pids
+for pid in ${pids[*]}; do
+	wait $pid
+done
 
 ##### concat results #######
-for dil in $dilutionseries_folder/*.bam ;
+for dil in $dilutionseriesfolder/*.bam ;
 do echo $i ;
 mkdir   ${outdir}/abemus_outdir_chr${chr}/$(basename $dil .bam)
 for j in {1..3} ;

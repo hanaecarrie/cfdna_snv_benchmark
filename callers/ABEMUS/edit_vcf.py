@@ -1,8 +1,16 @@
 import pandas as pd
 import numpy as np
 from itertools import chain
+import subprocess
+import sys
 
-vcf_df = pd.read_csv('homo_sapiens-chr22.vcf', skiprows=36, sep='\t', memory_map=True)
+vcfpath=sys.argv[1]
+print(vcfpath)
+
+nrowstoskip = int(subprocess.check_output("grep -n -m 1 '#CHROM' " + vcfpath + " | cut -f1 -d:", shell=True))
+print(nrowstoskip)
+
+vcf_df = pd.read_csv(vcfpath, skiprows=nrowstoskip-1, sep='\t', memory_map=True)
 print(vcf_df.head())
 print(vcf_df.shape)
 
