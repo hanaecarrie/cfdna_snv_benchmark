@@ -50,8 +50,8 @@ exec 1>$outdir/log.out 2>&1
 # Index it
 # Create dictionary
 # Create bed file chr
-#export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
-#echo $nbbasechr
+export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
+echo $nbbasechr
 if [ ! -d $extdata/wholegenome_bed ] ; then mkdir $extdata/wholegenome_bed ; fi
 if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ] ;
 then touch $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ;
@@ -62,21 +62,24 @@ fi
 if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_ ; fi
 
 ###### run SINVICT per chunk in parallel ######
-#export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
-#echo $nchunk
+export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
+echo $nchunk
 echo "dilfolder ${dilutionseriesfolder}"
 for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 	echo "plasma ${plasma}" ;
 	export outdirplasma=$outdir/$(basename $plasma .bam)
         echo $outdirplasma
 	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
-	for n in $(seq -f "%02g" 0 1) ; do #$nchunk
+	for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
 		echo "run sinvict on chunk ${n}"
-		if [ "$n" -eq "01" ] ; then echo $n ; echo "bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma & "
-		else echo "last chunk" ; echo "bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma"
-		fi
+		export npid=$((${n#0} + 1))
+	        bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma &  pids[${npid}]=$!
+	done
+	# wait for all pids
+	for pid in ${pids[*]}; do
+		wait $pid
 	done
 	### SINVICT ###
-	#if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-	#/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
+	if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
+	/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
 done
