@@ -57,8 +57,8 @@ def cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding
     cosmic_muts.dropna(subset=['chrom', 'startpos', 'endpos'], inplace=True)
     # get occurences
     occurences = cosmic_muts[mutposname].value_counts().values
-    plt.figure()
-    plt.hist(occurences[occurences <= 10])
+    #plt.figure()
+    #plt.hist(occurences[occurences <= 10])
     print(np.quantile(occurences, 0.25), np.mean(occurences), np.median(occurences), np.quantile(occurences, 0.75))
     occ = cosmic_muts['chrom_pos'].value_counts()
     common_muts_occ = occ[occ >= threshold]
@@ -66,12 +66,12 @@ def cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding
     print(len(common_muts))
     cosmic_muts = cosmic_muts[cosmic_muts['chrom_pos'].isin(common_muts)]
     print(cosmic_muts.shape)
-    plt.figure(figsize=(14, 10))
-    ax = sns.countplot(x='chrom', data=cosmic_muts[['chrom', 'startpos', 'endpos', 'chrom_pos']].drop_duplicates(), order=np.arange(1,25).astype(str))
-    plt.title('number of common {} mutations (SNV + INDEL) per chromosome found in at least {} patients'.format(cancer_type, threshold))
-    for p in ax.patches:
-        ax.annotate('{}'.format(p.get_height()), (p.get_x(), p.get_height()))
-    plt.show(block=False)
+    #plt.figure(figsize=(14, 10))
+    #ax = sns.countplot(x='chrom', data=cosmic_muts[['chrom', 'startpos', 'endpos', 'chrom_pos']].drop_duplicates(), order=np.arange(1,25).astype(str))
+    #plt.title('number of common {} mutations (SNV + INDEL) per chromosome found in at least {} patients'.format(cancer_type, threshold))
+    #for p in ax.patches:
+    #    ax.annotate('{}'.format(p.get_height()), (p.get_x(), p.get_height()))
+    #plt.draw()
     cosmic_muts_chr = cosmic_muts[cosmic_muts['chrom'] == chrom]
     print(cosmic_muts_chr.shape)
     if target == 'coding':
@@ -86,6 +86,10 @@ def cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding
                 chromrow, startpos, endpos = row['chrom_pos'].split('_')
                 if chromrow.startswith('chr'):
                     chromrow = chromrow[3:]
+                if chromrow == '23':
+                    chromrow = 'X'
+                elif chromrow == '24':
+                    chromrow = 'Y'
                 startpos, endpos = int(startpos), int(endpos)
                 fasta = pysam.FastaFile(os.path.join('data', 'GRCh37', 'GRCh37.fa'))
                 ref_seq = fasta.fetch(chromrow, startpos-1, startpos)
@@ -93,7 +97,7 @@ def cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding
                 cosmic_muts_chr.at[ri, 'ref'] = ref_seq
                 cosmic_muts_chr.at[ri, 'alt'] = ref_seq
             # needs shift in deletions for bamsurgeon to indicate length of deletion
-            cosmic_muts_chr.loc[cosmic_muts_chr['type'] == 'DEL', 'endpos'] += 1 #cosmic_muts_chr[cosmic_muts_chr['type'] == 'DEL', 'endpos'] + 1
+        cosmic_muts_chr.loc[cosmic_muts_chr['type'] == 'DEL', 'endpos'] += 1
     else:  # target noncoding
         cosmic_muts_chr['ref'] = cosmic_muts_chr['WT_SEQ']
         cosmic_muts_chr['alt'] = cosmic_muts_chr['MUT_SEQ']
@@ -130,18 +134,27 @@ if __name__ == "__main__":
     config = Config("config/", "config_viz.yaml")
     extdatafolder = os.path.join('data', 'extdata')
     cancer_type = 'CRC'
-    chrom = '1'
-    threshold = 5
-    cosmic_bed_chr_snv_coding, cosmic_bed_chr_indel_coding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding', threshold=threshold)
-    cosmic_bed_chr_snv_noncoding, cosmic_bed_chr_indel_noncoding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='noncoding', threshold=threshold)
-    cosmic_bed_chr_snv = pd.concat([cosmic_bed_chr_snv_coding, cosmic_bed_chr_snv_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
-    cosmic_bed_chr_indel = pd.concat([cosmic_bed_chr_indel_coding, cosmic_bed_chr_indel_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
 
-    print(cosmic_bed_chr_snv.shape)
-    print(cosmic_bed_chr_snv)
-    print(cosmic_bed_chr_indel.shape)
-    print(cosmic_bed_chr_indel)
-    # save bed files
-    cosmic_bed_chr_snv.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_SNV_tf1.bed', sep='\t', header=False, index=False)
-    cosmic_bed_chr_indel.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_INDEL_tf1.bed', sep='\t', header=False, index=False)
+    for chrom in range(1, 25):
+        chrom = str(chrom)
+        print('#########')
+        print(chrom)
+        print('#########')
+        threshold = 5
+        cosmic_bed_chr_snv_coding, cosmic_bed_chr_indel_coding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding', threshold=threshold)
+        cosmic_bed_chr_snv_noncoding, cosmic_bed_chr_indel_noncoding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='noncoding', threshold=threshold)
+        cosmic_bed_chr_snv = pd.concat([cosmic_bed_chr_snv_coding, cosmic_bed_chr_snv_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
+        cosmic_bed_chr_indel = pd.concat([cosmic_bed_chr_indel_coding, cosmic_bed_chr_indel_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
+
+        print(cosmic_bed_chr_snv.shape)
+        print(cosmic_bed_chr_snv)
+        print(cosmic_bed_chr_indel.shape)
+        print(cosmic_bed_chr_indel)
+        # save bed files
+        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom)):
+            os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom))
+        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations')):
+            os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations'))
+        cosmic_bed_chr_snv.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_SNV_tf1.bed', sep='\t', header=False, index=False)
+        cosmic_bed_chr_indel.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_INDEL_tf1.bed', sep='\t', header=False, index=False)
 
