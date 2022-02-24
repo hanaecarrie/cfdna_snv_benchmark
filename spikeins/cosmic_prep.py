@@ -135,26 +135,56 @@ if __name__ == "__main__":
     extdatafolder = os.path.join('data', 'extdata')
     cancer_type = 'CRC'
 
+    threshold = 5
+
     for chrom in range(1, 25):
         chrom = str(chrom)
         print('#########')
         print(chrom)
         print('#########')
-        threshold = 5
-        cosmic_bed_chr_snv_coding, cosmic_bed_chr_indel_coding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding', threshold=threshold)
-        cosmic_bed_chr_snv_noncoding, cosmic_bed_chr_indel_noncoding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='noncoding', threshold=threshold)
-        cosmic_bed_chr_snv = pd.concat([cosmic_bed_chr_snv_coding, cosmic_bed_chr_snv_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
-        cosmic_bed_chr_indel = pd.concat([cosmic_bed_chr_indel_coding, cosmic_bed_chr_indel_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
+        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')) \
+                or not os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'):
+            cosmic_bed_chr_snv_coding, cosmic_bed_chr_indel_coding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding', threshold=threshold)
+            cosmic_bed_chr_snv_noncoding, cosmic_bed_chr_indel_noncoding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='noncoding', threshold=threshold)
+            cosmic_bed_chr_snv = pd.concat([cosmic_bed_chr_snv_coding, cosmic_bed_chr_snv_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
+            cosmic_bed_chr_indel = pd.concat([cosmic_bed_chr_indel_coding, cosmic_bed_chr_indel_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
 
-        print(cosmic_bed_chr_snv.shape)
-        print(cosmic_bed_chr_snv)
-        print(cosmic_bed_chr_indel.shape)
-        print(cosmic_bed_chr_indel)
-        # save bed files
-        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom)):
-            os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom))
-        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations')):
-            os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations'))
-        cosmic_bed_chr_snv.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_SNV_tf1.bed', sep='\t', header=False, index=False)
-        cosmic_bed_chr_indel.to_csv('data/spikein/spikein_chr'+chrom+'/common_cancer_mutations/'+cancer_type+'_chr'+chrom+'_INDEL_tf1.bed', sep='\t', header=False, index=False)
+            print(cosmic_bed_chr_snv.shape)
+            print(cosmic_bed_chr_snv)
+            print(cosmic_bed_chr_indel.shape)
+            print(cosmic_bed_chr_indel)
+            # save bed files
+            if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom)):
+                os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom))
+            if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations')):
+                os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations'))
+            cosmic_bed_chr_snv.to_csv(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed'), sep='\t', header=False, index=False)
+            cosmic_bed_chr_indel.to_csv(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'), sep='\t', header=False, index=False)
+
+    res_df = pd.DataFrame(columns=['chrom', 'startpos', 'endpos', 'vaf', 'alt',  'type'])
+    for chrom in range(1, 25):
+        chrom = str(chrom)
+        snv_file = os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')
+        indel_file = os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed')
+        if not os.stat(snv_file).st_size == 0:
+            aux_snv = pd.read_csv(snv_file, sep='\t', header=None)
+            aux_snv.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'alt']
+            aux_snv['type'] = 'SNV'
+        else:
+            aux_snv = pd.DataFrame()
+        if not os.stat(indel_file).st_size == 0:
+            aux_indel = pd.read_csv(indel_file, sep='\t', header=None)
+            aux_indel.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'alt']
+            aux_indel['type'] = 'INDEL'
+        else:
+            aux_indel = pd.DataFrame()
+        res_df = pd.concat([res_df, aux_snv, aux_indel])
+    print(res_df)
+    df_plot = res_df.groupby(['chrom', 'type']).size().reset_index().pivot(columns='type', index='chrom', values=0)
+    ax = df_plot.plot(kind='bar', stacked=True)
+    for p in ax.patches:
+        ax.annotate(str(int(p.get_height())), (p.get_x() + 0.1, p.get_height() + 25))
+    plt.title('Common {} mutations found in at least {} patients in the COSMIC database'.format(cancer_type, threshold))
+    plt.show()
+
 
