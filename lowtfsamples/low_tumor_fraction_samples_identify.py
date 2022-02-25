@@ -8,7 +8,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-from utils.viz import load_files
+from utils.table import load_files
 
 
 def get_tf(config, batch='all'):

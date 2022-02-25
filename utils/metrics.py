@@ -166,7 +166,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                     if type(ground_truth_method) == int:
                         truth_name = 'truth'
                     elif ground_truth_method == 'caller':
-                        truth_name = method +'_truth'
+                        truth_name = method + '_truth'
                     elif ground_truth_method == 'spikein':
                         truth_name = 'TRUTH'
                     else:
