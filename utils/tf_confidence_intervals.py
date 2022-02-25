@@ -11,9 +11,14 @@ if __name__ == "__main__":
     tf_estimates_filepath = os.path.join('data', 'tumor_burden', 'ctDNA_burden_estimation_deepwgs_plasma_CRC_samples'
                                                                  '.xlsx')
     df_tf = pd.read_excel(tf_estimates_filepath, keep_default_na=False).set_index('sample name')
-
+    df_tf.loc['1014_110116'] = ['1014', '1014_110116', 'CRC', 63.17, 0.14, 0.75, 0.50, 0.84, 0.14, 0.75, 0.50, 0.84, 0.14, 0.73, 0.50, 0.89, 0.56, 0.62, 0.10, np.nan, np.nan, np.nan]
+    # edit average coverage value with source bcbio Aquila
+    # bcbio_final/2015-07-31_XXX/mutiqc/report/metrics/XXX-T.bcbio.txt Avg_coverage
+    df_tf.loc['986_100215'][3] = 77.68
+    df_tf.loc['986_261016'][3] = 82.82
+    df_tf.loc['1014_180816'][3] = 87.80
     # studied samples
-    samples = ['986_100215', '986_261016', '1014_180816']
+    samples = ['986_100215', '986_261016', '1014_110116', '1014_180816']
     # proposed ratios
     mixseries = [['cov', 0], [70, 0], [70, 80], [50, 100], [30, 120], [20, 130], [10, 140], [5, 145], [70, 130],
                  [70, 180], [70, 230]]
@@ -45,7 +50,7 @@ if __name__ == "__main__":
         for ms in mixseries:
             covhigh, covlow = ms
             if covhigh == 'cov':
-                covhigh = cov_hightb
+                covhigh = float(cov_hightb)
             tmin = (cihigh[0]*covhigh + cilow[0]*covlow)/(covhigh+covlow)
             tmax = (cihigh[1]*covhigh + cilow[1]*covlow)/(covhigh+covlow)
             tmean = (tfhigh*covhigh + tflow*covlow)/(covhigh+covlow)
