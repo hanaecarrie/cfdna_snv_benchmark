@@ -181,10 +181,15 @@ if __name__ == "__main__":
         res_df = pd.concat([res_df, aux_snv, aux_indel])
     print(res_df)
     df_plot = res_df.groupby(['chrom', 'type']).size().reset_index().pivot(columns='type', index='chrom', values=0)
-    ax = df_plot.plot(kind='bar', stacked=True)
+    ax = df_plot.plot(kind='bar', stacked=True, figsize=(20, 7))
     for p in ax.patches:
-        ax.annotate(str(int(p.get_height())), (p.get_x() + 0.1, p.get_height() + 25))
+        width, height = p.get_width(), p.get_height()
+        x, y = p.get_xy()
+        ax.text(x+width/2, y+height+25, int(height), horizontalalignment='center', verticalalignment='center')
     plt.title('Common {} mutations found in at least {} patients in the COSMIC database'.format(cancer_type, threshold))
+    if not os.path.exists(os.path.join('figures', 'common_{}_mutations_COSMIC_{}patients.png'.format(cancer_type, threshold))):
+        plt.savefig(os.path.join('figures', 'common_{}_mutations_COSMIC_{}patients.png'.format(cancer_type, threshold)))
     plt.show()
+
 
 
