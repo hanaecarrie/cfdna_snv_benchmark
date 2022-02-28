@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import pysam
 import matplotlib.pyplot as plt
 
@@ -142,8 +141,8 @@ if __name__ == "__main__":
         print('#########')
         print(chrom)
         print('#########')
-        if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')) \
-                or not os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'):
+        if not os.path.exists(os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')) \
+                or not os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'):
             cosmic_bed_chr_snv_coding, cosmic_bed_chr_indel_coding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding', threshold=threshold)
             cosmic_bed_chr_snv_noncoding, cosmic_bed_chr_indel_noncoding = cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='noncoding', threshold=threshold)
             cosmic_bed_chr_snv = pd.concat([cosmic_bed_chr_snv_coding, cosmic_bed_chr_snv_noncoding], ignore_index=True).sort_values(by=['chrom', 'startpos', 'endpos'])
@@ -154,18 +153,18 @@ if __name__ == "__main__":
             print(cosmic_bed_chr_indel.shape)
             print(cosmic_bed_chr_indel)
             # save bed files
-            if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom)):
-                os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom))
-            if not os.path.exists(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations')):
-                os.mkdir(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations'))
-            cosmic_bed_chr_snv.to_csv(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed'), sep='\t', header=False, index=False)
-            cosmic_bed_chr_indel.to_csv(os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'), sep='\t', header=False, index=False)
+            if not os.path.exists(os.path.join('data', 'extdata')):
+                os.mkdir(os.path.join('data', 'extdata'))
+            if not os.path.exists(os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients')):
+                os.mkdir(os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients'))
+            cosmic_bed_chr_snv.to_csv(os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_SNV_tf1.bed'), sep='\t', header=False, index=False)
+            cosmic_bed_chr_indel.to_csv(os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed'), sep='\t', header=False, index=False)
 
     res_df = pd.DataFrame(columns=['chrom', 'startpos', 'endpos', 'vaf', 'alt',  'type'])
     for chrom in range(1, 25):
         chrom = str(chrom)
-        snv_file = os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')
-        indel_file = os.path.join('data', 'spikein', 'spikein_chr'+chrom, 'common_cancer_mutations', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed')
+        snv_file = os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_SNV_tf1.bed')
+        indel_file = os.path.join('data', 'extdata', 'cosmic_mutations_atleast'+str(threshold)+'patients', cancer_type+'_chr'+chrom+'_INDEL_tf1.bed')
         if not os.stat(snv_file).st_size == 0:
             aux_snv = pd.read_csv(snv_file, sep='\t', header=None)
             aux_snv.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'alt']
