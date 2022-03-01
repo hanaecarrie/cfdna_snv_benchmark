@@ -64,10 +64,11 @@ if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then /mnt/projects/skanderupamj/wg
 
                          
 # prepare bedfile SNV
-cp $mutsbed $outputdir/$(basename $mutsbed .bed)_${vaf}.bed
+cp $mutsbed $outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
 awk -v tfv=$vaf '$4=tfv' $mutsbed > $outputdir/tmp.bed
-sed -e 's/ /\t/g'  $outputdir/tmp.bed  > $outputdir/$(basename $mutsbed .bed)_${vaf}.bed
+sed -e 's/ /\t/g'  $outputdir/tmp.bed  > $outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
 rm $outputdir/tmp.bed
+export mutsbed=$outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
 
 # change working directory
 cd $outputdir
@@ -76,39 +77,39 @@ if [ $type = 'SNV' ]; then
 
 # run bamsurgeon with snv
 echo 'run bamsurgeon SNV...'
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.bam ] && [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.sorted.bam ];
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam ] && [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ];
 then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
     -v $mutsbed \
     -f $sample_pseudohealthy_chr \
     -r $refgenome \
-    -o $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.bam \
+    -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam \
     --picardjar $picardjarfile --aligner $aligner --mindepth $mindepth --maxdepth $maxdepth --tagreads \
     --tmpdir $outputdir/addsnv.tmp -p 4 --seed 1 ;
 fi
 echo 'index output file...'
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.sorted.bam ]; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.bam ; fi
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_snv.sorted.bam ; fi
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ]; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam ; fi
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ; fi
 rm -r $outputdir/addsnv.tmp
-rm $outputdir/${inputsample_name}_chr${chr}_${vaf}_snv.bam
+rm $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam
 
 elif [ $type = 'INDEL' ] ; then
 
 # run bamsurgeon with indel
 echo 'run bamsurgeon INDEL...'
-if [ ! -f $outputdir/${inputsample_name}_chr${chr}_${vaf}_indel.bam ] && [ ! -f $outputdir/${inputsample_name}_chr${chr}_${vaf}_indel.sorted.bam ];
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.bam ] && [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.sorted.bam ];
 then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addindel.py \
     -v $mutsbed \
-    -f $sample_psuedohealthy_chr \
+    -f $sample_pseudohealthy_chr \
     -r $refgenome \
-    -o $outputdir/${samplename_pseudohealthy}_chr${chr}_indel.bam \
+    -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.bam \
     --picardjar $picardjarfile --aligner $aligner --mindepth $mindepth --maxdepth $maxdepth --tagreads \
     --tmpdir $outputdir/addindel.tmp -p 4 --seed 1 ;
 fi
 echo 'sort and index output file...'
-if  [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_indel.sorted.bam ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_indel.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_indel.bam ; fi
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_indel.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_${vaf}_indel.sorted.bam ; fi
+if  [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.sorted.bam ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.bam ; fi
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.sorted.bam ; fi
 rm -r $outputdir/addindel.tmp
-
+rm $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_indel.bam
 fi
 
 # check buffy coat select chr exists
