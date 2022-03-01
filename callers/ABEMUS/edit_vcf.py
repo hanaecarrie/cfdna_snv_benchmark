@@ -38,6 +38,6 @@ res = res[(res['REF'] == 'A') | (res['REF'] == 'C') | (res['REF'] == 'G') | (res
 res = res[(res['ALT'] == 'A') | (res['ALT'] == 'C') | (res['ALT'] == 'G') | (res['ALT'] == 'T')]
 
 print(res)
-res.to_csv('homo_sapiens-chr22_edited.vcf', sep='\t', header=False, index=False)
+res.to_csv(vcfpath[:-3]+'_edited.vcf', sep='\t', header=False, index=False)
 
 
