@@ -47,8 +47,8 @@ echo $tffile
 echo $dilutionfactor
 export dilutionfactor_tumor=$(echo $dilutionfactor | cut -f1 -d-)
 export dilutionfactor_healthy=$(echo $dilutionfactor | cut -f2 -d-)
-export outputdir=$outputfolder/dilutions_${samplename_tumor}/dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
-if [ ! -d $outputfolder/dilutions_${samplename_tumor} ] ; then mkdir $outputfolder/dilutions_${samplename_tumor} ; fi
+export outputdir=$outputfolder/mixtures_${samplename_tumor}/mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}
+if [ ! -d $outputfolder/mixtures_${samplename_tumor} ] ; then mkdir $outputfolder/mixtures_${samplename_tumor} ; fi
 echo $outputdir
 echo $tumordir
 echo $healthydir
@@ -71,12 +71,12 @@ if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 echo "Select chr ${chr} only for the tumor and the healthy sample..."
 if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
 
-if [ ! -f $sample_tumor_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
-if [ ! -f ${sample_tumor_chr}.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_tumor_chr ; fi
+if [ ! -f $sample_tumor_chr ] ; then $samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
+if [ ! -f ${sample_tumor_chr}.bai ] ; then $samtools index $sample_tumor_chr ; fi
 if  [ ! -f $tumor_chr_coverage ] ; then export tumor_cov=$(/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools depth -a $sample_tumor_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $tumor_cov >  $tumor_chr_coverage ; else export tumor_cov=$(cat $tumor_chr_coverage) ; fi
 if [ ! -d $healthydir ] ; then mkdir $healthydir ; fi
-if [ ! -f $sample_healthy_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
-if [ ! -f ${sample_healthy_chr}.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_healthy_chr ; fi
+if [ ! -f $sample_healthy_chr ] ; then $samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
+if [ ! -f ${sample_healthy_chr}.bai ] ; then $samtools index $sample_healthy_chr ; fi
 if  [ ! -f $healthy_chr_coverage ] ; then export healthy_cov=$(/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools depth -a $sample_healthy_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $healthy_cov >  $healthy_chr_coverage ; else export healthy_cov=$(cat $healthy_chr_coverage) ; fi
 echo $tumor_cov
 echo $healthy_cov
@@ -102,7 +102,7 @@ echo $rgname
 echo "subsample tumor and healthy samples as desired..."
 
 if [ $dilutionfraction_tumor != 1 ] ;
-then if [ ! -f $sample_tumor_chr_downsample ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b -s $dilutionfraction_tumor -o $sample_tumor_chr_downsample $sample_tumor_chr ; fi
+then if [ ! -f $sample_tumor_chr_downsample ] ; then $samtools view -b -s $dilutionfraction_tumor -o $sample_tumor_chr_downsample $sample_tumor_chr ; fi
 else if [ ! -f $sample_tumor_chr_downsample ] ; then cp $sample_tumor_chr $sample_tumor_chr_downsample ; fi
 fi
 
@@ -110,7 +110,7 @@ fi
 if [ $dilutionfraction_healthy != 0 ] ;
 
 then if [ $dilutionfraction_healthy != 1 ] ;
-then if [ ! -f $sample_healthy_chr_downsample ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b -s $dilutionfraction_healthy -o $sample_healthy_chr_downsample $sample_healthy_chr ; fi
+then if [ ! -f $sample_healthy_chr_downsample ] ; then $samtools view -b -s $dilutionfraction_healthy -o $sample_healthy_chr_downsample $sample_healthy_chr ; fi
 
 else if [ ! -f $sample_healthy_chr_downsample ] ; then cp $sample_healthy_chr $sample_healthy_chr_downsample ; fi
 fi
@@ -119,7 +119,7 @@ echo "label reads coming from the tumor and ones from the merged healthy..."
 if [ ! -f $outputdir/$rgname ] ; then perl -e 'print "@RG\\tID:tumor\\tSM:hs\\tLB:tumor\\tPL:Illumina\\n@RG\\tID:healthy\\tSM:hs\\tLB:healthy\\tPL:Illumina\\n"' > $outputdir/$rgname ; fi
 
 echo "merge helthy and tumor reads into a silico mixture sample..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools merge -rh $outputdir/$rgname $outputdir/${dilutionname}.bam $sample_tumor_chr_downsample $sample_healthy_chr_downsample ; fi
+if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then $samtools merge -rh $outputdir/$rgname $outputdir/${dilutionname}.bam $sample_tumor_chr_downsample $sample_healthy_chr_downsample ; fi
 
 # dilutionfactor healthy == 0
 else  cp  $sample_tumor_chr_downsample $outputdir/${dilutionname}.bam ;
@@ -127,18 +127,18 @@ fi
 
 # sort
 echo "sort mixture..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${dilutionname}.sorted.bam -@ 4 $outputdir/${dilutionname}.bam ; fi
+if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then $samtools sort -o $outputdir/${dilutionname}.sorted.bam -@ 4 $outputdir/${dilutionname}.bam ; fi
 # index
 echo "index mixture..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${dilutionname}.sorted.bam ; fi
+if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then $samtools index -@ 4 $outputdir/${dilutionname}.sorted.bam ; fi
 
 if [  -f $outputdir/${dilutionname}.bam ] ; then rm $outputdir/${dilutionname}.bam ; fi
 
 # check buffy coat select chr exists
 echo "buffy coat..."
 if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
+if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  $samtools index $sample_buffycoat_chr ; fi
 
 echo "estimate tumor burden by calculation..."
 if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt ] ; then
@@ -162,5 +162,5 @@ export cov=$(/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools depth -a $ou
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}_${samplename_healthy}_${dilutionfactor_healthy}.txt  ; fi
 
 echo "estimate tumor burden by ichorCNA..."
-bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/dilutions/run_ichorcna_chr.sh $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr
+bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr
 
