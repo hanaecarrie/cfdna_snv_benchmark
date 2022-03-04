@@ -116,10 +116,11 @@ def cosmictsv_to_bamsurgeonbed(extdatafolder, cancer_type, chrom, target='coding
     cosmic_bed_chr_snv = cosmic_bed_chr[cosmic_bed_chr['type'] == 'SNV'].drop('type', axis=1)
     cosmic_bed_chr_snv.insert(loc=3, column='vaf', value=1)  # Insert default VAF column
     # /!\ 0-based index for INDEL bamsurgeon
-    cosmic_bed_chr_indel = cosmic_bed_chr[(cosmic_bed_chr['type'] == 'INS') | (cosmic_bed_chr['type'] == 'DEL')].drop('type', axis=1)
+    cosmic_bed_chr_indel = cosmic_bed_chr[(cosmic_bed_chr['type'] == 'INS') | (cosmic_bed_chr['type'] == 'DEL')]
     cosmic_bed_chr_indel.insert(loc=3, column='vaf', value=1)  # Insert default VAF column
     cosmic_bed_chr_indel['startpos'] -= 1
     cosmic_bed_chr_indel['endpos'] -= 1
+    cosmic_bed_chr_indel = cosmic_bed_chr_indel[['chrom', 'startpos', 'endpos', 'vaf', 'type', 'alt']]  # reorder cols
     return cosmic_bed_chr_snv, cosmic_bed_chr_indel
 
 
@@ -173,7 +174,7 @@ if __name__ == "__main__":
             aux_snv = pd.DataFrame()
         if not os.stat(indel_file).st_size == 0:
             aux_indel = pd.read_csv(indel_file, sep='\t', header=None)
-            aux_indel.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'alt']
+            aux_indel.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'type', 'alt']
             aux_indel['type'] = 'INDEL'
         else:
             aux_indel = pd.DataFrame()
