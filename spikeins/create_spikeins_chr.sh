@@ -43,8 +43,8 @@ echo $vaf
 echo $mutsbed
 echo $type
 
-export outputdir=$outputfolder/spikeins_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
-if [ ! -d $outputfolder/spikeins_${samplename_pseudohealthy} ] ; then mkdir $outputfolder/spikeins_${samplename_pseudohealthy} ; fi
+export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
+if [ ! -d $outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy} ] ; then mkdir $outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy} ; fi
 echo $outputdir
 echo $pseudohealthydir
 echo $buffycoatdir
@@ -59,8 +59,8 @@ if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 echo "Select chr ${chr} only for the pseudohealthy sample..."
 if [ ! -d $pseudohealthydir ] ; then mkdir $pseudohealthydir ; fi
 
-if [ ! -f $sample_pseudohealthy_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
-if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_pseudohealthy_chr ; fi
+if [ ! -f $sample_pseudohealthy_chr ] ; then $samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
+if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseudohealthy_chr ; fi
 
                          
 # prepare bedfile SNV
@@ -87,8 +87,8 @@ then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
     --tmpdir $outputdir/addsnv.tmp -p 4 --seed 1 ;
 fi
 echo 'index output file...'
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ]; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam ; fi
-if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ; fi
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ]; then $samtools sort -o $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam ; fi
+if [ ! -f $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam.bai ] ; then $samtools index -@ 4 $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.sorted.bam ; fi
 rm -r $outputdir/addsnv.tmp
 rm $outputdir/${samplename_pseudohealthy}_chr${chr}_vaf${vaf}_snv.bam
 
@@ -115,6 +115,6 @@ fi
 # check buffy coat select chr exists
 echo "buffy coat..."
 if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
+if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi
 
