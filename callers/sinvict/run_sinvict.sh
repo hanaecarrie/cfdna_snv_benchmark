@@ -70,6 +70,25 @@ for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 	export outdirplasma=$outdir/$(basename $plasma .bam)
         echo $outdirplasma
 	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	
+	#if [ ! -f $outdirplasma/log/logtime_${i}.out ] ; then touch $outdirplasma/log/logtime_${i}.out ; fi
+	#### ABRA ###
+	#if [ ! -d $outdirplasma/abra ] ; then mkdir $outdirplasma/abra ; fi
+	#if [ ! -d $outdirplasma/tmp ] ; then mkdir $outdirplasma/tmp ; fi
+	#startabra=$(date +%s)
+	#if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam ] ;
+        #then java -Xmx16G -jar /home/ubuntu/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar \
+        #--in $buffycoatbam,$plasma \
+        #--out ${outdirplasma}/abra/$(basename $buffycoatbam .bam).abra.bam,${outdirplasma}/abra/$(basename $plasma .bam).abra.bam \
+        #--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra.log
+	#fi
+	#endabra=$(date +%s)
+	#timeabra=$(($endabra-$startabra))
+	#hmsabra=$(printf '%02dh:%02dm:%02ds\n' $((timeabra/3600)) $((timeabra%3600/60)) $((timeabra%60)))
+	#echo "Elapsed Time ABRA on ${plasma} for chr${chr}: ${hmsabra}"
+	#echo "Elapsed Time ABRA on ${plasma} for chr${chr}: ${hmsabra}" >> $outdirplasma/log/logtime_${i}.out
+	#if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam.bai ] ; then /usr/bin/samtools index ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam ; fi
+
 	for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
 		echo "run sinvict on chunk ${n}"
 		export npid=$((${n#0} + 1))
