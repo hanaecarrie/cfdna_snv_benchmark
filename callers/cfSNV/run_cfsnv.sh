@@ -45,13 +45,19 @@ exec 1>$outputdir/log.out 2>&1
 # Everything below will go to the file 'log.out':
 
 echo 'Clean tmp folder'
-rm -r $tmpdir
+#rm -r $tmpdir
 
 touch $outputdir/logtime.out
 
 startcfsnv=$(date +%s)
 
 Rscript run_cfsnv.R --config_file $config_file
+
+for targetbed in $targetbeddir/*chr[0-9]*[0-9][0-9].bed  ; do 
+	echo $targetbed 
+	Rscript run_variantcalling.R --config_file $config_file --targetbed $targetbed
+done
+
 
 endcfsnv=$(date +%s)
 timecfsnv=$(($endcfsnv-$startcfsnv))
