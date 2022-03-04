@@ -34,8 +34,8 @@ done
 eval $(parse_yaml $config_file)
 
 echo $config_file
-echo $dilutionseries_folder
-echo $buffycoat_bam
+echo $dilutionseriesfolder
+echo $buffycoatbam
 echo $chr
 echo $extdata
 echo $outdir
@@ -43,15 +43,18 @@ echo $outdir
 echo $i
 
 if [ ! -d $outdir ] ; then mkdir $outdir ; fi ; 
-if [ ! -d $outdir/abemus_outdir_chr${chr}_${i} ] ; then mkdir $outdir/abemus_outdir_chr${chr}_${i} ; fi ;
-if [ ! -d $outdir/abemus_outdir_chr${chr}_${i}/PaCBAM_outdir ] ; then mkdir $outdir/abemus_outdir_chr${chr}_${i}/PaCBAM_outdir ; fi
+if [ ! -d $outdir/chunk_${i} ] ; then mkdir $outdir/chunk_${i} ; fi ;
+if [ ! -d $outdir/chunk_${i}/PaCBAM_outdir ] ; then mkdir $outdir/chunk_${i}/PaCBAM_outdir ; fi
 
-~/bin/pacbam/pacbam bam=$buffycoat_bam  bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/homo_sapiens-chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/abemus_outdir_chr${chr}_${i}/PaCBAM_outdir ;
-for bamfile in $dilutionseries_folder/*/*.bam; do echo $bamfile ; ~/bin/pacbam/pacbam bam=$bamfile bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/homo_sapiens-chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/abemus_outdir_chr${chr}_${i}/PaCBAM_outdir ; done
+# PaCBAM buffy coat file
+~/bin/pacbam/pacbam bam=$buffycoatbam  bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
+# PaCBAM plasma files
+for bamfile in ${dilutionseriesfolder}/*/*.bam; do 
+	echo $bamfile ; 
+	~/bin/pacbam/pacbam bam=$bamfile bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
+done
 
-if [ ! -d $outdir/abemus_outdir_chr${chr}_${i}/pacbam_data_bychrom ] ; then mkdir $outdir/abemus_outdir_chr${chr}_${i}/pacbam_data_bychrom ; fi
+if [ ! -d $outdir/chunk_${i}/pacbam_data_bychrom ] ; then mkdir $outdir/chunk_${i}/pacbam_data_bychrom ; fi
 
-Rscript run_abemus.R "${outdir}/abemus_outdir_chr${chr}_${i}/" "${outdir}/infofile.tsv" "${extdata}/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed" "${outdir}/abemus_outdir_chr${chr}_${i}/PaCBAM_outdir" "${outdir}/abemus_outdir_chr${chr}_${i}/pacbam_data_bychrom"
-
-
+Rscript run_abemus.R "${outdir}/chunk_${i}/" "${outdir}/infofile.tsv" "${extdata}/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed" "${outdir}/chunk_${i}/PaCBAM_outdir" "${outdir}/chunk_${i}/pacbam_data_bychrom"
 

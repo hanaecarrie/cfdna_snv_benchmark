@@ -1,0 +1,27 @@
+##### Config file #####
+
+sample:
+  pseudohealthy: "/mnt/projects/huangwt/wgs/hanae/lowtbcfdnabams/NCC_CRC-1014_090516-CW-T-sort.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-1014_180816-CW-N-ready.bam"
+
+samplename:
+  pseudohealthy: "CRC-1014_090516"
+  buffycoat: "CRC-1014_180816-BC"
+
+vafs: "0.3 0.2 0.15 0.10 0.05 0.025 0.01"
+
+chr: 22
+
+pseudohealthydir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22/NCC_CRC-1014_090516-CW-T"
+buffycoatdir: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/dilutions_series/dilutions_series_chr22/NCC_CRC-1014_180816-CW-N"
+outputfolder: "/mnt/projects/zhug/cfDNA/skandlab-public/carriehc/spikeins/"
+
+mutsbed: '/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_INDEL_vaf1.bed'
+type: 'INDEL'
+
+refgenome: "/mnt/projects/carriehc/cfDNA/data/refgenome/GRCh37/GRCh37.fa"
+picardjarfile: "/mnt/projects/carriehc/cfDNA/utils/picard.jar"
+aligner: mem
+mindepth: 0
+maxdepth: 200000
+

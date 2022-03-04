@@ -46,11 +46,12 @@ cp $config_file $outdir/
 
 if [ ! -f $outdir/infofile.tsv ] ; then touch $outdir/infofile.tsv ; fi
 
-export patientid=$($(basename $dilutionseriesfolder) | cut -d 'dilutions_' -f1)'chr'$(dirname $dilutionseriesfolder | cut -d 'dilutions_series_')
+export patientid=$(echo $(basename $dilutionseriesfolder) | cut -d '_' -f2-3)
 echo $patientid
 
-for dil in $dilutionseriesfolder/*.bam ;
-do echo $dil ;
+echo $dilutionseriesfolder
+for dil in ${dilutionseriesfolder}/*/*.bam ; do
+	echo $dil ;
         echo -e $patientid'\t'$(basename $dil .bam)'\t'$dil'\t'$(basename $buffycoatbam .bam)'\t'$buffycoatbam >> $outdir/infofile.tsv ;
 done
 
@@ -60,8 +61,8 @@ done
 # Index it
 # Create dictionary
 # Create bed file chr
-#export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
-#echo $nbbasechr
+export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
+echo $nbbasechr
 if [ ! -d $extdata/wholegenome_bed ] ; then mkdir $extdata/wholegenome_bed ; fi
 if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ] ;
 then touch $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ;
@@ -83,35 +84,36 @@ if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then sp
 # 2. Split per chromosome
 # $ bcftools filter -r chr${chr} $extdata/dbsnp_vcf/dbSNP.vcf.gz -o $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf
 # 3. Edit vcf to keep only SNPs with one Alt base
-if [ -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
-
+echo $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf
+if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 
 ###### run ABEMUS per chunk in parallel ######
 export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
-for ((n=00; i<$nchunk; n++)) ; do echo "run abemus on chunk ${n}" ; bash run_abemus_i.sh $config_file $n & ; done
-bash run_abemus_i.sh $config_file $nchunk 
-for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do
-	echo "run abemus on chunk ${n}"
-        export npid=$((${n#0} + 1))
-        bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
+for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
+	echo "run abemus on chunk ${n}" ; 
+	export npid=$((${n#0} + 1))
+	bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
 done
+
 # wait for all pids
 for pid in ${pids[*]}; do
 	wait $pid
 done
 
+if [ ! -d ${outdir}/results ] ; do mkdir ${outdir}/results ; done
+
 ##### concat results #######
-for dil in $dilutionseriesfolder/*.bam ;
+for dil in ${dilutionseriesfolder}/*/*.bam ;
 do echo $i ;
-mkdir   ${outdir}/abemus_outdir_chr${chr}/$(basename $dil .bam)
+mkdir   ${outdir}/results/$(basename $dil .bam)
 for j in {1..3} ;
-        do ls ${outdir}/abemus_outdir_chr${chr}_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv
+        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv
 awk '
     FNR==1 && NR!=1 { while (/^<header>/) getline; }
     1 {print}
-' ${outdir}/abemus_outdir_chr${chr}_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv  > ${outdir}/abemus_outdir_chr${chr}/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
-echo ${outdir}/abemus_outdir_chr${chr}/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+echo ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
 done
 done
 
