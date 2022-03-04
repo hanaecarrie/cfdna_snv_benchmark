@@ -20,29 +20,29 @@ setwd(outdir)
 
 # split pacbam outputs by chrom
 
-#split_pacbam_bychrom(targetbed=targetbed, pacbamfolder=pacbamfolder, pacbamfolder_bychrom=pacbamfolder_bychrom)
-#targetbp_list <- bed2positions(targetbed=targetbed, get_only_chromosomes=TRUE)
+split_pacbam_bychrom(targetbed=targetbed, pacbamfolder=pacbamfolder, pacbamfolder_bychrom=pacbamfolder_bychrom)
+targetbp_list <- bed2positions(targetbed=targetbed, get_only_chromosomes=TRUE)
 
 # compute per-base error model
 
-#outpbem <- compute_pbem(sample.info.file=sample.info.file, targetbed=targetbed, outdir=outdir, pacbamfolder_bychrom=pacbamfolder_bychrom)
+outpbem <- compute_pbem(sample.info.file=sample.info.file, targetbed=targetbed, outdir=outdir, pacbamfolder_bychrom=pacbamfolder_bychrom)
 
 # outs
 
-#head(outpbem$pbem_tab)
-#outpbem$bperr_summary
-#outpbem$bgpbem
-#outpbem$mean_pbem
+head(outpbem$pbem_tab)
+outpbem$bperr_summary
+outpbem$bgpbem
+outpbem$mean_pbem
 
 # compute coverage-based and not-coverage-based allelic fraction thresholds
 
-#outafth <- compute_afthreshold(outdir=outdir, pbem_dir=file.path(outdir,"BaseErrorModel"))
+outafth <- compute_afthreshold(outdir=outdir, pbem_dir=file.path(outdir,"BaseErrorModel"))
 
 # outs
 
-#head( outafth$th_results )
-#head( outafth$th_results_bin )
-#head( outafth$datacount_bin )
+head( outafth$th_results )
+head( outafth$th_results_bin )
+head( outafth$datacount_bin )
 
 # call snvs in case samples
 
@@ -51,7 +51,7 @@ head(calls$tabsnvs_index)
 
 tabindex <- calls$tabsnvs_index
 
-#calls$tabsnvs_index_scalfact <- apply_scaling_factor(tabindex = tabindex, R = 0.5 )
+calls$tabsnvs_index_scalfact <- apply_scaling_factor(tabindex = tabindex, R = 0.5 )
 
 # compute mean coverage
 

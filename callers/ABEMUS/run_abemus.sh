@@ -101,7 +101,7 @@ for pid in ${pids[*]}; do
 	wait $pid
 done
 
-if [ ! -d ${outdir}/results ] ; do mkdir ${outdir}/results ; done
+if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
 
 ##### concat results #######
 for dil in ${dilutionseriesfolder}/*/*.bam ;
