@@ -40,7 +40,7 @@ echo $outputfolder
 echo $mutsbed
 echo $type
 
-export outputdir=$outputfolder/spikeins_${samplename_pseudohealthy}
+export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
 echo $outputdir
 echo $pseudohealthydir
@@ -58,19 +58,19 @@ cp $config_file $outputdir/
 echo "Select chr ${chr} only for the pseudohealthy sample..."
 if [ ! -d $pseudohealthydir ] ; then mkdir $pseudohealthydir ; fi
 
-if [ ! -f $sample_pseudohealthy_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
-if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_pseudohealthy_chr ; fi
+if [ ! -f $sample_pseudohealthy_chr ] ; then $samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
+if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseudohealthy_chr ; fi
 
 # check buffy coat select chr exists
 echo "buffy coat..."
 if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index $sample_buffycoat_chr ; fi
+if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi
 
 for vaf in $vafs ;
 
 do echo $vaf
-export outputdirnew=$outputfolder/spikeins_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
+export outputdirnew=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
 if [ ! -d $outputdirnew/logs ] ; then mkdir $outputdirnew/logs ; fi
 qsub -pe OpenMP 4 -l mem_free=48G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outputdirnew/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf
 
