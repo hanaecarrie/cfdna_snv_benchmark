@@ -5,7 +5,7 @@
 #' Map raw reads from fastq (gzip or not) files to the reference genome.
 #'
 #' @export
-getbam_align <- function(fastq1, fastq2, reference, SNP.database,
+getbam_align_edited <- function(bamfile, reference, SNP.database,
                     samtools.dir, picard.dir, bedtools.dir, GATK.dir, bwa.dir, sample.id,
                     output.dir, java.dir="java") {
 
@@ -43,9 +43,10 @@ getbam_align <- function(fastq1, fastq2, reference, SNP.database,
   system2(command = java.dir, args = paste0(
     "-Xms1g -jar ", picard.dir, " CreateSequenceDictionary REFERENCE=", reference, " OUTPUT=", reference_dict))
 
-  system2(command = bwa.dir, args = paste("mem -t 4", reference, fastq1, fastq2, "|", samtools.dir,
-                                      "sort -@3 -O BAM -o", sorted.bam, "-"))
- 
+  #system2(command = bwa.dir, args = paste("mem -t 4", reference, fastq1, fastq2, "|", samtools.dir,
+  #                                    "sort -@3 -O BAM -o", sorted.bam, "-"))
+  system2(command = scp, args = paste(bamfile, sorted.bam))
+
   system2(command = samtools.dir, args = paste("index", sorted.bam))
 
   system2(command = java.dir, args = paste0(
@@ -91,7 +92,7 @@ getbam_align <- function(fastq1, fastq2, reference, SNP.database,
 #' then map raw reads from fastq (gzip or not) files to the reference genome
 #'
 #' @export
-getbam_align_after_merge <- function(fastq1, fastq2, reference, SNP.database,
+getbam_align_after_merge_edited <- function(fastq1, fastq2, reference, SNP.database,
                                      samtools.dir, picard.dir, bedtools.dir,
                                      GATK.dir, bwa.dir, flash.dir, sample.id,
                                      output.dir, java.dir="java") {

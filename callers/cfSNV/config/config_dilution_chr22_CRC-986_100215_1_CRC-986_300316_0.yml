@@ -7,11 +7,13 @@ plasma:
         id: 'dilution_chr22_CRC-986_100215_1_CRC-986_300316_0'
         fastq1: '/home/ubuntu/fastq/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted-1.fq.gz'
         fastq2: '/home/ubuntu/fastq/dilution_chr22_CRC-986_100215_1_CRC-986_300316_0.sorted-2.fq.gz'
+        bam: '/ 
 
 normal:
         id: 'CRC-986_100215-BC_chr22'
         fastq1: '/home/ubuntu/fastq/CRC-986_100215-BC_chr22-1.fq.gz'
         fastq2: '/home/ubuntu/fastq/CRC-986_100215-BC_chr22-2.fq.gz'
+        bam: 
 
 chr: 22
 targetbeddir: '/output/extdata/wholegenome_bed'

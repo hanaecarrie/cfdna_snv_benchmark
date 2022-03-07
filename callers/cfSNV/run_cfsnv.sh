@@ -49,10 +49,23 @@ echo 'Clean tmp folder'
 
 touch $outputdir/logtime.out
 
+### Convert BAM to FASTQ ###
+export plasmafastqoutdir=$(dirname $config$plasma$bam)
+echo $plasmafastqoutdir
+if [ ! -f $config$plasma$fastq1 ] ; then python generate_fastq_yaml.py -i $config$plasma$bam -t $config$dir$tmp -o $plasmafastqoutdir -c $config_file ; fi
+export normalfastqoutdir=$(dirname $config$normal$bam)
+echo $normalfastqoutdir
+if [ ! -f $config$normal$fastq1 ] ; then python generate_fastq_yaml.py -i $config$normal$bam -t $config$dir$tmp -o $normalfastqoutdir -c $config_file ; fi
+
+### Run cfSNV pipeline ###
+
 startcfsnv=$(date +%s)
 
+# get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
+# run parameter recommend function
 Rscript run_cfsnv.R --config_file $config_file
 
+# apply cfSNV mutation calling function per batch
 for targetbed in $targetbeddir/*chr[0-9]*[0-9][0-9].bed  ; do 
 	echo $targetbed 
 	Rscript run_variantcalling.R --config_file $config_file --targetbed $targetbed
