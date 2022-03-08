@@ -54,7 +54,8 @@ i <- i[length(i)]
 results_file <- file.path(config$outputdir, paste0(config$plasma$id, '.results_', i, '.txt'))
 print(results_file)
 
-results <- variant_calling(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbed, config$reference, config$SNPdatabase, config$dir$samtools, config$dir$picard, condif$dir$bedtools, config$plasma$id, MIN_HOLD_SUPPORT_COUNT, MIN_PASS_SUPPORT_COUNT, python.dir=config$dir$python)
+#print(paste(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbed, config$reference, config$SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, config$plasma$id, MIN_HOLD_SUPPORT_COUNT, MIN_PASS_SUPPORT_COUNT, config$dir$python))
+results <- variant_calling(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbed, config$reference, config$SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, config$plasma$id, MIN_HOLD_SUPPORT_COUNT, MIN_PASS_SUPPORT_COUNT, python.dir=config$dir$python)
 
 write.table(results, file = results_file, sep='\t', row.names=F, quote=F)
 print(results$variant.list)

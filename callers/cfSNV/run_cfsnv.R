@@ -73,13 +73,13 @@ if (!file.exists(normal)) {
 	print(normal.oldname)
 	print(normal)
 	file.rename(normal.oldname, normal)
-	file.rename(paste0(substring(plasma.unmerged.oldname, 1, nchar(plasma.unmerged.oldname)-1), 'i'), paste0(substring(plasma.unmerged,1, nchar(plasma.unmerged)-1), 'i'))
+	file.rename(paste0(substring(normal.oldname, 1, nchar(normal.oldname)-1), 'i'), paste0(substring(normal,1, nchar(normal)-1), 'i'))
 }
 
 
 print('Parameter recommend')
 targetbedfull <- list.files(path = config$targetbeddir, pattern = 'chr[0-2]?[0-9].bed', all.files = TRUE, full.names = TRUE) # target bed directory with whole genome bed XXX_chr22.bed and split beds per chunks XXX_chr22_i.bed, i from 00 to 99 for instance
-#parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, config$reference, config$SNPdatabase, config$dir$samtools, config$plasma$id, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
+parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, config$reference, config$SNPdatabase, config$dir$samtools, config$plasma$id, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
 # read parameter recommended 
 MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(config$outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])
 MIN_PASS_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(config$outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], 'MIN_PASS_SUPPORT_COUNT = '))[2], ';'))[1])
