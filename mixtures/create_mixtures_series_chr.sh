@@ -66,7 +66,7 @@ export healthy_chr_coverage=$healthydir/coverage_${samplename_healthy}_chr${chr}
 echo $tumor_chr_coverage
 echo $healthy_chr_coverage
 
-cp $config_file $outputfolder/
+cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}/ 
 
 # Select chr only
 echo "Select chr ${chr} only for the tumor and the healthy sample..."

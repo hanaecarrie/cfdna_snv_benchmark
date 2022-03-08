@@ -98,7 +98,7 @@ export sample_tumor_chr_downsample=$tumordir/${samplename_tumor}_chr${chr}_${dil
 export sample_healthy_chr_downsample=$healthydir/${samplename_healthy}_chr${chr}_${dilutionfactor_healthy}x.bam
 echo $sample_tumor_chr_downsample
 echo $sample_healthy_chr_downsample
-export dilutionname=dilution_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
+export dilutionname=mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
 export rgname=rg_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
 echo $dilutionname
 echo $rgname
