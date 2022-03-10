@@ -42,7 +42,6 @@ echo $chr
 echo $vaf
 echo $mutsbed_snv
 echo $mutsbed_indel
-echo $type
 
 export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
 if [ ! -d $outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy} ] ; then mkdir $outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy} ; fi
@@ -65,11 +64,16 @@ if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseud
 
                          
 # prepare bedfile SNV
-cp $mutsbed $outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
-awk -v tfv=$vaf '$4=tfv' $mutsbed > $outputdir/tmp.bed
-sed -e 's/ /\t/g'  $outputdir/tmp.bed  > $outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
+cp $mutsbed_snv $outputdir/$(basename $mutsbed_snv "1.bed")${vaf}.bed
+cp $mutsbed_indel $outputdir/$(basename $mutsbed_indel "1.bed")${vaf}.bed
+awk -v tfv=$vaf '$4=tfv' $mutsbed_snv > $outputdir/tmp.bed
+sed -e 's/ /\t/g'  $outputdir/tmp.bed  > $outputdir/$(basename $mutsbed_snv "1.bed")${vaf}.bed
 rm $outputdir/tmp.bed
-export mutsbed=$outputdir/$(basename $mutsbed "1.bed")${vaf}.bed
+export mutsbed_snv=$outputdir/$(basename $mutsbed_snv "1.bed")${vaf}.bed
+awk -v tfv=$vaf '$4=tfv' $mutsbed_indel > $outputdir/tmp.bed
+sed -e 's/ /\t/g'  $outputdir/tmp.bed  > $outputdir/$(basename $mutsbed_indel "1.bed")${vaf}.bed
+rm $outputdir/tmp.bed
+export mutsbed_indel=$outputdir/$(basename $mutsbed_indel "1.bed")${vaf}.bed
 
 # change working directory
 cd $outputdir

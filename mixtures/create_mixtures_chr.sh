@@ -150,7 +150,7 @@ echo "estimate tumor burden by calculation..."
 if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
 echo $tffile
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
-if [ "$A" == $samplename_tumor ] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ;  fi ; done < $tffile
+if [[ "$A" == *${samplename_tumor}* ]] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ;  fi ; done < $tffile
 echo $median_tumor_burden
 cov_t=$(echo "$median_tumor_burden * $tumor_cov * $dilutionfraction_tumor" | bc)
 echo $cov_t
