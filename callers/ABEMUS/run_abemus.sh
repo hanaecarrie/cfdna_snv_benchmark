@@ -44,6 +44,11 @@ echo $outdir
 if [ ! -d $outdir ] ; then mkdir $outdir ; fi
 cp $config_file $outdir/
 
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>$outdir/log.out 2>&1
+# Everything below will go to the file 'log.out'
+
 if [ ! -f $outdir/infofile.tsv ] ; then touch $outdir/infofile.tsv ; fi
 
 export patientid=$(echo $(basename $dilutionseriesfolder) | cut -d '_' -f2-3)

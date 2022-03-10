@@ -51,7 +51,7 @@ head(calls$tabsnvs_index)
 
 tabindex <- calls$tabsnvs_index
 
-calls$tabsnvs_index_scalfact <- apply_scaling_factor(tabindex = tabindex, R = 0.5 )
+calls$tabsnvs_index_scalfact <- apply_scaling_factor(tabindex = tabindex, R = 1.2 )
 
 # compute mean coverage
 
