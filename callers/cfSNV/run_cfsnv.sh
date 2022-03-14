@@ -33,29 +33,44 @@ done
 eval $(parse_yaml $config_file)
 
 echo $config_file
-echo $outputdir
+echo $outdir
 echo $tmpdir
-echo $sampleid
+echo $dilutionseriesfolder
 
-if [ ! -d $outputdir ]; then mkdir $outputdir ; fi
+if [ ! -d $outdir ]; then mkdir $outdir ; fi
 
 exec 3>&1 4>&2
 trap 'exec 2>&4 1>&3' 0 1 2 3
-exec 1>$outputdir/log.out 2>&1
+exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out':
 
-echo 'Clean tmp folder'
-#rm -r $tmpdir
+# Start logging the RAM usage and CPU usage
+bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
-touch $outputdir/logtime.out
+echo 'Clean tmp folder'
+echo $tmpdir
+rm -r $tmpdir
+
+touch $outdir/logtime.out
+
+echo "dilfolder ${dilutionseriesfolder}"
+
+export normal=$buffycoatbam
+
+for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+        echo "plasma ${plasma}" ;
+
+export outdirplasma=$outdir/$(basename $plasma .bam)
+echo $outdirplasma
+if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
 
 ### Convert BAM to FASTQ ###
-export plasmafastqoutdir=$(dirname $config$plasma$bam)
+export plasmafastqoutdir=$(dirname $plasma)
 echo $plasmafastqoutdir
-if [ ! -f $config$plasma$fastq1 ] ; then python generate_fastq_yaml.py -i $config$plasma$bam -t $config$dir$tmp -o $plasmafastqoutdir -c $config_file ; fi
-export normalfastqoutdir=$(dirname $config$normal$bam)
+if [ ! -f $(dirname $plasma)/$(basename $plasma .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py  -i $plasma -t $(dirname $plasma)/tmp -o $plasmafastqoutdir -c $config_file ; fi
+export normalfastqoutdir=$(dirname $normal)
 echo $normalfastqoutdir
-if [ ! -f $config$normal$fastq1 ] ; then python generate_fastq_yaml.py -i $config$normal$bam -t $config$dir$tmp -o $normalfastqoutdir -c $config_file ; fi
+if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
 
 ### Run cfSNV pipeline ###
 
@@ -63,17 +78,23 @@ startcfsnv=$(date +%s)
 
 # get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
 # run parameter recommend function
-Rscript run_cfsnv.R --config_file $config_file
+export plasmaid=$(basename $plasma .sorted.bam)
+echo $plasmaid
+Rscript run_cfsnv.R --config_file $config_file --plasmaid $plasmaid
 
 # apply cfSNV mutation calling function per batch
-for targetbed in $targetbeddir/*chr[0-9]*[0-9][0-9].bed  ; do 
+for targetbed in $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed ; do 
 	echo $targetbed 
-	Rscript run_variantcalling.R --config_file $config_file --targetbed $targetbed
+	Rscript run_variantcalling.R --config_file $config_file --plasmaid $plasmaid --targetbed $targetbed
 done
-
 
 endcfsnv=$(date +%s)
 timecfsnv=$(($endcfsnv-$startcfsnv))
 hmscfsnv=$(printf '%02dh:%02dm:%02ds\n' $((timecfsnv/3600)) $((timecfsnv%3600/60)) $((timecfsnv%60)))
         echo "Elapsed Time cfSNV on ${sampleid} for chr${chr}: ${hmscfsnv}"
-        echo "Elapsed Time cfSNV on ${sampleid} for chr${chr}: ${hmscfsnv}" >> $outputdir/logtime.out
+        echo "Elapsed Time cfSNV on ${sampleid} for chr${chr}: ${hmscfsnv}" >> $outdir/logtime.out
+
+done
+
+kill -9 $logpid
+

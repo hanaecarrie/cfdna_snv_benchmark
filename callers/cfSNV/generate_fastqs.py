@@ -2,7 +2,7 @@
 
 import argparse
 import os
-import yaml
+import json
 import subprocess
 import sys
 
@@ -48,24 +48,21 @@ def main():
     configfile = args.config
     config = {}
     with open(configfile, 'r') as cfile:
-        config = yaml.safe_load(cfile)
+        config = json.load(cfile)
 
     print(config)
 
     samtools = None
-    if "samtools" in list(config['dir'].keys()):
-        samtools = config['dir']["samtools"]
+    if "samtools" in config:
+        samtools = config["samtools"]
     java = None
-    if "java" in list(config['dir'].keys()):
-        java = config['dir']["java"]
+    if "java" in config:
+        java = config["java"]
 
     picard_jar = None
-    if "picard" in list(config['dir'].keys()):
-        picard_jar = config['dir']["picard"]
+    if "picard" in config:
+        picard_jar = config["picard"]
     
-    print('samtools path {}'.format(samtools))
-    print('java path {}'.format(java))
-    print('picard_jar path {}'.format(picard_jar))
 
     if is_debug is False and outdir == tmpdir:
         print("Do not specify output bam file in tmp directory, as the tmp directory will be deleted by this script")
