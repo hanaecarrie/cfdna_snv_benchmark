@@ -56,6 +56,8 @@ touch $outdir/logtime.out
 echo "dilfolder ${dilutionseriesfolder}"
 
 export normal=$buffycoatbam
+if [ ! -d $outdir/$(basename $normal .bam) ] ; then mkdir $outdir/$(basename $normal .bam) ; fi
+
 
 for plasma in ${dilutionseriesfolder}/*/*.bam ; do
         echo "plasma ${plasma}" ;
@@ -63,6 +65,11 @@ for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 export outdirplasma=$outdir/$(basename $plasma .bam)
 echo $outdirplasma
 if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>$outdirplasma/log.out 2>&1
+# Everything below will go to the file 'log.out':
 
 ### Convert BAM to FASTQ ###
 export plasmafastqoutdir=$(dirname $plasma)
@@ -80,13 +87,26 @@ startcfsnv=$(date +%s)
 # run parameter recommend function
 export plasmaid=$(basename $plasma .sorted.bam)
 echo $plasmaid
-Rscript run_cfsnv.R --config_file $config_file --plasmaid $plasmaid
+Rscript run_getbamalign.R --config_file $config_file --plasmaid $plasmaid
+
+if [ ! -f $outdirplasma/parameter.txt ] ; then Rscript run_parameter.R --config_file $config_file --plasmaid $plasmaid ;
+tail -n 5 $outdirplasma/log.out > $outdirplasma/parameter.txt ;
+fi
 
 # apply cfSNV mutation calling function per batch
+if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
 for targetbed in $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed ; do 
 	echo $targetbed 
 	Rscript run_variantcalling.R --config_file $config_file --plasmaid $plasmaid --targetbed $targetbed
 done
+
+####### copy results to common folder ########
+echo $finaloutdir
+if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
+echo "plasma ${plasma}" ;
+if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
+if [ ! -d $finaloutdir/$(basename $plasma .bam)/cfsnv ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/cfsnv ; fi
+scp $outdirplasma/results/* $finaloutdir/$(basename $plasma .bam)/cfsnv/
 
 endcfsnv=$(date +%s)
 timecfsnv=$(($endcfsnv-$startcfsnv))
