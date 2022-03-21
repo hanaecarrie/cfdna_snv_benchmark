@@ -26,7 +26,7 @@ def read_vcf(path):
         return res
 
 
-def get_calltable(calldir, methods):
+def get_calltable(calldir, methods, save=False):
     callmethods_snv, callmethods_indel, callmethods_snp = {}, {}, {}
     sampleid = os.path.basename(calldir)[:-7]
     print(sampleid)
@@ -104,8 +104,23 @@ def get_calltable(calldir, methods):
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
-                callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
-                callmethod.set_index('chrom_pos_ref_alt', inplace=True)
+        elif method == 'cfsnv':  # NB: no indel method
+            calltablemethod_paths = [os.path.join(os.getcwd(), calldir, method,  l) for l in os.listdir(os.path.join(calldir, method)) if l.endswith('.txt')]
+            if not os.path.exists(os.path.join(calldir, method)) or calltablemethod_paths == []:
+                print('calls for caller {} do not exist. paths in folder {} not found.'.format(method, os.path.join(calldir, method)))
+            else:
+                li = []
+                for calltablemethod_path in calltablemethod_paths:
+                    li.append(pd.read_csv(calltablemethod_path, index_col=None, header=0, sep='\t'))
+                callmethod = pd.concat(li, axis=0, ignore_index=True)
+                callmethod.columns = ['chrom', 'pos', 'type', 'ref', 'alt', 'cfsnv_score', 'filter', 'vaf', 'tumor fraction']
+                callmethod = callmethod[callmethod['filter'] == 'PASS']
+                callmethod.loc[callmethod['type'] == '.', 'type'] = 'SNV'
+                callmethod.loc[callmethod['type'] != 'SNV', 'type'] = 'SNP'
+                callmethod['totcov'] = np.nan
+                callmethod['altcov'] = np.nan
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
+                callmethod[method] = True
         elif method == 'sinvict':
             calltablemethod_path = os.path.join(calldir, method, 'calls_level4.sinvict')
             if not os.path.exists(calltablemethod_path):
@@ -131,7 +146,7 @@ def get_calltable(calldir, methods):
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
         callmethod.set_index('chrom_pos_ref_alt', inplace=True)
         if method == 'abemus':
-            callmethod.drop('chr_pos_ref_alt', inplace=True)  # TODO: fix abemus concatenation
+             callmethod.drop('chr_pos_ref_alt', inplace=True)  # TODO: fix abemus concatenation
         callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
         # callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov_'+method, 'altcov_'+method, 'vaf_'+method, method, method+'_score']
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
@@ -140,9 +155,9 @@ def get_calltable(calldir, methods):
         callmethods_snv[method] = callmethod_snv
         callmethods_indel[method] = callmethod_indel
         callmethods_snp[method] = callmethod_snp
-    calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1)
-    calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1)
-    calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1)
+    calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
+    calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
+    calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
     calltable_snv = calltable_snv.groupby(calltable_snv.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
     calltable_indel = calltable_indel.groupby(calltable_indel.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
     calltable_snp = calltable_snp.groupby(calltable_snp.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
@@ -153,9 +168,28 @@ def get_calltable(calldir, methods):
         calltable_indel[m] = calltable_indel[m].astype(bool)
         calltable_snp[m] = calltable_snp[m].fillna(False)
         calltable_snp[m] = calltable_snp[m].astype(bool)
+    calltable_snv = calltable_snv[[m+suffix for m in methods for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
+    calltable_indel = calltable_indel[[m+suffix for m in methods for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
+    calltable_snp = calltable_snp[[m+suffix for m in methods  for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
     print('final shape SNV: {}'.format(calltable_snv.shape))
     print('final shape INDEL: {}'.format(calltable_indel.shape))
     print('final shape SNP: {}'.format(calltable_snp.shape))
+    if save:
+        if not os.path.exists(os.path.join(calldir, 'calls')):
+            os.mkdir(os.path.join(calldir, 'calls'))
+        if not os.path.exists(os.path.join(calldir, 'calls', 'snv_calls.csv')):
+            calltable_snv.to_csv(os.path.join(calldir, 'calls', 'snv_calls.csv'))
+        else:
+            print('snv_calls already exists')
+        if not os.path.exists(os.path.join(calldir, 'calls', 'indel_calls.csv')):
+            calltable_indel.to_csv(os.path.join(calldir, 'calls', 'indel_calls.csv'))
+        else:
+            print('indel_calls already exists')
+        if not os.path.exists(os.path.join(calldir, 'calls', 'snp_calls.csv')):
+            calltable_snp.to_csv(os.path.join(calldir, 'calls', 'snp_calls.csv'))
+        else:
+            print('snp_calls already exists')
+
     return calltable_snv, calltable_indel, calltable_snp
 
 
@@ -170,22 +204,22 @@ if __name__ == "__main__":
     config = Config("config/", "config_viz.yaml")
     calltable_snv, calltable_indel, calltable_snp = get_calltable(
         'data/callers_output/mixtures/mixtures_chr22/mixture_chr22_CRC-1014_180816-CW-T_10x_CRC-1014_090516-CW-T_140x.sorted',
-        config.methods)
+        config.methods, save=True)
     print(calltable_snv)
     print(calltable_snv.columns)
-    for irow, row in calltable_snv.iterrows():  # sanity check
-        if (',' in list(row.values)[2]) and int(sum(row[config.methods].values)) != (int(list(row.values)[2].count(',')) + 1):
+    for irow, row in calltable_snv.iterrows():  # sanity check on vaf
+        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
             print(calltable_snv.columns.tolist())
             print(list(row.values))
     print(calltable_indel)
     print(calltable_indel.columns)
-    for irow, row in calltable_indel.iterrows():  # sanity check
-        if (',' in list(row.values)[2]) and int(sum(row[config.methods].values)) != (int(list(row.values)[2].count(',')) + 1):
+    for irow, row in calltable_indel.iterrows():  # sanity check on vaf
+        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
             print(calltable_indel.columns.tolist())
             print(list(row.values))
     print(calltable_snp)
     print(calltable_snp.columns)
-    for irow, row in calltable_snp.iterrows():  # sanity check
-        if (',' in list(row.values)[2]) and int(sum(row[config.methods].values)) != (int(list(row.values)[2].count(',')) + 1):
+    for irow, row in calltable_snp.iterrows():  # sanity check on vaf
+        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
             print(calltable_snp.columns.tolist())
             print(list(row.values))
