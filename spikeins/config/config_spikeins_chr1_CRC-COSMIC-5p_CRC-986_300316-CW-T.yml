@@ -1,0 +1,30 @@
+##### Config file #####
+
+sample:
+  pseudohealthy: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHC433/1014_090516_P-T-sort.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHB12844/1014_090516_P-N-sort.bam"
+
+samplename:
+  knowntumormuts: "CRC-COSMIC-5p"
+  pseudohealthy: "CRC-986_300316-CW-T"
+  buffycoat: "CRC-986-CW-N"
+
+vafs: "0 0.3 0.2 0.15 0.10 0.05 0.025 0.01"
+
+chr: 1
+
+pseudohealthydir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986_300316-CW-T"
+buffycoatdir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986-CW-N"
+outputfolder: "/mnt/projects/huangwt/wgs/hanae/data/spikeins/spikeins_chr1"
+
+mutsbed:
+  snv: '/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr1_SNV_vaf1.bed'
+  indel:'/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr1_INDEL_vaf1.bed'
+
+
+refgenome: "/mnt/projects/carriehc/cfDNA/data/refgenome/GRCh37/GRCh37.fa"
+picardjarfile: "/mnt/projects/carriehc/cfDNA/utils/picard.jar"
+aligner: mem
+mindepth: 0
+maxdepth: 200000
+samtools: '/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools'

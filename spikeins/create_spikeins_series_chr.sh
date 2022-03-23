@@ -40,7 +40,7 @@ echo $outputfolder
 echo $mutsbed
 echo $type
 
-export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}
+export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
 echo $outputdir
 echo $pseudohealthydir
@@ -70,9 +70,10 @@ if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat
 for vaf in $vafs ;
 
 do echo $vaf
-export outputdirnew=$outputfolder/spikeins_chr${chr}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_pseudohealthy}_${vaf}
+export outputdirnew=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}
+if [ ! -d $outputdirnew ] ; then mkdir $outputdirnew ; fi
 if [ ! -d $outputdirnew/logs ] ; then mkdir $outputdirnew/logs ; fi
-qsub -pe OpenMP 4 -l mem_free=48G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outputdirnew/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf
+qsub -pe OpenMP 4 -l mem_free=32G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outputdirnew/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf
 
 done
 
