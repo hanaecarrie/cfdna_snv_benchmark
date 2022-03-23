@@ -47,8 +47,8 @@ echo $tffile
 echo $dilutionfactor
 export dilutionfactor_tumor=$(echo $dilutionfactor | cut -f1 -d-)
 export dilutionfactor_healthy=$(echo $dilutionfactor | cut -f2 -d-)
-export outputdir=$outputfolder/mixtures_chr${chr}_${samplename_tumor}/mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
-if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor} ] ; then mkdir $outputfolder/mixtures_chr${chr}_${samplename_tumor} ; fi
+export outputdir=$outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
+if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ] ; then mkdir $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ; fi
 echo $outputdir
 echo $tumordir
 echo $healthydir
@@ -123,7 +123,7 @@ echo "label reads coming from the tumor and ones from the merged healthy..."
 if [ ! -f $outputdir/$rgname ] ; then perl -e 'print "@RG\\tID:${samplename_tumor}\\tSM:hs\\tLB:${samplename_tumor}\\tPL:Illumina\\n@RG\\tID:${samplename_healthy}\\tSM:hs\\tLB:${samplename_healthy}\\tPL:Illumina\\n"' > $outputdir/$rgname ; fi
 
 echo "merge helthy and tumor reads into a silico mixture sample..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then $samtools merge -rh $outputdir/$rgname $outputdir/${dilutionname}.bam $sample_tumor_chr_downsample $sample_healthy_chr_downsample ; fi
+if [ ! -f $outputdir/${dilutionname}.bam ] ; then $samtools merge -rh $outputdir/$rgname $outputdir/${dilutionname}.unsorted.bam $sample_tumor_chr_downsample $sample_healthy_chr_downsample ; fi
 
 # dilutionfactor healthy == 0
 else  cp  $sample_tumor_chr_downsample $outputdir/${dilutionname}.bam ;
@@ -131,12 +131,15 @@ fi
 
 # sort
 echo "sort mixture..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam ] ; then $samtools sort -o $outputdir/${dilutionname}.sorted.bam -@ 4 $outputdir/${dilutionname}.bam ; fi
+if [ ! -f $outputdir/${dilutionname}.bam ] ; then $samtools sort -o $outputdir/${dilutionname}.bam -@ 4 $outputdir/${dilutionname}.unsorted.bam ; fi
 # index
 echo "index mixture..."
-if [ ! -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then $samtools index -@ 4 $outputdir/${dilutionname}.sorted.bam ; fi
+if [ ! -f $outputdir/${dilutionname}.bam.bai ] ; then $samtools index -@ 4 $outputdir/${dilutionname}.bam ; fi
 
-if [  -f $outputdir/${dilutionname}.bam ] ; then rm $outputdir/${dilutionname}.bam ; fi
+if [  -f $outputdir/${dilutionname}.unsorted.bam ] ; then rm $outputdir/${dilutionname}.unsorted.bam ; fi
+
+#if [ -f $outputdir/${dilutionname}.sorted.bam ] ; then mv  $outputdir/${dilutionname}.sorted.bam  $outputdir/${dilutionname}.bam ; fi
+#if [ -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then mv $outputdir/${dilutionname}.sorted.bam.bai  $outputdir/${dilutionname}.bam.bai ; fi
 
 # check buffy coat select chr exists
 echo "buffy coat..."
@@ -163,9 +166,9 @@ fi
 
 echo "calculate coverage..."
 if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
-export cov=$($samtools depth -a $outputdir/${dilutionname}.sorted.bam | awk '{sum+=$3} END {print sum/NR}')
+export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt  ; fi
 
 echo "estimate tumor burden by ichorCNA..."
-bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.sorted.bam $ichorcnaextdata $chr
+bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.bam $ichorcnaextdata $chr
 

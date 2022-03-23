@@ -1,0 +1,24 @@
+##### Config file #####
+
+sample:
+  healthy: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHC433/1014_090516_P-T-sort.bam"
+  tumor: "/mnt/projects/skanderupamj/wgs/data/training/ready.bams/cfdna/NCC_CRC-1014_180816-CW-T-ready.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHB12844/1014_090516_P-N-sort.bam"
+
+samplename:
+  healthy: "CRC-1014_090516-CW-T"
+  tumor: "CRC-1014_180816-CW-T"
+  buffycoat: "CRC-1014-CW-N"
+
+dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-30 70-130 70-180"
+
+chr: 1
+
+healthydir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-1014_090516-CW-T"
+tumordir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-1014_180816-CW-T"
+buffycoatdir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-1014-CW-N"
+outputfolder: "/mnt/projects/huangwt/wgs/hanae/data/mixtures/mixtures_chr1"
+
+tffile: "/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/initialsamples/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv" 
+ichorcnaextdata: "/mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/lib/R/library/ichorCNA/extdata/"
+samtools: "/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools"

@@ -47,7 +47,7 @@ echo $tffile
 echo $samtools
 
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
-if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor} ] ; then mkdir $outputfolder/mixtures_chr${chr}_${samplename_tumor} ; fi
+if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ] ; then mkdir $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ; fi
 echo $tumordir
 echo $healthydir
 echo $buffycoatdir
@@ -66,7 +66,7 @@ export healthy_chr_coverage=$healthydir/coverage_${samplename_healthy}_chr${chr}
 echo $tumor_chr_coverage
 echo $healthy_chr_coverage
 
-cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}/ 
+cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/ 
 
 # Select chr only
 echo "Select chr ${chr} only for the tumor and the healthy sample..."
@@ -91,11 +91,11 @@ for dilutionfactor in $dilutionfactors ;
 do echo $dilutionfactor
 export dilutionfactor_tumor=$(echo $dilutionfactor | cut -f1 -d-)
 export dilutionfactor_healthy=$(echo $dilutionfactor | cut -f2 -d-)
-export outputdir=$outputfolder/mixtures_chr${chr}_${samplename_tumor}/mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
+export outputdir=$outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x
 if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 if [ ! -d $outputdir/logs ] ; then mkdir $outputdir/logs ; fi
 
-/opt/uge-8.1.7p3/bin/lx-amd64/qsub -pe OpenMP 4 -l mem_free=48G,h_rt=24:00:00 -o $outputdir/logs/ -e $outputdir/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/create_mixtures_chr.sh -c $config_file -d $dilutionfactor
+/opt/uge-8.1.7p3/bin/lx-amd64/qsub -pe OpenMP 4 -l mem_free=24G,h_rt=24:00:00 -o $outputdir/logs/ -e $outputdir/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/create_mixtures_chr.sh -c $config_file -d $dilutionfactor
 
 done
 
