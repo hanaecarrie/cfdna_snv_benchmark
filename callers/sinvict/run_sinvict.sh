@@ -45,6 +45,9 @@ trap 'exec 2>&4 1>&3' 0 1 2 3
 exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out'
 
+# Start logging the RAM usage and CPU usage
+bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
+
 ###### prepare bedfile ######
 # Download reference genome (here all with hg19)
 # Index it
@@ -67,30 +70,19 @@ echo $nchunk
 echo "dilfolder ${dilutionseriesfolder}"
 for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 	echo "plasma ${plasma}" ;
-	export outdirplasma=$outdir/$(basename $plasma .bam)
-        echo $outdirplasma
-	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
-	
-	#if [ ! -f $outdirplasma/log/logtime_${i}.out ] ; then touch $outdirplasma/log/logtime_${i}.out ; fi
-	#### ABRA ###
-	#if [ ! -d $outdirplasma/abra ] ; then mkdir $outdirplasma/abra ; fi
-	#if [ ! -d $outdirplasma/tmp ] ; then mkdir $outdirplasma/tmp ; fi
-	#startabra=$(date +%s)
-	#if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam ] ;
-        #then java -Xmx16G -jar /home/ubuntu/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar \
-        #--in $buffycoatbam,$plasma \
-        #--out ${outdirplasma}/abra/$(basename $buffycoatbam .bam).abra.bam,${outdirplasma}/abra/$(basename $plasma .bam).abra.bam \
-        #--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra.log
-	#fi
-	#endabra=$(date +%s)
-	#timeabra=$(($endabra-$startabra))
-	#hmsabra=$(printf '%02dh:%02dm:%02ds\n' $((timeabra/3600)) $((timeabra%3600/60)) $((timeabra%60)))
-	#echo "Elapsed Time ABRA on ${plasma} for chr${chr}: ${hmsabra}"
-	#echo "Elapsed Time ABRA on ${plasma} for chr${chr}: ${hmsabra}" >> $outdirplasma/log/logtime_${i}.out
-	#if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam.bai ] ; then /usr/bin/samtools index ${outdirplasma}/abra/$(basename $plasma .bam).abra.bam ; fi
+	echo "abra $abra"	
 
-	for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
-		echo "run sinvict on chunk ${n}"
+	if [ $abra = 'False' ] ; then
+		bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma & 
+       	fi
+	
+	if [ $abra = 'True' ] ; then
+		export outdirplasma=$outdir/$(basename $plasma .bam)
+		echo $outdirplasma
+		if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	
+	for n in $(seq -f '%02g' 0 $(($nchunk - 1))) ; do 
+		echo 'run sinvict on chunk ${n}'
 		export npid=$((${n#0} + 1))
 	        bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma &  pids[${npid}]=$!
 	done
@@ -100,5 +92,34 @@ for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 	done
 	### SINVICT ###
 	if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-	/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
+	/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results      
+
+	fi
+
 done
+
+if [ $abra = 'False' ] ; then
+	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+        echo "plasma ${plasma}" ;
+	export outdirplasma=$outdir/$(basename $plasma .bam)
+        echo $outdirplasma
+	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	### SINVICT ###
+        if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
+        /home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
+	done
+fi
+
+####### copy results to common folder ########
+echo $finaloutdir
+if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
+
+for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+        echo "plasma ${plasma}" ;
+	export outdirplasma=$outdir/$(basename $plasma .bam)
+	if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
+	if [ ! -d $finaloutdir/$(basename $plasma .bam)/sinvict ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/sinvict ; fi
+	scp $outdirplasma/results/* $finaloutdir/$(basename $plasma .bam)/sinvict/
+done
+
+kill -9 $logpid
