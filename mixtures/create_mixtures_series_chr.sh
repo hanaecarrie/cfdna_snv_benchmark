@@ -63,28 +63,25 @@ echo $sample_healthy_chr
 
 export tumor_chr_coverage=$tumordir/coverage_${samplename_tumor}_chr${chr}.txt
 export healthy_chr_coverage=$healthydir/coverage_${samplename_healthy}_chr${chr}.txt
+export buffycoat_chr_coverage=$buffycoatdir/coverage_${samplename_buffycoat}_chr${chr}.txt
 echo $tumor_chr_coverage
 echo $healthy_chr_coverage
+echo $buffycoat_chr_coverage
 
 cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/ 
 
 # Select chr only
 echo "Select chr ${chr} only for the tumor and the healthy sample..."
-if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
-
-if [ ! -f $sample_tumor_chr ] ; then $samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
-if [ ! -f ${sample_tumor_chr}.bai ] ; then $samtools index $sample_tumor_chr ; fi
-if  [ ! -f $tumor_chr_coverage ] ; then export tumor_cov=$($samtools depth -a $sample_tumor_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $tumor_cov >  $tumor_chr_coverage ; else export tumor_cov=$(cat $tumor_chr_coverage) ; fi
 if [ ! -d $healthydir ] ; then mkdir $healthydir ; fi
 if [ ! -f $sample_healthy_chr ] ; then $samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
 if [ ! -f ${sample_healthy_chr}.bai ] ; then $samtools index $sample_healthy_chr ; fi
 if  [ ! -f $healthy_chr_coverage ] ; then export healthy_cov=$($samtools depth -a $sample_healthy_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $healthy_cov >  $healthy_chr_coverage ; else export healthy_cov=$(cat $healthy_chr_coverage) ; fi
 
-# check buffy coat select chr exists
-echo "buffy coat..."
-if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  $samtools index $sample_buffycoat_chr ; fi
+if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
+if [ ! -f $sample_tumor_chr ] ; then $samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
+if [ ! -f ${sample_tumor_chr}.bai ] ; then $samtools index $sample_tumor_chr ; fi
+if  [ ! -f $tumor_chr_coverage ] ; then export tumor_cov=$($samtools depth -a $sample_tumor_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $tumor_cov >  $tumor_chr_coverage ; else export tumor_cov=$(cat $tumor_chr_coverage) ; fi
+
 
 for dilutionfactor in $dilutionfactors ;
 
@@ -99,3 +96,9 @@ if [ ! -d $outputdir/logs ] ; then mkdir $outputdir/logs ; fi
 
 done
 
+# check buffy coat select chr exists
+echo "buffy coat..."
+if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
+if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  $samtools index $sample_buffycoat_chr ; fi
+if  [ ! -f $buffycoat_chr_coverage ] ; then export buffycoat_cov=$($samtools depth -a $sample_buffycoat_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $buffycoat_cov >  $buffycoat_chr_coverage ; else export buffycoat_cov=$(cat $buffycoat_chr_coverage) ; fi
