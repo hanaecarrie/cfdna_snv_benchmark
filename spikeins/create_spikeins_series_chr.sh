@@ -37,8 +37,8 @@ echo $samplename_pseudohealthy
 echo $samplename_buffycoat
 echo $chr
 echo $outputfolder
-echo $mutsbed
-echo $type
+echo $mutsbed_snv
+echo $mutsbed_indel
 
 export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
@@ -57,15 +57,8 @@ cp $config_file $outputdir/
 # Select chr only
 echo "Select chr ${chr} only for the pseudohealthy sample..."
 if [ ! -d $pseudohealthydir ] ; then mkdir $pseudohealthydir ; fi
-
 if [ ! -f $sample_pseudohealthy_chr ] ; then $samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
 if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseudohealthy_chr ; fi
-
-# check buffy coat select chr exists
-echo "buffy coat..."
-if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi
 
 for vaf in $vafs ;
 
@@ -77,3 +70,8 @@ qsub -pe OpenMP 4 -l mem_free=32G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outpu
 
 done
 
+# check buffy coat select chr exists
+echo "buffy coat..."
+if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
+if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi

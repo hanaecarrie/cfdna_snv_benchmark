@@ -1,0 +1,30 @@
+##### Config file #####
+
+sample:
+  pseudohealthy: "/mnt/projects/skanderupamj/wgs/data/cfdna.crc/cfDNA.20211019/NCC_CRC-123_121115_P/bcbio_work/align/NCC_CRC-123_121115_P-T/NCC_CRC-123_121115_P-T-sort.bam"
+  buffycoat: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHB12842/NCC_CRC-123_070116_P-W-N-sort.bam"
+
+samplename:
+  knowntumormuts: "CRC-COSMIC-5p"
+  pseudohealthy: "CRC-123_121115-CW-T"
+  buffycoat: "CRC-123-CW-N"
+
+vafs: "0 0.3 0.2 0.15 0.10 0.05 0.025 0.01"
+
+chr: 22
+
+pseudohealthydir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-123_121115-CW-T"
+buffycoatdir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-123-CW-N"
+outputfolder: "/mnt/projects/huangwt/wgs/hanae/data/spikeins/spikeins_chr22"
+
+mutsbed:
+  snv: '/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_SNV_vaf1.bed'
+  indel:'/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_INDEL_vaf1.bed'
+
+
+refgenome: "/mnt/projects/carriehc/cfDNA/data/refgenome/GRCh37/GRCh37.fa"
+picardjarfile: "/mnt/projects/carriehc/cfDNA/utils/picard.jar"
+aligner: mem
+mindepth: 0
+maxdepth: 200000
+samtools: '/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools'
