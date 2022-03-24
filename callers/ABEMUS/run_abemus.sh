@@ -38,6 +38,7 @@ echo $buffycoatbam
 echo $chr
 echo $extdata
 echo $outdir
+echo $finaloutdir
 
 
 ####### generate info file #######
@@ -48,6 +49,9 @@ exec 3>&1 4>&2
 trap 'exec 2>&4 1>&3' 0 1 2 3
 exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out'
+
+# Start logging the RAM usage and CPU usage
+bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
 if [ ! -f $outdir/infofile.tsv ] ; then touch $outdir/infofile.tsv ; fi
 
@@ -113,13 +117,30 @@ for dil in ${dilutionseriesfolder}/*/*.bam ;
 do echo $i ;
 mkdir   ${outdir}/results/$(basename $dil .bam)
 for j in {1..3} ;
-        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv
+        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
 awk '
     FNR==1 && NR!=1 { while (/^<header>/) getline; }
     1 {print}
-' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_*.tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
 echo ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
 done
+ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+awk '
+    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+    1 {print}
+' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+echo ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
 done
 
+####### copy results to common folder ########
+echo $finaloutdir
+if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
 
+for plasma in ${dilutionseriesfolder}/*/*.bam ; 
+	do echo "plasma ${plasma}" ;
+	if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
+	if [ ! -d $finaloutdir/$(basename $plasma .bam)/abemus ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/abemus ; fi
+	scp $outdir/results/$(basename $plasma .bam)/* $finaloutdir/$(basename $plasma .bam)/abemus/
+done
+
+kill -9 $logpid

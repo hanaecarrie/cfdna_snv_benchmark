@@ -1,6 +1,9 @@
 
 
-for i in /data/dilutions_chr22/*sorted.bam ;
+
+echo $dilutionseriesfolder
+
+for i in $dilutionseriesfolder/*/*.bam  ;
 
 do echo $i ;
 mkdir /data/abemus_outdir/abemus_outdir_chr22/$(basename $i .bam)
