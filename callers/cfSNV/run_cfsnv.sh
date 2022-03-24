@@ -56,45 +56,21 @@ touch $outdir/logtime.out
 echo "dilfolder ${dilutionseriesfolder}"
 
 export normal=$buffycoatbam
+if [ ! -d $outdir/$(basename $normal .bam) ] ; then mkdir $outdir/$(basename $normal .bam) ; fi
 
+export npid=0
 for plasma in ${dilutionseriesfolder}/*/*.bam ; do
         echo "plasma ${plasma}" ;
-
-export outdirplasma=$outdir/$(basename $plasma .bam)
-echo $outdirplasma
-if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
-
-### Convert BAM to FASTQ ###
-export plasmafastqoutdir=$(dirname $plasma)
-echo $plasmafastqoutdir
-if [ ! -f $(dirname $plasma)/$(basename $plasma .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py  -i $plasma -t $(dirname $plasma)/tmp -o $plasmafastqoutdir -c $config_file ; fi
-export normalfastqoutdir=$(dirname $normal)
-echo $normalfastqoutdir
-if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
-
-### Run cfSNV pipeline ###
-
-startcfsnv=$(date +%s)
-
-# get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
-# run parameter recommend function
-export plasmaid=$(basename $plasma .sorted.bam)
-echo $plasmaid
-Rscript run_cfsnv.R --config_file $config_file --plasmaid $plasmaid
-
-# apply cfSNV mutation calling function per batch
-for targetbed in $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed ; do 
-	echo $targetbed 
-	Rscript run_variantcalling.R --config_file $config_file --plasmaid $plasmaid --targetbed $targetbed
+	export npid=$((npid+1))
+	echo "n PID ${npid}" 
+        bash /home/ubuntu/cfSNV/run_cfsnv_sample.sh -c $config_file -p $plasma  &  pids[${npid}]=$!
 done
 
-endcfsnv=$(date +%s)
-timecfsnv=$(($endcfsnv-$startcfsnv))
-hmscfsnv=$(printf '%02dh:%02dm:%02ds\n' $((timecfsnv/3600)) $((timecfsnv%3600/60)) $((timecfsnv%60)))
-        echo "Elapsed Time cfSNV on ${sampleid} for chr${chr}: ${hmscfsnv}"
-        echo "Elapsed Time cfSNV on ${sampleid} for chr${chr}: ${hmscfsnv}" >> $outdir/logtime.out
-
+# wait for all pids
+for pid in ${pids[*]}; do
+        wait $pid
 done
+
 
 kill -9 $logpid
 

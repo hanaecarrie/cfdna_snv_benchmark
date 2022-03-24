@@ -18,7 +18,7 @@ plasmaid = opt$plasmaid
 
 # input files
 print(config$outdir)
-outputdir <- file.path(config$outdir, plasmaid)
+outputdir <- file.path(config$outdir, paste0(plasmaid, '.sorted'))
 print(outputdir)
 plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R1.fastq.gz'))
 plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R2.fastq.gz'))
@@ -32,13 +32,14 @@ print(plasma.merged.extendedFrags)
 print(plasma.merge.notCombined)
 
 print(config$buffycoatbam)
-normalid <- tools::file_path_sans_ext(config$buffycoatbam)
+normalid <- tools::file_path_sans_ext(basename(config$buffycoatbam))
 normaldir <- dirname(config$buffycoatbam)
-normalfastq1 <- file.path(normaldir, paste0(normalid, '.sorted_R1.fastq.gz'))
-normalfastq2 <- file.path(normaldir, paste0(normalid, '.sorted_R2.fastq.gz'))
+normalfastq1 <- file.path(normaldir, paste0(normalid, '_R1.fastq.gz'))
+normalfastq2 <- file.path(normaldir, paste0(normalid, '_R2.fastq.gz'))
 print(normalfastq1)
 print(normalfastq2)
-normal <-  file.path(outputdir, paste0(normalid, ".recal.bam"))
+normaloutputdir <- file.path(config$outdir, normalid)
+normal <-  file.path(normaloutputdir, paste0(normalid, ".recal.bam"))
 print(normal)
 
 targetbeddir <- file.path(config$extdata, 'wholegenome_bed')
@@ -58,17 +59,19 @@ print(config$dir$python)
 print(config$dir$java)
 
 # read parameter recommended 
-MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])
-MIN_PASS_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], 'MIN_PASS_SUPPORT_COUNT = '))[2], ';'))[1])
+MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'parameter.txt'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])
+MIN_PASS_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'parameter.txt'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], 'MIN_PASS_SUPPORT_COUNT = '))[2], ';'))[1])
 print(paste0('MIN_HOLD_SUPPORT_COUNT = ', MIN_HOLD_SUPPORT_COUNT, ', MIN_PASS_SUPPORT_COUNT = ', MIN_PASS_SUPPORT_COUNT))
+
 
 i <- unlist(strsplit(substr(targetbed,1,nchar(targetbed)-4), '_'))
 i <- i[length(i)]
-results_file <- file.path(outputdir, paste0(plasmaid, '.results_', i, '.txt'))
+results_file <- file.path(outputdir, 'results', paste0(plasmaid, '.results_', i, '.txt'))
 print(results_file)
 
+if (!(file.exists(results_file))) {
 results <- variant_calling(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbed, reference, SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, plasmaid, MIN_HOLD_SUPPORT_COUNT, MIN_PASS_SUPPORT_COUNT, python.dir=config$dir$python)
-
 write.table(results, file = results_file, sep='\t', row.names=F, quote=F)
 print(results$variant.list)
 print(results$tumor.fraction)
+}
