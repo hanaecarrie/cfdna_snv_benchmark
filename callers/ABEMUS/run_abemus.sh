@@ -59,7 +59,7 @@ export patientid=$(echo $(basename $dilutionseriesfolder) | cut -d '_' -f2-3)
 echo $patientid
 
 echo $dilutionseriesfolder
-for dil in ${dilutionseriesfolder}/*/*.bam ; do
+for dil in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 	echo $dil ;
         echo -e $patientid'\t'$(basename $dil .bam)'\t'$dil'\t'$(basename $buffycoatbam .bam)'\t'$buffycoatbam >> $outdir/infofile.tsv ;
 done
@@ -113,7 +113,7 @@ done
 if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
 
 ##### concat results #######
-for dil in ${dilutionseriesfolder}/*/*.bam ;
+for dil in ${dilutionseriesfolder}/*/*[Tx].bam ;
 do echo $i ;
 mkdir   ${outdir}/results/$(basename $dil .bam)
 for j in {1..3} ;
@@ -136,7 +136,7 @@ done
 echo $finaloutdir
 if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
 
-for plasma in ${dilutionseriesfolder}/*/*.bam ; 
+for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; 
 	do echo "plasma ${plasma}" ;
 	if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
 	if [ ! -d $finaloutdir/$(basename $plasma .bam)/abemus ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/abemus ; fi
