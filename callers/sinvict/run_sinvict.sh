@@ -68,46 +68,70 @@ if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then sp
 export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
 echo "dilfolder ${dilutionseriesfolder}"
-for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+
+if [ $abra = 'True' ] ; then
+
+	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
 	echo "plasma ${plasma}" ;
 	echo "abra $abra"	
 
-	if [ $abra = 'False' ] ; then
-		bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma & 
-       	fi
-	
-	if [ $abra = 'True' ] ; then
-		export outdirplasma=$outdir/$(basename $plasma .bam)
-		echo $outdirplasma
-		if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	export outdirplasma=$outdir/$(basename $plasma .bam)
+	echo $outdirplasma
+	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
 	
 	for n in $(seq -f '%02g' 0 $(($nchunk - 1))) ; do 
 		echo 'run sinvict on chunk ${n}'
 		export npid=$((${n#0} + 1))
 	        bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma &  pids[${npid}]=$!
 	done
+	
 	# wait for all pids
 	for pid in ${pids[*]}; do
 		wait $pid
 	done
+	
 	### SINVICT ###
 	if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
 	/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results      
 
-	fi
-
-done
-
-if [ $abra = 'False' ] ; then
-	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
-        echo "plasma ${plasma}" ;
-	export outdirplasma=$outdir/$(basename $plasma .bam)
-        echo $outdirplasma
-	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
-	### SINVICT ###
-        if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-        /home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results
 	done
+fi
+
+if [ $abra = 'False' ] ; then  # wait for all pids
+
+	export cpid=0
+
+	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+		echo "plasma ${plasma}" ;
+		echo "abra $abra"       
+		export cpid=$(($cpid + 1))
+		echo job $cpid
+		#bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma &  pids[${cpid}]=$!
+	done
+        
+	#for pid in ${pids[*]}; do
+        #        wait $pid
+        #done
+
+	#export cpid=0
+
+	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+		echo "plasma ${plasma}" ;
+		export outdirplasma=$outdir/$(basename $plasma .bam)
+		echo $outdirplasma
+		if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
+	
+		### SINVICT ###
+		if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
+		#export cpid=$(($cpid + 1))
+		#echo job $cpid
+		/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results #&  pids[${cpid}]=$!
+	done
+
+	# wait for all pids
+        #for pid in ${pids[*]}; do
+        #        wait $pid
+        #done
 fi
 
 ####### copy results to common folder ########
