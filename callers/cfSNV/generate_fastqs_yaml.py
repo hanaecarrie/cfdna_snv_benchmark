@@ -74,9 +74,9 @@ def main():
 
     # Step 1: convert bam file to sam
     print("Generating SAM file")
-    cmd = "samtools view -h %s > %s" %(inbam, unfiltered_sam)
+    cmd = "samtools view -@ 4 -h %s > %s" %(inbam, unfiltered_sam)
     if samtools is not None:
-        cmd = "%s view -h %s > %s" %(samtools, inbam, unfiltered_sam)
+        cmd = "%s view -@ 4 -h %s > %s" %(samtools, inbam, unfiltered_sam)
     try:
         print(cmd)
         subprocess.call(cmd, shell = True)
@@ -143,9 +143,9 @@ def main():
 
     # Step 3: Generate bam from sam
     print("Creating BAM file from SAM file")
-    cmd = "samtools view -b %s > %s" %(filtered_sam, filtered_bam)
+    cmd = "samtools view -@ 4 -b %s > %s" %(filtered_sam, filtered_bam)
     if samtools is not None:
-        cmd = "%s view -b %s > %s" %(samtools, filtered_sam, filtered_bam)
+        cmd = "%s view -@ 4 -b %s > %s" %(samtools, filtered_sam, filtered_bam)
 
     
     try:

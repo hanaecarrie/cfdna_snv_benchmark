@@ -58,8 +58,12 @@ echo "dilfolder ${dilutionseriesfolder}"
 export normal=$buffycoatbam
 if [ ! -d $outdir/$(basename $normal .bam) ] ; then mkdir $outdir/$(basename $normal .bam) ; fi
 
+export normalfastqoutdir=$(dirname $normal)
+echo $normalfastqoutdir
+if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
+
 export npid=0
-for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
         echo "plasma ${plasma}" ;
 	export npid=$((npid+1))
 	echo "n PID ${npid}" 

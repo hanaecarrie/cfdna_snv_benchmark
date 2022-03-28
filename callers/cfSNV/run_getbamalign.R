@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV)
+library(cfSNV, lib.loc='/home/ubuntu/Rlibs')
 library(yaml)
 library(optparse)
 library(callr)
@@ -67,6 +67,8 @@ if (!file.exists(plasma.unmerged) ) {
 	print(plasma.unmerged)
 	file.rename(plasma.unmerged.oldname, plasma.unmerged)
 	file.rename(paste0(substring(plasma.unmerged.oldname, 1, nchar(plasma.unmerged.oldname)-1), 'i'), paste0(substring(plasma.unmerged,1, nchar(plasma.unmerged)-1), 'i'))
+	# remove dbsnp
+
 }
 
 if (!file.exists(plasma.merged.extendedFrags) ) {
