@@ -113,24 +113,27 @@ done
 if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
 
 ##### concat results #######
-for dil in ${dilutionseriesfolder}/*/*[Tx].bam ;
-do echo $i ;
-mkdir   ${outdir}/results/$(basename $dil .bam)
-for j in {1..3} ;
-        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
-awk '
-    FNR==1 && NR!=1 { while (/^<header>/) getline; }
-    1 {print}
-' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
-echo ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
-done
-ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
-awk '
-    FNR==1 && NR!=1 { while (/^<header>/) getline; }
-    1 {print}
-' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
-echo ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
-done
+#for dil in ${dilutionseriesfolder}/*/*[Tx].bam ;
+#do echo $i ;
+#mkdir   ${outdir}/results/$(basename $dil .bam)
+#for j in {1..3} ;
+#        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#awk '
+#    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+#    1 {print}
+#' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#echo ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#done
+#ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#awk '
+#    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+#    1 {print}
+#' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#echo ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#done
+
+###### concat results #####
+python /home/ubuntu/ABEMUS/concat_results.py $dilutionseriesfolder $outdir
 
 ####### copy results to common folder ########
 echo $finaloutdir
