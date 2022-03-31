@@ -74,7 +74,7 @@ startcfsnv=$(date +%s)
 
 # get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
 # run parameter recommend function
-export plasmaid=$(basename $plasma .sorted.bam)
+export plasmaid=$(basename $plasma .bam)
 echo $plasmaid
 Rscript run_getbamalign.R --config_file $config_file --plasmaid $plasmaid
 
