@@ -71,7 +71,7 @@ echo "dilfolder ${dilutionseriesfolder}"
 
 if [ $abra = 'True' ] ; then
 
-	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+	for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 	echo "plasma ${plasma}" ;
 	echo "abra $abra"	
 
@@ -101,21 +101,21 @@ if [ $abra = 'False' ] ; then  # wait for all pids
 
 	export cpid=0
 
-	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+	for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 		echo "plasma ${plasma}" ;
 		echo "abra $abra"       
 		export cpid=$(($cpid + 1))
 		echo job $cpid
-		#bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma &  pids[${cpid}]=$!
+		bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma &  pids[${cpid}]=$!
 	done
         
-	#for pid in ${pids[*]}; do
-        #        wait $pid
-        #done
+	for pid in ${pids[*]}; do
+                wait $pid
+        done
 
-	#export cpid=0
+	export cpid=0
 
-	for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+	for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 		echo "plasma ${plasma}" ;
 		export outdirplasma=$outdir/$(basename $plasma .bam)
 		echo $outdirplasma
@@ -125,7 +125,7 @@ if [ $abra = 'False' ] ; then  # wait for all pids
 		if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
 		#export cpid=$(($cpid + 1))
 		#echo job $cpid
-		/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results #&  pids[${cpid}]=$!
+		if [ ! -f $outdirplasma/results/calls_level6.sinvict ] ; then /home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results ; fi #&  pids[${cpid}]=$!
 	done
 
 	# wait for all pids
@@ -138,7 +138,7 @@ fi
 echo $finaloutdir
 if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
 
-for plasma in ${dilutionseriesfolder}/*/*.bam ; do
+for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
         echo "plasma ${plasma}" ;
 	export outdirplasma=$outdir/$(basename $plasma .bam)
 	if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
