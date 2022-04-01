@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV, lib.loc='/home/ubuntu/Rlibs')
+library(cfSNV, lib.loc='/outdir/Rlibs')
 library(yaml)
 library(optparse)
  
@@ -18,10 +18,10 @@ plasmaid = opt$plasmaid
 
 # input files
 print(config$outdir)
-outputdir <- file.path(config$outdir, paste0(plasmaid, '.sorted'))
+outputdir <- file.path(config$outdir, plasmaid)
 print(outputdir)
-plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R1.fastq.gz'))
-plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R2.fastq.gz'))
+plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R1.fastq.gz'))
+plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R2.fastq.gz'))
 print(plasmafastq1)
 print(plasmafastq2)
 plasma.unmerged <-  file.path(outputdir, paste0(plasmaid, '.recal.bam'))

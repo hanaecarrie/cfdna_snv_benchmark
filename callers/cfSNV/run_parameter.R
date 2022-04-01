@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV, lib.loc='/home/ubuntu/Rlibs')
+library(cfSNV, lib.loc='/outdir/Rlibs')
 library(yaml)
 library(optparse)
  
@@ -17,7 +17,7 @@ print(plasmaid)
 
 # input files
 print(config$outdir)
-outputdir <- file.path(config$outdir, paste0(plasmaid, '.sorted'))
+outputdir <- file.path(config$outdir, plasmaid)
 print(outputdir)
 plasma.unmerged <-  file.path(outputdir, paste0(plasmaid, '.recal.bam'))
 plasma.merged.extendedFrags <- file.path(outputdir, paste0(plasmaid, ".extendedFrags.recal.bam"))

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV, lib.loc='/home/ubuntu/Rlibs')
+library(cfSNV, lib.loc='/outdir/Rlibs')
 library(yaml)
 library(optparse)
 library(callr)
@@ -18,10 +18,10 @@ print(plasmaid)
 
 # input files
 print(config$outdir)
-outputdir <- file.path(config$outdir, paste0(plasmaid, '.sorted'))
+outputdir <- file.path(config$outdir, plasmaid)
 print(outputdir)
-plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R1.fastq.gz'))
-plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R2.fastq.gz'))
+plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R1.fastq.gz'))
+plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R2.fastq.gz'))
 print(plasmafastq1)
 print(plasmafastq2)
 plasma.unmerged <-  file.path(outputdir, paste0(plasmaid, '.recal.bam'))
@@ -67,7 +67,6 @@ if (!file.exists(plasma.unmerged) ) {
 	print(plasma.unmerged)
 	file.rename(plasma.unmerged.oldname, plasma.unmerged)
 	file.rename(paste0(substring(plasma.unmerged.oldname, 1, nchar(plasma.unmerged.oldname)-1), 'i'), paste0(substring(plasma.unmerged,1, nchar(plasma.unmerged)-1), 'i'))
-	# remove dbsnp
 
 }
 
