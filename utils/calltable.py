@@ -28,29 +28,38 @@ def read_vcf(path):
 
 def get_calltable(calldir, methods, save=False):
     callmethods_snv, callmethods_indel, callmethods_snp = {}, {}, {}
-    sampleid = os.path.basename(calldir)[:-7]
+    sampleid = os.path.basename(calldir)
     print(sampleid)
     for method in methods:
         print(method)
         if method in ['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan']:
-            calltablemethod_path = os.path.join(calldir, 'bcbio', sampleid+'-'+method+'-annotated.vcf.gz')
+            calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-'+method+'-annotated.vcf.gz')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
                 callmethod = read_vcf(calltablemethod_path)
-                callmethod = callmethod[callmethod['FILTER'] == "PASS"]
-                callmethod = callmethod[callmethod['CHROM'] == '22']  # TODO: add bedfile to bcbio
+                if method != 'mutect2' or method != 'strelka2':
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]  # TODO: get also low vaf
                 info = callmethod['INFO']
-                sampleidbis = sampleid.replace('mixture', 'dilution')  # just for test sample with mismatch in IDs
-                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleidbis+'-T', 'ID']]
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid+'-T', 'ID']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'format', 'formatvalue', 'ID']
                 callmethod[method] = True
                 if method == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
                     callmethod[method + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))))
                                                      if 'ODDS' in i else np.nan for i in info.to_list()]
                 elif method == 'mutect2':  # logodds to probability score prob = exp(logTLOD)/(1+exp(logTLOD))
-                    callmethod[method + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))))
-                                                     if 'TLOD' in i else np.nan for i in info.to_list()]
+                    callmethod[method + '_score'] = 'nan'
+                    print(callmethod.head())
+                    print(info.head())
+                    for idx, i in info.iteritems():
+                        if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]:
+                            callmethod.loc[idx, method + '_score'] = str(np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0])))))
+                        elif 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]:
+                            #print([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                            callmethod.loc[idx, method + '_score'] = ','.join([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                            #print(callmethod.loc[idx, 'alt'])
+                    # callmethod[method + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))))
+                    #                                  if 'TLOD' in i else np.nan for i in info.to_list()]
                 if method == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
                     callmethod[method + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
                                                      if 'SomaticEVS' in i else np.nan for i in info.to_list()]
@@ -69,6 +78,7 @@ def get_calltable(calldir, methods, save=False):
                         callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][AOpos[a]] for a in range(callmethod.shape[0])]
                     elif method == 'mutect2' or method == 'vardict':
                         ADpos = [int(a.index('AD')) for a in callmethod['format'].str.split(':').values]
+                        print(ADpos)
                         callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][ADpos[a]][1:] for a in range(callmethod.shape[0])]
                     elif method == 'varscan':
                         ADpos = [int(a.index('AD')) for a in callmethod['format'].str.split(':').values]
@@ -83,7 +93,11 @@ def get_calltable(calldir, methods, save=False):
                     callmethod.drop(['format', 'formatvalue', 'XUTIR'], axis=1, inplace=True)
                 callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
                 callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
-                callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
+                if method == 'mutect2':
+                    print(callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).values[:50])
+                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
+                else:
+                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
                 callmethod['altcov'] = callmethod['altcov'].astype(int)
                 callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
                 callmethod['type'] = np.nan
@@ -93,11 +107,11 @@ def get_calltable(calldir, methods, save=False):
                 callmethod.loc[callmethod['ID'].str.contains('rs'), 'type'] = 'SNP'
                 callmethod.drop('ID', axis=1, inplace=True)
         elif method == 'abemus':  # NB: no indel method
-            calltablemethod_path = os.path.join(calldir, method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.tsv')
+            calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
-                callmethod = pd.read_csv(calltablemethod_path, sep='\t')
+                callmethod = pd.read_csv(calltablemethod_path)
                 # 'pbem.allele', 'filter.pbem_coverage' ??? scores
                 callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
@@ -105,7 +119,7 @@ def get_calltable(calldir, methods, save=False):
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
         elif method == 'cfsnv':  # NB: no indel method
-            calltablemethod_paths = [os.path.join(os.getcwd(), calldir, method,  l) for l in os.listdir(os.path.join(calldir, method)) if l.endswith('.txt')]
+            calltablemethod_paths = [os.path.join(os.getcwd(), calldir, 'calls', method,  l) for l in os.listdir(os.path.join(calldir, 'calls', method)) if l.endswith('.txt')]
             if not os.path.exists(os.path.join(calldir, method)) or calltablemethod_paths == []:
                 print('calls for caller {} do not exist. paths in folder {} not found.'.format(method, os.path.join(calldir, method)))
             else:
@@ -122,7 +136,7 @@ def get_calltable(calldir, methods, save=False):
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
                 callmethod[method] = True
         elif method == 'sinvict':
-            calltablemethod_path = os.path.join(calldir, method, 'calls_level4.sinvict')
+            calltablemethod_path = os.path.join(calldir, 'calls', method, 'calls_level4.sinvict')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
@@ -145,10 +159,7 @@ def get_calltable(calldir, methods, save=False):
             raise ValueError('caller {} is unknown'.format(method))
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
         callmethod.set_index('chrom_pos_ref_alt', inplace=True)
-        if method == 'abemus':
-             callmethod.drop('chr_pos_ref_alt', inplace=True)  # TODO: fix abemus concatenation
         callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
-        # callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov_'+method, 'altcov_'+method, 'vaf_'+method, method, method+'_score']
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
@@ -203,8 +214,8 @@ if __name__ == "__main__":
 
     config = Config("config/", "config_viz.yaml")
     calltable_snv, calltable_indel, calltable_snp = get_calltable(
-        'data/callers_output/mixtures/mixtures_chr22/mixture_chr22_CRC-1014_180816-CW-T_10x_CRC-1014_090516-CW-T_140x.sorted',
-        config.methods, save=True)
+        'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_5x_CRC-1014_090516-CW-T_145x',
+        config.methods, save=False)
     print(calltable_snv)
     print(calltable_snv.columns)
     for irow, row in calltable_snv.iterrows():  # sanity check on vaf
