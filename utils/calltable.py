@@ -36,6 +36,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
             calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-'+method+'-annotated.vcf.gz')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
             else:
                 callmethod = read_vcf(calltablemethod_path)
                 if filter == 'PASS':
@@ -159,26 +160,12 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         callmethods_snv[method] = callmethod_snv
         callmethods_indel[method] = callmethod_indel
         callmethods_snp[method] = callmethod_snp
-    #for cm in list(callmethods_snv.values()):
-    #    print(cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1).head())
-    #calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
-    #calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
-    #calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
     calltable_snv = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snv.values())], axis=1, sort=True)
     calltable_indel = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_indel.values())], axis=1, sort=True)
     calltable_snp = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snp.values())], axis=1, sort=True)
     calltable_snv['chrom_pos_ref_alt'] = list(calltable_snv.index)
     calltable_indel['chrom_pos_ref_alt'] = list(calltable_indel.index)
     calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
-    #calltable_snv.reset_index(inplace=True)
-    #calltable_indel.reset_index(inplace=True)
-    #calltable_snp.reset_index(inplace=True)
-    #calltable_snv['chrom_pos_ref_alt'] = calltable_snv['chrom'].astype('str').str.cat(calltable_snv['pos'].astype('str'), sep="_").str.cat(calltable_snv['ref'].astype('str'), sep='_').str.cat(calltable_snv['alt'].astype('str'), sep='_')
-    #calltable_snv.set_index('chrom_pos_ref_alt', inplace=True)
-    #calltable_indel['chrom_pos_ref_alt'] = calltable_indel['chrom'].astype('str').str.cat(calltable_indel['pos'].astype('str'), sep="_").str.cat(calltable_indel['ref'].astype('str'), sep='_').str.cat(calltable_indel['alt'].astype('str'), sep='_')
-    #calltable_indel.set_index('chrom_pos_ref_alt', inplace=True)
-    #calltable_snp['chrom_pos_ref_alt'] = calltable_snp['chrom'].astype('str').str.cat(calltable_snp['pos'].astype('str'), sep="_").str.cat(calltable_snp['ref'].astype('str'), sep='_').str.cat(calltable_snp['alt'].astype('str'), sep='_')
-    #calltable_snp.set_index('chrom_pos_ref_alt', inplace=True)
     calltable_snv[['chrom', 'pos', 'ref', 'alt']] = calltable_snv['chrom_pos_ref_alt'].str.split('_', expand=True)
     calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
     calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
@@ -186,23 +173,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() > 0, 'type'] = 'INS'
     calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() < 0, 'type'] = 'DEL'
     calltable_snp['type'] = 'SNP'
-    #calltable_snv.drop('chrom_pos_ref_alt', axis=1, inplace=True)
-    #calltable_indel['chrom_pos_ref_alt'] = list(calltable_indel.index)
-    #calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
-    #calltable_indel.drop('chrom_pos_ref_alt', axis=1, inplace=True)
-    #calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
-    #calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
-    #calltable_snp.drop('chrom_pos_ref_alt', axis=1, inplace=True)
-    ##calltable_snv['chrom'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[0]
-    #calltable_snv['pos'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[1]
-    #calltable_snv['ref'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[2]
-    #calltable_snv['alt'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[3]
-    #calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
-    #calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
-    #calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
-    #calltable_snv = calltable_snv.groupby(calltable_snv.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
-    #calltable_indel = calltable_indel.groupby(calltable_indel.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
-    #calltable_snp = calltable_snp.groupby(calltable_snp.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
     for m in methods:
         calltable_snv[m] = calltable_snv[m].fillna(False)
         calltable_snv[m] = calltable_snv[m].astype(bool)

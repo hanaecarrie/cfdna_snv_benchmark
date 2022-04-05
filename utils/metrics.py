@@ -41,26 +41,29 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     if methods is None:
         methods = config.methods
     for i, d in enumerate(dilutionseries):
+        mixturepath = 'mixture_chr'+chrom+'_'+plasmasample +"_" + str(d[0]) +"x_" + healthysample + "_" + str(d[1]) + 'x'
         tb_dict[str(d)] = \
-           float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
+            float(pd.read_csv(os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample, mixturepath, 'estimated_tf_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
+        # float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
     fig, ax = plt.subplots(figsize=(10, 10))
     for i, d in enumerate(dilutionseries):
         for method in methods:
-            if str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score' in list(df_table.columns):
+            if str(round(100*tb_dict[str(d)], 2)) + '_' + method + '_score' in list(df_table.columns):
+                print(str(round(100*tb_dict[str(d)], 2)) + '_' + method + '_score')
                 if type(ground_truth_method) == int:
                     truth_name = 'truth'
                 elif ground_truth_method == 'method':
                     truth_name = method +'_truth'
                 else:
                     raise ValueError('unknown ground truth {}'.format(ground_truth_method))
-                df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score']]
+                df_method = df_table[[truth_name, str(round(100*tb_dict[str(d)], 2)) + '_' + method + '_score']]
                 df_method[truth_name].fillna(False, inplace=True)
-                df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'].fillna(0, inplace=True)
+                df_method[str(round(100*tb_dict[str(d)], 2)) + '_' + method + '_score'].fillna(0, inplace=True)
                 baseline_dict[str(d)] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
                 if str(d) not in dilutionseries_present:
                     dilutionseries_present.append(str(d))
                 if xy == 'pr':
-                    precision, recall, thresholds = precision_recall_curve(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 3)) + '_' + method + '_score'])
+                    precision, recall, thresholds = precision_recall_curve(df_method[truth_name], df_method[str(round(100*tb_dict[str(d)], 2)) + '_' + method + '_score'])
                     if i == 0:
                         plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax),
                                       kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
@@ -77,7 +80,7 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                                        kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
     # print(baseline_dict)
     # print(tb_dict)
-    # print(dilutionseries_present)
+    print(dilutionseries_present)
     list_lines_baseline = []
     if xy == 'pr':
         if len(np.unique(baseline_dict.values())) == 1:
@@ -147,8 +150,10 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     if healthysample is not None:
         for i, d in enumerate(dilutionseries):
             #if ground_truth_method == 'spikein':
+            mixturepath = 'mixture_chr'+chrom+'_'+plasmasample +"_" + str(d[0]) +"x_" + healthysample + "_" + str(d[1]) + 'x'
             tb_dict[str(d)] = \
-                float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
+                float(pd.read_csv(os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample, mixturepath, 'estimated_tf_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
+                # float(pd.read_csv(os.path.join(*config.dilutionfolder, "estimated_tf_chr22_" + plasmasample +"_" + str(d[0]) +"_" + healthysample + "_" + str(d[1]) + ".txt")).columns[0])
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -157,7 +162,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     baseline = {}
     for i, d in enumerate(dilutionseries):
         if healthysample is not None:
-            factorprefix = str(round(100*tb_dict[str(d)], 3))
+            factorprefix = '{:.2f}'.format(100*round(tb_dict[str(d)], 4))
         else:
             factorprefix = 'vaf_' + str(d)
         for method in methods:
@@ -234,7 +239,9 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     if metric != 'auprc':
         plt.ylim([0, max(0.5, max(aux_metric))])
     if metric == 'auprc':
+        plt.ylim([0, max(0.5, max(aux_metric))])
         if len(np.unique(baseline.values())) == 1:
+            print(baseline[config.methods[0]])
             plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
     if type(ground_truth_method) == int:
         refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
