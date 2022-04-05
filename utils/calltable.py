@@ -26,7 +26,7 @@ def read_vcf(path):
         return res
 
 
-def get_calltable(calldir, methods, save=False):
+def get_calltable(calldir, methods, save=False, filter='PASS'):
     callmethods_snv, callmethods_indel, callmethods_snp = {}, {}, {}
     sampleid = os.path.basename(calldir)
     print(sampleid)
@@ -38,7 +38,7 @@ def get_calltable(calldir, methods, save=False):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
                 callmethod = read_vcf(calltablemethod_path)
-                if method != 'mutect2' or method != 'strelka2':
+                if filter == 'PASS':
                     callmethod = callmethod[callmethod['FILTER'] == "PASS"]  # TODO: get also low vaf
                 info = callmethod['INFO']
                 callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid+'-T', 'ID']]
@@ -48,18 +48,11 @@ def get_calltable(calldir, methods, save=False):
                     callmethod[method + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))))
                                                      if 'ODDS' in i else np.nan for i in info.to_list()]
                 elif method == 'mutect2':  # logodds to probability score prob = exp(logTLOD)/(1+exp(logTLOD))
-                    callmethod[method + '_score'] = 'nan'
-                    print(callmethod.head())
-                    print(info.head())
-                    for idx, i in info.iteritems():
-                        if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]:
-                            callmethod.loc[idx, method + '_score'] = str(np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0])))))
-                        elif 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]:
-                            #print([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
-                            callmethod.loc[idx, method + '_score'] = ','.join([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
-                            #print(callmethod.loc[idx, 'alt'])
-                    # callmethod[method + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))))
-                    #                                  if 'TLOD' in i else np.nan for i in info.to_list()]
+                    callmethod[method + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))))
+                                                     if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]
+                                                     else ','.join([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                                                     if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
+                                                     else 'nan' for i in info.to_list()]
                 if method == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
                     callmethod[method + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
                                                      if 'SomaticEVS' in i else np.nan for i in info.to_list()]
@@ -78,8 +71,7 @@ def get_calltable(calldir, methods, save=False):
                         callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][AOpos[a]] for a in range(callmethod.shape[0])]
                     elif method == 'mutect2' or method == 'vardict':
                         ADpos = [int(a.index('AD')) for a in callmethod['format'].str.split(':').values]
-                        print(ADpos)
-                        callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][ADpos[a]][1:] for a in range(callmethod.shape[0])]
+                        callmethod['altcov'] = [','.join(callmethod['formatvalue'].iloc[a][ADpos[a]].split(',')[1:]) for a in range(callmethod.shape[0])]
                     elif method == 'varscan':
                         ADpos = [int(a.index('AD')) for a in callmethod['format'].str.split(':').values]
                         callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][ADpos[a]] for a in range(callmethod.shape[0])]
@@ -91,13 +83,13 @@ def get_calltable(calldir, methods, save=False):
                     XUTIRpos = [int(callmethod.iloc[a]['format'].split(':').index(callmethod.iloc[a]['XUTIR'])) for a in range(callmethod.shape[0])]
                     callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][XUTIRpos[a]] for a in range(callmethod.shape[0])]
                     callmethod.drop(['format', 'formatvalue', 'XUTIR'], axis=1, inplace=True)
-                callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
-                callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
-                if method == 'mutect2':
-                    print(callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).values[:50])
-                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
-                else:
+                if method != 'mutect2':
+                    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
+                    callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
                     callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
+                if method == 'mutect2':
+                    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(",")).assign(mutect2_score=callmethod.mutect2_score.str.split(","))
+                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
                 callmethod['altcov'] = callmethod['altcov'].astype(int)
                 callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
                 callmethod['type'] = np.nan
@@ -160,18 +152,57 @@ def get_calltable(calldir, methods, save=False):
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
         callmethod.set_index('chrom_pos_ref_alt', inplace=True)
         callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        callmethod.rename(columns={'totcov': method+'_totcov', 'altcov': method+'_altcov', 'vaf': method+'_vaf'}, inplace=True)
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
         callmethods_snv[method] = callmethod_snv
         callmethods_indel[method] = callmethod_indel
         callmethods_snp[method] = callmethod_snp
-    calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
-    calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
-    calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
-    calltable_snv = calltable_snv.groupby(calltable_snv.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
-    calltable_indel = calltable_indel.groupby(calltable_indel.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
-    calltable_snp = calltable_snp.groupby(calltable_snp.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
+    #for cm in list(callmethods_snv.values()):
+    #    print(cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1).head())
+    #calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
+    #calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
+    #calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
+    calltable_snv = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snv.values())], axis=1, sort=True)
+    calltable_indel = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_indel.values())], axis=1, sort=True)
+    calltable_snp = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snp.values())], axis=1, sort=True)
+    calltable_snv['chrom_pos_ref_alt'] = list(calltable_snv.index)
+    calltable_indel['chrom_pos_ref_alt'] = list(calltable_indel.index)
+    calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
+    #calltable_snv.reset_index(inplace=True)
+    #calltable_indel.reset_index(inplace=True)
+    #calltable_snp.reset_index(inplace=True)
+    #calltable_snv['chrom_pos_ref_alt'] = calltable_snv['chrom'].astype('str').str.cat(calltable_snv['pos'].astype('str'), sep="_").str.cat(calltable_snv['ref'].astype('str'), sep='_').str.cat(calltable_snv['alt'].astype('str'), sep='_')
+    #calltable_snv.set_index('chrom_pos_ref_alt', inplace=True)
+    #calltable_indel['chrom_pos_ref_alt'] = calltable_indel['chrom'].astype('str').str.cat(calltable_indel['pos'].astype('str'), sep="_").str.cat(calltable_indel['ref'].astype('str'), sep='_').str.cat(calltable_indel['alt'].astype('str'), sep='_')
+    #calltable_indel.set_index('chrom_pos_ref_alt', inplace=True)
+    #calltable_snp['chrom_pos_ref_alt'] = calltable_snp['chrom'].astype('str').str.cat(calltable_snp['pos'].astype('str'), sep="_").str.cat(calltable_snp['ref'].astype('str'), sep='_').str.cat(calltable_snp['alt'].astype('str'), sep='_')
+    #calltable_snp.set_index('chrom_pos_ref_alt', inplace=True)
+    calltable_snv[['chrom', 'pos', 'ref', 'alt']] = calltable_snv['chrom_pos_ref_alt'].str.split('_', expand=True)
+    calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
+    calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
+    calltable_snv['type'] = 'SNV'
+    calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() > 0, 'type'] = 'INS'
+    calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() < 0, 'type'] = 'DEL'
+    calltable_snp['type'] = 'SNP'
+    #calltable_snv.drop('chrom_pos_ref_alt', axis=1, inplace=True)
+    #calltable_indel['chrom_pos_ref_alt'] = list(calltable_indel.index)
+    #calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
+    #calltable_indel.drop('chrom_pos_ref_alt', axis=1, inplace=True)
+    #calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
+    #calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
+    #calltable_snp.drop('chrom_pos_ref_alt', axis=1, inplace=True)
+    ##calltable_snv['chrom'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[0]
+    #calltable_snv['pos'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[1]
+    #calltable_snv['ref'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[2]
+    #calltable_snv['alt'] = calltable_snv['chrom_pos_ref_alt'].str.split('_')[3]
+    #calltable_snv = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snv.values())], axis=1, sort=True)
+    #calltable_indel = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_indel.values())], axis=1, sort=True)
+    #calltable_snp = pd.concat([cm.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for cm in list(callmethods_snp.values())], axis=1, sort=True)
+    #calltable_snv = calltable_snv.groupby(calltable_snv.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
+    #calltable_indel = calltable_indel.groupby(calltable_indel.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
+    #calltable_snp = calltable_snp.groupby(calltable_snp.columns, axis=1).agg(lambda x: x.apply(lambda y: ','.join([str(l) for l in y if str(l) != "nan"]), axis=1))
     for m in methods:
         calltable_snv[m] = calltable_snv[m].fillna(False)
         calltable_snv[m] = calltable_snv[m].astype(bool)
@@ -179,27 +210,28 @@ def get_calltable(calldir, methods, save=False):
         calltable_indel[m] = calltable_indel[m].astype(bool)
         calltable_snp[m] = calltable_snp[m].fillna(False)
         calltable_snp[m] = calltable_snp[m].astype(bool)
-    calltable_snv = calltable_snv[[m+suffix for m in methods for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
-    calltable_indel = calltable_indel[[m+suffix for m in methods for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
-    calltable_snp = calltable_snp[[m+suffix for m in methods  for suffix in ['', '_score']] + ['altcov', 'totcov', 'vaf']]
+    calltable_snv = calltable_snv[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    print(calltable_snv.head())
     print('final shape SNV: {}'.format(calltable_snv.shape))
     print('final shape INDEL: {}'.format(calltable_indel.shape))
     print('final shape SNP: {}'.format(calltable_snp.shape))
     if save:
         if not os.path.exists(os.path.join(calldir, 'calls')):
             os.mkdir(os.path.join(calldir, 'calls'))
-        if not os.path.exists(os.path.join(calldir, 'calls', 'snv_calls.csv')):
-            calltable_snv.to_csv(os.path.join(calldir, 'calls', 'snv_calls.csv'))
-        else:
-            print('snv_calls already exists')
-        if not os.path.exists(os.path.join(calldir, 'calls', 'indel_calls.csv')):
-            calltable_indel.to_csv(os.path.join(calldir, 'calls', 'indel_calls.csv'))
-        else:
-            print('indel_calls already exists')
-        if not os.path.exists(os.path.join(calldir, 'calls', 'snp_calls.csv')):
-            calltable_snp.to_csv(os.path.join(calldir, 'calls', 'snp_calls.csv'))
-        else:
-            print('snp_calls already exists')
+        #if not os.path.exists(os.path.join(calldir, 'calls', sampleid+'_snv_calls_'+filter+'.csv')):
+        calltable_snv.to_csv(os.path.join(calldir, 'calls', sampleid+'_snv_calls_'+filter+'.csv'))
+        #else:
+        #    print('snv_calls already exists')
+        #if not os.path.exists(os.path.join(calldir, 'calls', sampleid+'_indel_calls_'+filter+'.csv')):
+        calltable_indel.to_csv(os.path.join(calldir, 'calls', sampleid+'_indel_calls_'+filter+'.csv'))
+        #else:
+        #    print('indel_calls already exists')
+        #if not os.path.exists(os.path.join(calldir, 'calls', sampleid+'_snp_calls_'+filter+'.csv')):
+        calltable_snp.to_csv(os.path.join(calldir, 'calls', sampleid+'_snp_calls_'+filter+'.csv'))
+        #else:
+        #    print('snp_calls already exists')
 
     return calltable_snv, calltable_indel, calltable_snp
 
@@ -214,10 +246,11 @@ if __name__ == "__main__":
 
     config = Config("config/", "config_viz.yaml")
     calltable_snv, calltable_indel, calltable_snp = get_calltable(
-        'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_5x_CRC-1014_090516-CW-T_145x',
-        config.methods, save=False)
+        'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
+        config.methods, save=False, filter='PASS')
     print(calltable_snv)
     print(calltable_snv.columns)
+    """
     for irow, row in calltable_snv.iterrows():  # sanity check on vaf
         if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
             print(calltable_snv.columns.tolist())
@@ -234,3 +267,4 @@ if __name__ == "__main__":
         if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
             print(calltable_snp.columns.tolist())
             print(list(row.values))
+    """
