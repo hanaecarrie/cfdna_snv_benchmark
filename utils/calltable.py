@@ -34,6 +34,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         print(method)
         if method in ['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan']:
             calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-'+method+'-annotated.vcf.gz')
+            if '.' in os.path.basename(calltablemethod_path[:-7]):
+                calltablemethod_path = os.path.join(os.path.dirname(calltablemethod_path), os.path.basename(calltablemethod_path)[:-7].replace('.', '_') + '.vcf.gz')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
                 callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
@@ -42,7 +44,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 if filter == 'PASS':
                     callmethod = callmethod[callmethod['FILTER'] == "PASS"]  # TODO: get also low vaf
                 info = callmethod['INFO']
-                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid+'-T', 'ID']]
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid.replace('.', '_')+'-T', 'ID']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'format', 'formatvalue', 'ID']
                 callmethod[method] = True
                 if method == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
@@ -112,9 +114,9 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
                 callmethod = pd.read_csv(calltablemethod_path)
-                # 'pbem.allele', 'filter.pbem_coverage' ??? scores
                 callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
+                callmethod['abemus_score'] = callmethod['abemus_score']
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
@@ -135,8 +137,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod['altcov'] = np.nan
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
                 callmethod[method] = True
-        elif method == 'sinvict':
-            calltablemethod_path = os.path.join(calldir, 'calls', method, 'calls_level4.sinvict')
+        elif method.startswith('sinvict'):
+            calltablemethod_path = os.path.join(calldir, 'calls', method.split('_')[0], 'calls_'+method.split('_')[1]+'.sinvict')
             if not os.path.exists(calltablemethod_path):
                 print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             else:
@@ -153,8 +155,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref']
                 callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] + callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'].str.replace('-', '', regex=True)
                 callmethod['vaf'] = callmethod['vaf'] / 100  # % to fraction
-                callmethod['sinvict_score'] = np.nan
-                callmethod['sinvict'] = True
+                callmethod[method+'_score'] = np.nan
+                callmethod[method] = True
         else:
             raise ValueError('caller {} is unknown'.format(method))
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
@@ -190,7 +192,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_snv = calltable_snv[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
-    print(calltable_snv.head())
     print('final shape SNV: {}'.format(calltable_snv.shape))
     print('final shape INDEL: {}'.format(calltable_indel.shape))
     print('final shape SNP: {}'.format(calltable_snp.shape))
