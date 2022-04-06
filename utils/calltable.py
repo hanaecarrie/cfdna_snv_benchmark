@@ -48,12 +48,19 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 if method == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
                     callmethod[method + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))))
                                                      if 'ODDS' in i else np.nan for i in info.to_list()]
-                elif method == 'mutect2':  # logodds to probability score prob = exp(logTLOD)/(1+exp(logTLOD))
-                    callmethod[method + '_score'] = [np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('TLOD=')[1].split(';')[0]))))
+                elif method == 'mutect2':  # logodds to probability score prob = exp(TLOD)/(1+exp(TLOD))
+                    callmethod[method + '_score'] = [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0])))
                                                      if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]
-                                                     else ','.join([str(np.exp(np.log(float(ii))) / (1 + np.exp(np.log(float(ii))))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                                                     else np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])))
                                                      if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
-                                                     else 'nan' for i in info.to_list()]
+                                                     else np.nan for i in info.to_list()]
+                    #else ','.join([str(float(ii)) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                    #if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
+                        #[np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0])))
+                        #                             if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]
+                        #                             else ','.join([str(np.exp(float(ii)) / (1 + np.exp(float(ii)))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
+                        #                             if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
+                        #                            else np.nan for i in info.to_list()]
                 if method == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
                     callmethod[method + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
                                                      if 'SomaticEVS' in i else np.nan for i in info.to_list()]
@@ -84,13 +91,13 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     XUTIRpos = [int(callmethod.iloc[a]['format'].split(':').index(callmethod.iloc[a]['XUTIR'])) for a in range(callmethod.shape[0])]
                     callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][XUTIRpos[a]] for a in range(callmethod.shape[0])]
                     callmethod.drop(['format', 'formatvalue', 'XUTIR'], axis=1, inplace=True)
-                if method != 'mutect2':
-                    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
-                    callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
-                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
-                if method == 'mutect2':
-                    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(",")).assign(mutect2_score=callmethod.mutect2_score.str.split(","))
-                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
+                #if method != 'mutect2':
+                callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
+                callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
+                callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
+                #if method == 'mutect2':
+                #    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(",")).assign(mutect2_score=callmethod.mutect2_score.str.split(","))
+                #    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
                 callmethod['altcov'] = callmethod['altcov'].astype(int)
                 callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
                 callmethod['type'] = np.nan
