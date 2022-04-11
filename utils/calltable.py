@@ -56,13 +56,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                                                      else np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])))
                                                      if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
                                                      else np.nan for i in info.to_list()]
-                    #else ','.join([str(float(ii)) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
-                    #if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
-                        #[np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0])))
-                        #                             if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]
-                        #                             else ','.join([str(np.exp(float(ii)) / (1 + np.exp(float(ii)))) for ii in i.split('TLOD=')[1].split(';')[0].split(',')])
-                        #                             if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
-                        #                            else np.nan for i in info.to_list()]
                 if method == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
                     callmethod[method + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
                                                      if 'SomaticEVS' in i else np.nan for i in info.to_list()]
@@ -88,18 +81,15 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     callmethod.drop(['format', 'formatvalue'], axis=1, inplace=True)
                 elif method == 'strelka2':
                     callmethod['XUTIR'] = callmethod['alt'].copy()
-                    callmethod.loc[(callmethod.ref.str.len() != 1) | (callmethod.alt.str.len() != 1), 'XUTIR'] = 'TIR'
+                    callmethod.loc[(callmethod.ref.str.len() - callmethod.alt.str.len() != 0), 'XUTIR'] = 'TIR'
                     callmethod.loc[callmethod['XUTIR'] != 'TIR', 'XUTIR'] = callmethod.loc[callmethod['XUTIR'] != 'TIR', 'XUTIR'] + 'U'
                     XUTIRpos = [int(callmethod.iloc[a]['format'].split(':').index(callmethod.iloc[a]['XUTIR'])) for a in range(callmethod.shape[0])]
-                    callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][XUTIRpos[a]] for a in range(callmethod.shape[0])]
+                    callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][XUTIRpos[a]][0] for a in range(callmethod.shape[0])]
                     callmethod.drop(['format', 'formatvalue', 'XUTIR'], axis=1, inplace=True)
-                #if method != 'mutect2':
                 callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
-                callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
+                #callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'] = callmethod.loc[callmethod.alt.str.len() != callmethod.altcov.str.len(), 'altcov'].apply(lambda x: max(x))
+                print(callmethod[['ref', 'alt', 'totcov', 'altcov']])
                 callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
-                #if method == 'mutect2':
-                #    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(",")).assign(mutect2_score=callmethod.mutect2_score.str.split(","))
-                #    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov', method+'_score']).tolist()).apply(pd.Series.explode).reset_index()
                 callmethod['altcov'] = callmethod['altcov'].astype(int)
                 callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
                 callmethod['type'] = np.nan
@@ -122,8 +112,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod['abemus'] = True
         elif method == 'cfsnv':  # NB: no indel method
             calltablemethod_paths = [os.path.join(os.getcwd(), calldir, 'calls', method,  l) for l in os.listdir(os.path.join(calldir, 'calls', method)) if l.endswith('.txt')]
-            if not os.path.exists(os.path.join(calldir, method)) or calltablemethod_paths == []:
-                print('calls for caller {} do not exist. paths in folder {} not found.'.format(method, os.path.join(calldir, method)))
+            if not os.path.exists(os.path.join(calldir, 'calls', method)) or calltablemethod_paths == []:
+                print('calls for caller {} do not exist. paths in folder {} not found.'.format(method, os.path.join(calldir, 'calls', method)))
             else:
                 li = []
                 for calltablemethod_path in calltablemethod_paths:
@@ -135,6 +125,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod.loc[callmethod['type'] != 'SNV', 'type'] = 'SNP'
                 callmethod['totcov'] = np.nan
                 callmethod['altcov'] = np.nan
+                # phred score to probability, prob = 1 - 10^(-variant.list.QUAL/10)
+                callmethod['cfsnv_score'] = 1 - (10 ** (-callmethod['cfsnv_score'].astype(float) / 10))
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
                 callmethod[method] = True
         elif method.startswith('sinvict'):
