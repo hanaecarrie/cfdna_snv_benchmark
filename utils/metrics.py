@@ -122,7 +122,9 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             plt.title("Receiver Operation Characteristics curve for SNV calling in sample {}".format(plasmasample + '_' + healthysample))
         if xy == 'pr':
             plt.semilogx()
-        plt.xlim([-0.01, 1.01])
+            plt.xlim([0.01, 1.01])
+        else:
+            plt.xlim([-0.01, 1.01])
         plt.ylim([-0.01, 1.01])
         dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
         dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
