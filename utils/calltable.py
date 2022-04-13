@@ -175,7 +175,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         callmethod.set_index('chrom_pos_ref_alt', inplace=True)
         callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
         callmethod.rename(columns={'totcov': method+'_totcov', 'altcov': method+'_altcov', 'vaf': method+'_vaf'}, inplace=True)
-        print(callmethod.shape)
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
@@ -205,6 +204,34 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_snv = calltable_snv[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    # correct for germline calls with GATK Haplotype
+    calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-N-gatk-haplotype-annotated.vcf.gz')
+    if '.' in os.path.basename(calltablemethod_path[:-7]):
+        calltablemethod_path = os.path.join(os.path.dirname(calltablemethod_path), os.path.basename(calltablemethod_path)[:-7].replace('.', '_') + '.vcf.gz')
+    if not os.path.exists(calltablemethod_path):
+        print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+        print('cannot use GATK Haplotype calls to filter germline calls')
+    else:
+        callmethod = read_vcf(calltablemethod_path)
+        callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER']]
+        callmethod = callmethod[callmethod['FILTER'] == 'PASS']
+        callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'gatk']
+        callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
+        callmethod.set_index('chrom_pos_ref_alt', inplace=True)
+        print("# calls before using germline calls from GATK Haplotype: {} SNV, {} INDEL, {} SNP".format(
+            calltable_snv.shape[0], calltable_indel.shape[0], calltable_snp.shape[0]))
+        idx_snv = calltable_snv.index.difference(callmethod.index, sort=False)
+        idx_snp_snv = calltable_snv.index.intersection(callmethod.index, sort=False)
+        calltable_snp_snv = calltable_snv.loc[idx_snp_snv]
+        calltable_snv = calltable_snv.loc[idx_snv]
+        idx_indel = calltable_indel.index.difference(callmethod.index, sort=False)
+        idx_snp_indel = calltable_indel.index.intersection(callmethod.index, sort=False)
+        calltable_snp_indel = calltable_indel.loc[idx_snp_indel]
+        calltable_indel = calltable_indel.loc[idx_indel]
+        calltable_snp = pd.concat([calltable_snp, calltable_snp_snv, calltable_snp_indel])
+        print("# calls after using germline calls from GATK Haplotype: {} SNV, {} INDEL, {} SNP".format(
+            calltable_snv.shape[0], calltable_indel.shape[0], calltable_snp.shape[0]))
+        print(sum(calltable_snp.duplicated()))
     print('final shape SNV: {}'.format(calltable_snv.shape))
     print('final shape INDEL: {}'.format(calltable_indel.shape))
     print('final shape SNP: {}'.format(calltable_snp.shape))
