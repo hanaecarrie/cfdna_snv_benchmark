@@ -64,9 +64,9 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 if method == 'vardict':  # P-value /!\ opposite direction of score variation /!\
                     callmethod[method + '_score'] = [1-float(i.split('SSF=')[1].split(';')[0])
                                                      if 'SSF' in i else np.nan for i in info.tolist()]
-                if method == 'varscan':  # P-value
-                    callmethod[method + '_score'] = [float(i.split('SSC=')[1].split(';')[0])
-                                                     if 'SSC' in i else np.nan for i in info.tolist()]
+                if method == 'varscan':  # P-value  /!\ opposite direction of score variation /!\  # [1-float(i.split('SSC=')[1].split(';')[0])/255
+                    callmethod[method + '_score'] = [1-float(i.split('SPV=')[1].split(';')[0])
+                                                     if 'SPV' in i else np.nan for i in info.tolist()]
                 DPpos = [int(a.index('DP')) for a in callmethod['format'].str.split(':').values]
                 callmethod['formatvalue'] = callmethod['formatvalue'].str.split(':')
                 callmethod['totcov'] = [int(callmethod['formatvalue'].iloc[a][DPpos[a]]) if callmethod['formatvalue'].iloc[a][DPpos[a]] != '.' else 0 for a in range(callmethod.shape[0])]
@@ -118,7 +118,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod = pd.read_csv(calltablemethod_path)
                 callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
-                callmethod['abemus_score'] = callmethod['abemus_score']
+                # phred score to probability, prob = 1 - 10^(-filter.pbem_coverage/10)
+                callmethod['abemus_score'] = 1 - callmethod['abemus_score']
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
