@@ -42,7 +42,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
             else:
                 callmethod = read_vcf(calltablemethod_path)
                 if filter == 'PASS':
-                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]  # TODO: get also low vaf
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]
                 elif filter == 'REJECT':
                     callmethod = callmethod[callmethod['FILTER'] != "PASS"]
                 info = callmethod['INFO']
@@ -91,20 +91,14 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 if method == 'freebayes':
                     callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'] = callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'].apply(lambda x: str(max(x)))
                 callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
-                checkindex = callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len())].index
-                callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] = callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov']*callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'alt'].str.len()
-                #print(callmethod.loc[checkindex][['pos', 'ref', 'alt', 'totcov', 'altcov']])
-                #print(callmethod.loc[checkindex, 'altcov'].dtype)
-                checkindex2 = list(callmethod.loc[(callmethod.alt.str.len() < callmethod.altcov.str.len())].index)
-                for ci in checkindex2:
-                    print(list(map(int, callmethod.loc[ci, 'altcov'])))
-                    print(len(callmethod.loc[ci, 'alt']))
-                    print(list(map(int, callmethod.loc[ci, 'altcov']))[:len(callmethod.loc[ci, 'alt'])])
-                    callmethod.loc[ci, 'altcov'] = list(map(int, callmethod.loc[ci, 'altcov']))[:int(len(callmethod.loc[ci, 'alt']))]
-                #print(callmethod.loc[checkindex2][['pos', 'ref', 'alt', 'totcov', 'altcov']])
-                #print(callmethod.loc[checkindex2, 'altcov'].dtype)
-                #print(callmethod.loc[(callmethod.alt.str.len() - callmethod.altcov.str.len()) != 0][['pos', 'ref', 'alt', 'totcov', 'altcov']])
-                #print(callmethod[['pos', 'ref', 'alt', 'totcov', 'altcov']])
+                for ci in callmethod['altcov'].isna().index:
+                    callmethod.at[ci, 'altcov'] = [0]
+                callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] =\
+                    callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] * \
+                    callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'alt'].str.len()
+                checkindex = list(callmethod.loc[(callmethod.alt.str.len() < callmethod.altcov.str.len())].index)
+                for ci in checkindex:
+                    callmethod.at[ci, 'altcov'] = list(map(int, callmethod.loc[ci, 'altcov']))[:int(len(callmethod.loc[ci, 'alt']))]
                 callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
                 callmethod['altcov'] = callmethod['altcov'].astype(int)
                 callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
@@ -144,31 +138,62 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod.loc[callmethod['type'] != 'SNV', 'type'] = 'SNP'
                 callmethod['totcov'] = np.nan
                 callmethod['altcov'] = np.nan
-                # phred score to probability, prob = 1 - 10^(-variant.list.QUAL/10)
+                # P-value  /!\ opposite direction of score variation /!\
                 callmethod['cfsnv_score'] = 1 - (10 ** (-callmethod['cfsnv_score'].astype(float) / 10))
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
                 callmethod[method] = True
-        elif method.startswith('sinvict'):
-            calltablemethod_path = os.path.join(calldir, 'calls', method.split('_')[0], 'calls_'+method.split('_')[1]+'.sinvict')
-            if not os.path.exists(calltablemethod_path):
-                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
-                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
-            else:
-                callmethod = pd.read_csv(calltablemethod_path, sep='\t', header=None)
-                callmethod.columns = ['chrom', 'pos', 'samplename', 'ref', 'totcov', 'alt', 'altcov', 'vaf', '+strand', '-strand', 'avgreadpos', 'type']
-                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf']]
-                callmethod['chrom'] = callmethod['chrom'].astype(str)
-                callmethod['pos'] = callmethod['pos'].astype(str)
-                callmethod.loc[callmethod['type'] == 'Somatic', 'type'] = 'SNV'  # NB: based on vaf not on dbsnp
-                callmethod.loc[callmethod['type'] == 'Germline', 'type'] = 'SNP'  # NB: based on vaf not on dbsnp
-                callmethod.loc[callmethod['alt'].str.startswith('+'), 'type'] = 'INS'  # generates warning
-                callmethod.loc[callmethod['alt'].str.startswith('+'), 'alt'] = callmethod.loc[callmethod['alt'].str.startswith('+'), 'ref'] + callmethod.loc[callmethod['alt'].str.startswith('+'), 'alt'].str.replace('+', '', regex=True)
-                callmethod.loc[callmethod['alt'].str.startswith('-'), 'type'] = 'DEL'  # generates warning
-                callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref']
-                callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] + callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'].str.replace('-', '', regex=True)
-                callmethod['vaf'] = callmethod['vaf'] / 100  # % to fraction
-                callmethod[method+'_score'] = np.nan
-                callmethod[method] = True
+        # elif method.startswith('sinvict'):
+        #     calltablemethod_path = os.path.join(calldir, 'calls', method.split('_')[0], 'calls_'+method.split('_')[1]+'.sinvict')
+        #     if not os.path.exists(calltablemethod_path):
+        #         print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+        #         callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+        #     else:
+        #         callmethod = pd.read_csv(calltablemethod_path, sep='\t', header=None)
+        #         callmethod.columns = ['chrom', 'pos', 'samplename', 'ref', 'totcov', 'alt', 'altcov', 'vaf', '+strand', '-strand', 'avgreadpos', 'type']
+        #         callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf']]
+        #         callmethod['chrom'] = callmethod['chrom'].astype(str)
+        #         callmethod['pos'] = callmethod['pos'].astype(str)
+        #         callmethod.loc[callmethod['type'] == 'Somatic', 'type'] = 'SNV'  # NB: based on vaf not on dbsnp
+        #         callmethod.loc[callmethod['type'] == 'Germline', 'type'] = 'SNP'  # NB: based on vaf not on dbsnp
+        #         callmethod.loc[callmethod['alt'].str.startswith('+'), 'type'] = 'INS'  # generates warning
+        #         callmethod.loc[callmethod['alt'].str.startswith('+'), 'alt'] = callmethod.loc[callmethod['alt'].str.startswith('+'), 'ref'] + callmethod.loc[callmethod['alt'].str.startswith('+'), 'alt'].str.replace('+', '', regex=True)
+        #         callmethod.loc[callmethod['alt'].str.startswith('-'), 'type'] = 'DEL'  # generates warning
+        #         callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref']
+        #         callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] = callmethod.loc[callmethod['alt'].str.startswith('-'), 'ref'] + callmethod.loc[callmethod['alt'].str.startswith('-'), 'alt'].str.replace('-', '', regex=True)
+        #         callmethod['vaf'] = callmethod['vaf'] / 100  # % to fraction
+        #         callmethod[method+'_score'] = np.nan
+        #         callmethod[method] = True
+        elif method == 'sinvict':
+            callmethod_dict = {}
+            for lev in range(1, 7):
+                calltablemethod_path = os.path.join(calldir, 'calls', method.split('_')[0], 'calls_level'+str(lev)+'.sinvict')
+                if not os.path.exists(calltablemethod_path):
+                    print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                    callmethod_sinvict = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method+'_level'+str(lev)])
+                elif os.path.getsize(calltablemethod_path) == 0:  # empty file like level 5 and 6
+                    callmethod_sinvict = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method+'_level'+str(lev)])
+                else:
+                    callmethod_sinvict = pd.read_csv(calltablemethod_path, sep='\t', header=None)
+                    callmethod_sinvict.columns = ['chrom', 'pos', 'samplename', 'ref', 'totcov', 'alt', 'altcov', 'vaf', '+strand', '-strand', 'avgreadpos', 'type']
+                    callmethod_sinvict = callmethod_sinvict[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf']]
+                    callmethod_sinvict['chrom'] = callmethod_sinvict['chrom'].astype(str)
+                    callmethod_sinvict['pos'] = callmethod_sinvict['pos'].astype(str)
+                    callmethod_sinvict.loc[callmethod_sinvict['type'] == 'Somatic', 'type'] = 'SNV'  # NB: based on vaf not on dbsnp
+                    callmethod_sinvict.loc[callmethod_sinvict['type'] == 'Germline', 'type'] = 'SNP'  # NB: based on vaf not on dbsnp
+                    callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('+'), 'type'] = 'INS'  # generates warning
+                    callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('+'), 'alt'] = callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('+'), 'ref'] + callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('+'), 'alt'].str.replace('+', '', regex=True)
+                    callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'type'] = 'DEL'  # generates warning
+                    callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'alt'] = callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'ref']
+                    callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'ref'] = callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'ref'] + callmethod_sinvict.loc[callmethod_sinvict['alt'].str.startswith('-'), 'alt'].str.replace('-', '', regex=True)
+                    callmethod_sinvict['vaf'] = callmethod_sinvict['vaf'] / 100  # % to fraction
+                    callmethod_sinvict[method+'_level'+str(lev)] = True
+                callmethod_dict[method+'_level'+str(lev)] = callmethod_sinvict
+            callmethod = pd.concat(list(callmethod_dict.values()), axis=1)
+            callmethod = callmethod.loc[:, ~callmethod.columns.duplicated()]
+            callmethod[method+'_score'] = callmethod[[method+'_level'+str(le) for le in range(1, 7)]].sum(axis=1) / 6
+            callmethod[method] = False
+            callmethod[method].loc[callmethod[method+'_score'] > 0] = True
+            callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'sinvict', 'sinvict_score']]
         else:
             raise ValueError('caller {} is unknown'.format(method))
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
@@ -178,9 +203,12 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
-        callmethods_snv[method] = callmethod_snv
-        callmethods_indel[method] = callmethod_indel
-        callmethods_snp[method] = callmethod_snp
+        callmethods_snv[method] = callmethod_snv.drop_duplicates()
+        callmethods_indel[method] = callmethod_indel.drop_duplicates()
+        callmethods_snp[method] = callmethod_snp.drop_duplicates()
+        callmethods_snv[method] = callmethods_snv[method].loc[~callmethods_snv[method].index.duplicated(keep='last')]
+        callmethods_indel[method] = callmethods_indel[method].loc[~callmethods_indel[method].index.duplicated(keep='last')]
+        callmethod_snp[method] = callmethod_snp[method].loc[~callmethod_snp[method].index.duplicated(keep='last')]
     calltable_snv = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snv.values())], axis=1, sort=True)
     calltable_indel = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_indel.values())], axis=1, sort=True)
     calltable_snp = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snp.values())], axis=1, sort=True)
@@ -283,7 +311,7 @@ if __name__ == "__main__":
 
     calltable_snv_reject, calltable_indel_reject, calltable_snp_reject = get_calltable(
         'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
-        config.methods, save=False, filter='PASS')
+        config.methods, save=False, filter='all')
     print(calltable_snv_reject)
     res = calltable_snv_reject[[m+'_vaf' for m in config.methods]].min(axis=1)
     print(res[res > 1])
