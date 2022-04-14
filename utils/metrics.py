@@ -59,7 +59,7 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                 factorprefix = '{:.2f}'.format(d)
             print(factorprefix + '_' + method + '_score')
             if factorprefix + '_' + method + '_score' in list(df_table.columns):
-                if type(ground_truth_method) == int or ground_truth_method == 'spikein':
+                if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                     truth_name = 'truth'
                 elif ground_truth_method == 'method':
                     truth_name = method +'_truth'
@@ -133,6 +133,8 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                 os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures'))
             if type(ground_truth_method) == int:
                 refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+            elif ground_truth_method == 'ranked':
+                refname = 'in'+refsample + 'sampleranked'
             else:
                 refname = 'in'+refsample + 'samplebythesamecaller'
             plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context), bbox_inches='tight')
@@ -192,7 +194,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         for method in methods:
             if factorprefix + '_' + method + '_score' in list(df_table.columns):
                 if i != 0 or ground_truth_method == 'spikein':
-                    if type(ground_truth_method) == int or ground_truth_method == 'spikein':
+                    if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                         truth_name = 'truth'
                     elif ground_truth_method == 'caller':
                         truth_name = method + '_truth'
@@ -267,6 +269,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
     if type(ground_truth_method) == int:
         refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+    elif ground_truth_method == 'ranked':
+        refname = 'in'+refsample + 'sampleranked'
     else:
         refname = 'in'+refsample + 'samplebythesamecaller'
     dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
