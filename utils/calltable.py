@@ -58,8 +58,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                                                      else np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])))
                                                      if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
                                                      else np.nan for i in info.to_list()]
-                if method == 'strelka2':  # phred score to probability, prob = 1 - 10^(-SomaticEVS/10)
-                    callmethod[method + '_score'] = [1 - (10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
+                if method == 'strelka2':  # phred score to probability, prob = 1-10^(-SomaticEVS/10)
+                    callmethod[method + '_score'] = [1-(10 ** (-float(i.split('SomaticEVS=')[1].split(';')[0]) / 10))
                                                      if 'SomaticEVS' in i else np.nan for i in info.to_list()]
                 if method == 'vardict':  # P-value /!\ opposite direction of score variation /!\
                     callmethod[method + '_score'] = [1-float(i.split('SSF=')[1].split(';')[0])
@@ -118,8 +118,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod = pd.read_csv(calltablemethod_path)
                 callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
-                # phred score to probability, prob = 1 - 10^(-filter.pbem_coverage/10)
-                callmethod['abemus_score'] = 1 - callmethod['abemus_score']
+                callmethod['abemus_score'] = callmethod['abemus_score']
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
@@ -139,8 +138,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod.loc[callmethod['type'] != 'SNV', 'type'] = 'SNP'
                 callmethod['totcov'] = np.nan
                 callmethod['altcov'] = np.nan
-                # P-value  /!\ opposite direction of score variation /!\
-                callmethod['cfsnv_score'] = 1 - (10 ** (-callmethod['cfsnv_score'].astype(float) / 10))
+                # phred score to probability, prob = 10^(-SomaticEVS/10)
+                callmethod['cfsnv_score'] = [1-10**(-float(cm)/10) for cm in callmethod['cfsnv_score']]
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'cfsnv_score']]
                 callmethod[method] = True
         # elif method.startswith('sinvict'):
