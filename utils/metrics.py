@@ -138,7 +138,7 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             else:
                 refname = 'in'+refsample + 'samplebythesamecaller'
             plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context), bbox_inches='tight')
-        plt.show()
+        # plt.show()
 
 
 def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kwargs={}):
@@ -282,7 +282,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + config.context), bbox_inches='tight')
         else:
             plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + config.context), bbox_inches='tight')
-    plt.show()
+    #plt.show()
     summary_df = results_df.copy()
     summary_df['plasma sample'] = plasmasample
     summary_df['healthy sample'] = healthysample
@@ -290,7 +290,6 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     summary_df['metric'] = metric
     summary_df['mutation type'] = refname
     if save:
-
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results'))
         if methods != config.methods:
@@ -301,4 +300,61 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
 
 
 if __name__ == "__main__":
-    print('TODO')
+    import os
+    # set working directory
+    if not os.getcwd().endswith('cfdna_snv_benchmark'):
+        os.chdir('../')
+    print('Current working directory: {}'.format(os.getcwd()))
+
+    # Config and Display paramaters
+    from utils.config import Config
+    from utils.viz import set_display_params
+    config = Config("config/", "config_viz.yaml")
+    set_display_params(config)
+    print(config.methods)
+
+    from utils.calltableseries import get_calltableseries
+    from utils.groundtruth import generate_groundtruth
+
+    chrom = '22'
+    reload = False
+    save = True
+    filterparam = 'all'
+    muttypes = ['snv', 'indel']
+    mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
+    fixedvars = ['coverage', 'ctdna']
+
+    for fixedvar in fixedvars:
+        if fixedvar == 'coverage':
+            dilutionseries = [(70,0), (70, 80), (50, 100), (30, 120), (20, 130), (10, 140), (5, 145)]
+        elif fixedvar == 'ctdna':
+            dilutionseries = [(70,0), (70, 30), (70, 80), (70, 130), (70, 180)]
+        for muttype in muttypes:
+            if muttype == 'snv':
+                nref = 5
+            else:  # elif muttype == 'indel':
+                nref = 3
+            for mixtureid in mixtureids:
+                print('############# {} {} ############'.format(mixtureid, muttype))
+                plasmasample = '_'.join(mixtureid.split('_')[:2])
+                print(plasmasample)
+                healthysample = '_'.join(mixtureid.split('_')[2:])
+                print(healthysample)
+                calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
+                print(calltablesseries.head())
+                print(calltables['tf'])
+                for gtm in [nref, 'ranked']:
+                    calltablesseries = generate_groundtruth(config, calltablesseries, calltables['tf'], ground_truth_method=gtm, muttype=muttype)
+                    results_auprc_df = metric_curve(config, calltablesseries, plasmasample, healthysample, dilutionseries,
+                                                    metric='auprc', ground_truth_method=gtm, refsample='undiluted',
+                                                    muttype=muttype, chrom=chrom, methods=config.methods,
+                                                    fixedvar=fixedvar, save=save)
+                    results_recall_df = metric_curve(config, calltablesseries, plasmasample, healthysample, dilutionseries,
+                                                     metric='recall', ground_truth_method=gtm, refsample='undiluted',
+                                                     muttype=muttype, chrom=chrom, methods=config.methods,
+                                                     fixedvar=fixedvar, save=save)
+                    results_precision_df = metric_curve(config, calltablesseries, plasmasample, healthysample, dilutionseries,
+                                                        metric='precision', ground_truth_method=gtm, refsample='undiluted',
+                                                        muttype=muttype, chrom=chrom,
+                                                        methods=config.methods,
+                                                        fixedvar=fixedvar, save=save)
