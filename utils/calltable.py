@@ -291,23 +291,6 @@ if __name__ == "__main__":
     print('Current working directory: {}'.format(os.getcwd()))
 
     config = Config("config/", "config_viz.yaml")
-    #calltable_snv_all, calltable_indel_all, calltable_snp_all = get_calltable(
-    #    'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
-    #    config.methods, save=False, filter='all')
-    #print(calltable_snv_all)
-    #print(calltable_snv_all.columns)
-    #calltable_snv_pass, calltable_indel_pass, calltable_snp_pass = get_calltable(
-    #    'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
-    #    config.methods, save=False, filter='PASS')
-    #print(calltable_snv_pass)
-    #print(calltable_snv_pass.columns)
-
-    #diff_index = calltable_snv_all.index.difference(calltable_snv_pass.index)
-    #calltable_snv_diff = calltable_snv_all.loc[diff_index]
-    #print(calltable_snv_diff.shape)
-    #res = calltable_snv_diff[[m+'_vaf' for m in config.methods]].min(axis=1)
-    #print(res)
-    #print(res.describe())
 
     calltable_snv_reject, calltable_indel_reject, calltable_snp_reject = get_calltable(
         'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
@@ -317,21 +300,3 @@ if __name__ == "__main__":
     print(res[res > 1])
     print(res)
     print(res.describe())
-    """
-    for irow, row in calltable_snv.iterrows():  # sanity check on vaf
-        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
-            print(calltable_snv.columns.tolist())
-            print(list(row.values))
-    print(calltable_indel)
-    print(calltable_indel.columns)
-    for irow, row in calltable_indel.iterrows():  # sanity check on vaf
-        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
-            print(calltable_indel.columns.tolist())
-            print(list(row.values))
-    print(calltable_snp)
-    print(calltable_snp.columns)
-    for irow, row in calltable_snp.iterrows():  # sanity check on vaf
-        if (',' in list(row.values)[-1]) and int(sum(row[config.methods].values)) != (int(list(row.values)[-1].count(',')) + 1):
-            print(calltable_snp.columns.tolist())
-            print(list(row.values))
-    """

@@ -326,9 +326,9 @@ if __name__ == "__main__":
 
     for fixedvar in fixedvars:
         if fixedvar == 'coverage':
-            dilutionseries = [(70,0), (70, 80), (50, 100), (30, 120), (20, 130), (10, 140), (5, 145)]
+            dilutionseries = [(70, 0), (70, 80), (50, 100), (30, 120), (20, 130), (10, 140), (5, 145)]
         elif fixedvar == 'ctdna':
-            dilutionseries = [(70,0), (70, 30), (70, 80), (70, 130), (70, 180)]
+            dilutionseries = [(70, 0), (70, 30), (70, 80), (70, 130), (70, 180)]
         for muttype in muttypes:
             if muttype == 'snv':
                 nref = 5

@@ -2,15 +2,16 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from utils.viz import *
 from utils.metrics import *
 from utils.calltable import *
-from viz import function_to_split
+from utils.viz import function_to_split
 
 
-def plot_metricsseries(config, restables, mixtureids, chrom, muttype='snv', ground_truth_method='mixture',
-                       fixedvar='coverage', allpatients=True, logscale=False,  save=False):
+def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='snv', ground_truth_method='mixture',
+                       fixedvar='coverage', refname='inundilutedsamplebyatleast5callers',
+                       allpatients=True, logscale=False,  save=False):
             xlab = 'tumor burden' if fixedvar == 'coverage' else 'coverage'
+            color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
             lc = 'logscale' if logscale else 'linearscale'
             if allpatients:
                 plt.figure(figsize=(15, 10))
@@ -43,7 +44,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, muttype='snv', grou
                             if plasmasample == 'CRC-123_310715-CW-T':
                                 restablesample = restablesample[restablesample['coverage'] != 250]
                         plt.plot(restablesample[restablesample['caller'] == method][xlab], restablesample[restablesample['caller'] == method][metric.upper()+' score'],
-                                 c=color_dict[method], marker=markers[mi], markersize=15, lw=2, ls=linestyles[mi], label = method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
+                                 c=color_dict[method], marker=config.markers[mi], markersize=15, lw=2, label = method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
                 if not allpatients:
                     if fixedvar == 'coverage':
                         plt.gca().invert_xaxis()
@@ -129,12 +130,12 @@ if __name__ == '__main__':
                         mixtureid+'_'+mt+'_'+metric+'_'+refname+'_fixed'+fixedvar+'.csv'), index_col=0)
                     restables[mt].append(restable)
                 restables[mt] = pd.concat(restables[mt])
-            plot_metricsseries(config, restables, mixtureids, chrom, muttype=muttype,
+            plot_metricsseries(config, restables, mixtureids, chrom, metric=metric, muttype=muttype,
                                ground_truth_method='mixture', fixedvar='coverage', allpatients=True, logscale=False, save=True)
-            plot_metricsseries(config, restables, mixtureids, chrom, muttype=muttype,
+            plot_metricsseries(config, restables, mixtureids, chrom, metric=metric, muttype=muttype,
                                ground_truth_method='mixture', fixedvar='coverage', allpatients=True, logscale=True, save=True)
-            plot_metricsseries(config, restables, mixtureids, chrom, muttype=muttype,
+            plot_metricsseries(config, restables, mixtureids, chrom, metric=metric, muttype=muttype,
                                ground_truth_method='mixture', fixedvar='coverage', allpatients=False, logscale=False, save=True)
-            plot_metricsseries(config, restables, mixtureids, chrom, muttype=muttype,
+            plot_metricsseries(config, restables, mixtureids, chrom, metric=metric, muttype=muttype,
                                ground_truth_method='mixture', fixedvar='coverage', allpatients=False, logscale=True, save=True)
 
