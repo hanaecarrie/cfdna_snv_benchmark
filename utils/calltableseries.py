@@ -54,7 +54,7 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
 
     calltablesseries = pd.read_csv(os.path.join(mixturefolder, 'calls', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv'), index_col=0)
 
-    return calltablesseries
+    return calltablesseries, calltables
 
 
 if __name__ == "__main__":
@@ -77,5 +77,5 @@ if __name__ == "__main__":
     for muttype in muttypes:
         for mixtureid in mixtureids:
             print('############# {} {} ############'.format(mixtureid, muttype))
-            calltablesseries = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
+            calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
             print(calltablesseries.head())
