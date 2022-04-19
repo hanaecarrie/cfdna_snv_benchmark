@@ -33,5 +33,32 @@ def set_display_params(config):
             "unknown context {}. Should be either 'whitetalk', 'darktalk' or 'paper'".format(config.context))
 
 
-if __name__ == "__main__":
-    print('TODO')
+def function_to_split(hand, labl, dividor):
+    Hand_L = []
+    Hand_M = []
+    Labl_L = []
+    Labl_M = []
+    for h, l in zip(hand, labl):
+        co = h.get_color()
+        ls = h.get_linestyle()
+        lw = h.get_linewidth()
+        mk = h.get_marker()
+        mew = h.get_markeredgewidth()
+        ms = h.get_markersize()
+        LABS = l.split(dividor)
+        if len(LABS) != 2:
+            print('Split Legends Error: Only exactly 1 Dividor is accepted.')
+            print('                     Currently ' + str(len(LABS)-1) + ' dividors were given')
+            return hand, labl
+        # Line and Color
+        LICO = plt.Line2D((0, 1), (0, 0), color=co, marker='', linestyle=ls,linewidth=lw)
+        # Marker
+        MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='')
+        if LABS[0] not in Labl_L:
+            Hand_L.append(LICO)
+            Labl_L.append(LABS[0])
+        if LABS[1] not in Labl_M:
+            Hand_M.append(MARK)
+            Labl_M.append(LABS[1])
+    return Hand_L+Hand_M, Labl_L+Labl_M
+
