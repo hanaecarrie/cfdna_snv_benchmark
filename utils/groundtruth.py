@@ -8,6 +8,7 @@ from utils.calltable import *
 
 def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv'):
     refmethods = list(np.copy(config.methods))
+
     # Approach 1: optimal threshold for each method + consensus
     # pseudo ground truth = mutations found by at least k callers
     if type(ground_truth_method) == int:
@@ -29,7 +30,6 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
             plt.title(m)
         truthpos = list(calltablesseries[calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=1) >= ground_truth_method].index)
         calltablesseries.loc[truthpos, 'truth'] = True
-
 
     # Approach 2: rank mutations
     # pseudo ground truth = best K mutations found by each caller

@@ -45,10 +45,25 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     callmethod = callmethod[callmethod['FILTER'] == "PASS"]
                 elif filter == 'REJECT':
                     callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid.replace('.', '_')+'-T', 'ID', 'INFO']]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'format', 'formatvalue', 'ID', 'INFO']
+                if filter == 'all':
+                    # callmethod[method].fillna('', inplace=True)
+                    callmethod[method] = callmethod[method].astype(str)
+                    if method == 'mutect2' or method == 'strelka2':
+                        # print(callmethod.loc[callmethod[method] == 'MinAF', method].value_counts())
+                        print('retrieving {} {} calls with MinAF tags out of {}'.format(method,
+                            callmethod[callmethod[method] =='MinAF'].shape[0], callmethod[callmethod[method] == "PASS"].shape[0]))
+                        callmethod.loc[callmethod[method] == 'MinAF', method] = True
+                    elif method == 'vardict':
+                        #print(callmethod.loc[(callmethod[method] == 'f0.01'), method].value_counts())
+                        print('retrieving {} {} calls with f0.01;REJECT;REJECT tags out of {}'.format(method,
+                            callmethod[(callmethod[method] == 'f0.01;REJECT;REJECT')].shape[0], callmethod[callmethod[method] == "PASS"].shape[0]))
+                        callmethod.loc[(callmethod[method] == 'f0.01;REJECT;REJECT'), method] = True
+                    callmethod.loc[callmethod[method] == 'PASS', method] = True
+                    callmethod = callmethod[callmethod[method] == True]
                 info = callmethod['INFO']
-                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'FORMAT', sampleid.replace('.', '_')+'-T', 'ID']]
-                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'format', 'formatvalue', 'ID']
-                callmethod[method] = True
+                callmethod.drop('INFO', axis=1, inplace=True)
                 if method == 'freebayes':  # logodds to probability score prob = exp(logODDS)/(1+exp(logODDS))
                     callmethod[method + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))))
                                                      if 'ODDS' in i else np.nan for i in info.to_list()]
@@ -116,7 +131,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
             else:
                 callmethod = pd.read_csv(calltablemethod_path)
-                callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
+                callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'af_case']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
                 callmethod['abemus_score'] = callmethod['abemus_score']
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
@@ -259,7 +274,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         calltable_snp = pd.concat([calltable_snp, calltable_snp_snv, calltable_snp_indel])
         print("# calls after using germline calls from GATK Haplotype: {} SNV, {} INDEL, {} SNP".format(
             calltable_snv.shape[0], calltable_indel.shape[0], calltable_snp.shape[0]))
-        print(sum(calltable_snp.duplicated()))
     print('final shape SNV: {}'.format(calltable_snv.shape))
     print('final shape INDEL: {}'.format(calltable_indel.shape))
     print('final shape SNP: {}'.format(calltable_snp.shape))
