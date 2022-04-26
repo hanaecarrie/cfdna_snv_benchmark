@@ -45,6 +45,7 @@ def function_to_split(hand, labl, dividor):
         mk = h.get_marker()
         mew = h.get_markeredgewidth()
         ms = h.get_markersize()
+        mkf = h.get_fillstyle()
         LABS = l.split(dividor)
         if len(LABS) != 2:
             print('Split Legends Error: Only exactly 1 Dividor is accepted.')
@@ -53,7 +54,11 @@ def function_to_split(hand, labl, dividor):
         # Line and Color
         LICO = plt.Line2D((0, 1), (0, 0), color=co, marker='', linestyle=ls,linewidth=lw)
         # Marker
-        MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='')
+        MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='', fillstyle=mkf)
+        #if mkf == 'full':
+        #    MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='')
+        #else:
+        #    MARK = plt.Line2D((0, 1), (0, 0), markeredgecolor='k', markerfacecolor='white', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='', fillstyle=mkf)
         if LABS[0] not in Labl_L:
             Hand_L.append(LICO)
             Labl_L.append(LABS[0])
