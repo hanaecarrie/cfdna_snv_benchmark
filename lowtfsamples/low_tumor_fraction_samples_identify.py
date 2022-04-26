@@ -59,7 +59,7 @@ def get_patient_tf_treatment(config, patient):
     return df_patient, tf_patient, tf_df
 
 
-def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
+def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, check=False):
     patient = int(patient)
     print(patient)
     # Display parameter
@@ -80,7 +80,9 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
     plt.figure()
     fig, ax2 = plt.subplots(figsize=figsize)
     # left y-axis -> treatment information
-    sns.stripplot(y='treatment', x='date', hue='treatment', data=df_patient, s=10, ax=ax2)
+    df_patient['date'] = df_patient['date'].astype(str)
+    df_patient['treatment'] = df_patient['treatment'].astype(str)
+    sns.stripplot(y='treatment', x='date', data=df_patient, color='grey', marker='X', size=10, ax=ax2)
     ax2.grid(False)
     plt.legend((), ())
     # right y-axis ->  tumor fraction (ichorCNA estimate) and VAF information, in [0,1]
@@ -94,7 +96,6 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
     ax.set_ylabel('fraction (tumor burden or VAF)', fontsize=30)
     ax.set_ylim(-0.01, 1)
     fig.legend([ele0], ['ichorCNA tumor burden'], loc='upper left')
-    ax.legend(loc='upper left')
     labels = [ad if ad in tumorburden_dates else '' for ad in alldates]
     ax2.set_xticklabels(labels, rotation=90, fontsize=fs)
     ax.set_xticklabels(labels, rotation=90, fontsize=fs)
@@ -162,7 +163,7 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
             mutations_acrosstime = mutations_acrosstime_226
             xacrosstime = [i for i in mutations_acrosstime.index if i in df_patient['date'].values]
             eles = [ele0]
-            collist = ['r', 'b', 'g', 'c', 'm', 'y', 'tab:pink', 'tab:orange', 'tab:olive', 'tab:purple', 'grey']
+            collist = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
             if mutation_df_226["TIERS"].iloc[0] == 'Trusted':
                 lstype = '-'
             elif mutation_df_226["TIERS"].iloc[0] == 'LowEvidence':
@@ -180,16 +181,28 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False):
             ax2.set_xticklabels(labels, rotation=90, fontsize=fs)
             ax.set_xticklabels(labels, rotation=90, fontsize=fs)
             # timepoints with low tumor burden lpWGS samples in blue (ichorCNA tumor fraction estimate)
-            for dltbt in date_lowtftimepoints:
-                ax.get_xticklabels()[labels.index(dltbt)].set_color('blue')
-                ax2.get_xticklabels()[labels.index(dltbt)].set_color('blue')
+            if not check:
+                for dltbt in date_lowtftimepoints:
+                    ax.get_xticklabels()[labels.index(dltbt)].set_color('blue')
+                    ax2.get_xticklabels()[labels.index(dltbt)].set_color('blue')
+            else:
+                ax.get_xticklabels()[labels.index(config.lowtfsamples[patient])].set_color('blue')
+                ax2.get_xticklabels()[labels.index(config.lowtfsamples[patient])].set_color('blue')
             # timepoints with high tumor burden deepWGS samples in red
             tf_deepwgs_df = get_tf(config, batch='deepwgs')
             listdeepwgs = list(pd.to_datetime(tf_deepwgs_df[tf_deepwgs_df['patient'] == patient]['date'],
                                               format='%d%m%y').astype(str).values)
-            for ldw in listdeepwgs:
-                ax.get_xticklabels()[labels.index(ldw)].set_color('red')
-                ax2.get_xticklabels()[labels.index(ldw)].set_color('red')
+            print(listdeepwgs)
+            if not check:
+                for ldw in listdeepwgs:
+                    ax.get_xticklabels()[labels.index(ldw)].set_color('red')
+                    ax2.get_xticklabels()[labels.index(ldw)].set_color('red')
+            else:
+                for htfsample in config.hightfsamples[patient]:
+                    ax.get_xticklabels()[labels.index(htfsample)].set_color('red')
+                    ax2.get_xticklabels()[labels.index(htfsample)].set_color('red')
+            #fig.legend()
+            ax.legend(loc='upper left')
             if not os.path.exists(
                     os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png')):
                 plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png'),
