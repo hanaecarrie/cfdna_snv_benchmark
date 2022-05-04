@@ -1,0 +1,28 @@
+##### Config file #####
+
+sample:
+  healthy: "/mnt/data/rawdata/NCC_CRC-123_121115_P-T-sort.bam"
+  tumor: "/mnt/data/rawdata/NCC_CRC-123_310715_P-T-sort.bam"
+  buffycoat: "/mnt/data/rawdata/NCC_CRC-123_070116_P-W-N-sort.bam"
+
+samplename:
+  healthy: "CRC-123_121115-CW-T"
+  tumor: "CRC-123_310715-CW-T"
+  buffycoat: "CRC-123-CW-N"
+
+dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-180"
+
+chr: 8
+
+healthydir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr8/initialsamples_chr8_CRC-123_121115-CW-T"
+tumordir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr8/initialsamples_chr8_CRC-123_310715-CW-T"
+buffycoatdir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr8/initialsamples_chr8_CRC-123-CW-N"
+outputfolder: "/mnt/cfdnaseries/mixtures/mixtures_chr8"
+
+tffile: "/home/ubuntu/cfdna_snv_benchmark/data/initialsamples/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv" 
+
+machine: 'Ronin'
+condapath: "/home/ubuntu/anaconda3/etc/profile.d/conda.sh"
+repopath: "/home/ubuntu/"
+ichorcnaextdata: "/home/ubuntu/anaconda3/envs/default/lib/R/library/ichorCNA/extdata/"
+samtools: "/home/ubuntu/anaconda3/envs/default/bin/samtools"

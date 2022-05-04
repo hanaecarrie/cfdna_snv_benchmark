@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# def path and environment
-source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
-conda activate default
-
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -43,6 +38,10 @@ echo $samplename_buffycoat
 echo $chr
 echo $outputdir
 echo $tffile
+
+# def path and environment
+source $condapath
+conda activate default
 
 echo $dilutionfactor
 export dilutionfactor_tumor=$(echo $dilutionfactor | cut -f1 -d-)
@@ -170,5 +169,5 @@ export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} 
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt  ; fi
 
 echo "estimate tumor burden by ichorCNA..."
-bash /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.bam $ichorcnaextdata $chr
+bash ${repopath}/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.bam $ichorcnaextdata $chr
 

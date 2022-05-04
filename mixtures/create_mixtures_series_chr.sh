@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# def path and environment
-source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
-conda activate default
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -46,6 +42,10 @@ echo $outputfolder
 echo $tffile
 echo $samtools
 
+# def path and environment
+source $condapath
+conda activate default
+
 if [ ! -d $outputfolder ] ; then mkdir $outputfolder ; fi
 if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ] ; then mkdir $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ; fi
 echo $tumordir
@@ -67,6 +67,7 @@ export buffycoat_chr_coverage=$buffycoatdir/coverage_${samplename_buffycoat}_chr
 echo $tumor_chr_coverage
 echo $healthy_chr_coverage
 echo $buffycoat_chr_coverage
+echo $machine
 
 cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/ 
 
@@ -92,7 +93,10 @@ export outputdir=$outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplena
 if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 if [ ! -d $outputdir/logs ] ; then mkdir $outputdir/logs ; fi
 
-/opt/uge-8.1.7p3/bin/lx-amd64/qsub -pe OpenMP 4 -l mem_free=24G,h_rt=24:00:00 -o $outputdir/logs/ -e $outputdir/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/mixtures/create_mixtures_chr.sh -c $config_file -d $dilutionfactor
+if [ $machine == 'Aquila' ] ; then /opt/uge-8.1.7p3/bin/lx-amd64/qsub -pe OpenMP 4 -l mem_free=24G,h_rt=24:00:00 -o $outputdir/logs/ -e $outputdir/logs/ $repopath/cfdna_snv_benchmark/mixtures/create_mixtures_chr.sh -c $config_file -d $dilutionfactor ; fi
+if [ $machine == 'Ronin' ] ; then
+	nohup $repopath/cfdna_snv_benchmark/mixtures/create_mixtures_chr.sh -c $config_file -d $dilutionfactor > $outputdir/logs/log_mixture_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.out &
+fi
 
 done
 
