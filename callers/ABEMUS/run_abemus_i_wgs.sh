@@ -47,15 +47,14 @@ if [ ! -d $outdir/chunk_${i} ] ; then mkdir $outdir/chunk_${i} ; fi ;
 if [ ! -d $outdir/chunk_${i}/PaCBAM_outdir ] ; then mkdir $outdir/chunk_${i}/PaCBAM_outdir ; fi
 
 # PaCBAM buffy coat file
-if [ ! -f $extdata/exome_bed/exome_hg19_merge_chr${chr}_${i}.bed ] ; then bedtools merge -i $extdata/exome_bed/exome_hg19_chr${chr}_${i}.bed > $extdata/exome_bed/exome_hg19_merge_chr${chr}_${i}.bed ; fi
-~/bin/pacbam/pacbam bam=$buffycoatbam  bed=$extdata/exome_bed/exome_hg19_merge_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
+~/bin/pacbam/pacbam bam=$buffycoatbam  bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
 # PaCBAM plasma files
 for bamfile in ${dilutionseriesfolder}/*/*.bam; do 
 	echo $bamfile ; 
-	~/bin/pacbam/pacbam bam=$bamfile bed=$extdata/exome_bed/exome_hg19_merge_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
+	~/bin/pacbam/pacbam bam=$bamfile bed=$extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed vcf=$extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf fasta=$extdata/GRCh37/GRCh37.fa strandbias mode=5 out=$outdir/chunk_${i}/PaCBAM_outdir ;
 done
 
 if [ ! -d $outdir/chunk_${i}/pacbam_data_bychrom ] ; then mkdir $outdir/chunk_${i}/pacbam_data_bychrom ; fi
 
-Rscript run_abemus.R "${outdir}/chunk_${i}/" "${outdir}/infofile.tsv" "${extdata}/exome_bed/exome_hg19_merge_chr${chr}_${i}.bed" "${outdir}/chunk_${i}/PaCBAM_outdir" "${outdir}/chunk_${i}/pacbam_data_bychrom"
+Rscript run_abemus.R "${outdir}/chunk_${i}/" "${outdir}/infofile.tsv" "${extdata}/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed" "${outdir}/chunk_${i}/PaCBAM_outdir" "${outdir}/chunk_${i}/pacbam_data_bychrom"
 

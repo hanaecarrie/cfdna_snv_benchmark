@@ -70,8 +70,16 @@ done
 # Index it
 # Create dictionary
 # Create bed file chr
+export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
+echo $nbbasechr
+if [ ! -d $extdata/wholegenome_bed ] ; then mkdir $extdata/wholegenome_bed ; fi
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ] ;
+then touch $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ;
+for ((i = 1; i <= $nbbasechr; i+=1000)) ;
+do echo -e "$chr\t$i\t$(($i+999))" >> $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ; done
+fi
 # Split bed file chr by chunks of 5,000 lines
-if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_ ; fi
 
 ###### prepare dbSNP database ######
 # 1. Download it in /data/extdata folder
@@ -89,13 +97,23 @@ echo $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf
 if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 
 ###### run ABEMUS per chunk in parallel ######
-export nchunk=$(ls $extdata/exome_bed/exome_hg19_chr${chr}_*.bed | wc -l)
+export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
-for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
-	echo "run abemus on chunk ${n}" ; 
-	export npid=$((${n#0} + 1))
-	bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
-done
+#for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
+#for n in $(seq -f "%02g" 5 8) ; do 
+#	echo "run abemus on chunk ${n}" ; 
+#	export npid=$((${n#0} + 1))
+#	bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
+#done
+export n=07
+echo "run abemus on chunk ${n}" ;
+export npid=$((${n#0} + 1))
+bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
+
+export n=08
+echo "run abemus on chunk ${n}" ;
+export npid=$((${n#0} + 1))
+bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
 
 # wait for all pids
 for pid in ${pids[*]}; do
@@ -103,6 +121,26 @@ for pid in ${pids[*]}; do
 done
 
 if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
+
+##### concat results #######
+#for dil in ${dilutionseriesfolder}/*/*[Tx].bam ;
+#do echo $i ;
+#mkdir   ${outdir}/results/$(basename $dil .bam)
+#for j in {1..3} ;
+#        do ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#awk '
+#    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+#    1 {print}
+#' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#echo ${outdir}/results/$(basename $dil .bam)/pmtab_F${j}_$(basename $dil .bam).tsv
+#done
+#ls ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#awk '
+#    FNR==1 && NR!=1 { while (/^<header>/) getline; }
+#    1 {print}
+#' ${outdir}/chunk_*/Results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv  > ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#echo ${outdir}/results/$(basename $dil .bam)/pmtab_F3_optimalR_$(basename $dil .bam).tsv
+#done
 
 ###### concat results #####
 python /home/ubuntu/ABEMUS/concat_results.py $dilutionseriesfolder $outdir

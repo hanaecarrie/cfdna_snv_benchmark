@@ -24,7 +24,7 @@ if __name__ == "__main__":
             else:
                 print('no results to concat for pmtab_F'+str(j)+'_'+dil)
         print('optimal R')
-        df_list = [pd.read_csv(os.path.join(outdir, 'chunk_'+str(i).rjust(2, '0'), 'Results',  dil, 'pmtab_F3_optimalR_'+dil+'.tsv'), sep="\t") for i in range(nchunks) if os.path.exists(os.path.join(outdir, 'chunk_'+str(i).rjust(2, '0'), 'Results',  dil, 'pmtab_F3_optimalR_'+str(j)+'_'+dil+'.tsv'))]
+        df_list = [pd.read_csv(os.path.join(outdir, 'chunk_'+str(i).rjust(2, '0'), 'Results',  dil, 'pmtab_F3_optimalR_'+dil+'.tsv'), sep="\t") for i in range(nchunks) if os.path.exists(os.path.join(outdir, 'chunk_'+str(i).rjust(2, '0'), 'Results',  dil, 'pmtab_F3_optimalR_'+dil+'.tsv'))]
         if df_list:
             res_df = pd.concat(df_list)
             print(res_df.head())
