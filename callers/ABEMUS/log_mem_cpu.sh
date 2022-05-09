@@ -16,9 +16,9 @@ export nCPU=$(grep -c ^processor /proc/cpuinfo)
 # usage RAM memory in Gb
 export useRAM=$(free -h | grep Mem: | awk '{print ($3)}')
 # load average
-export loagavgCPU=$(uptime | awk '{print $12}' | cut -d "," -f 1)   
+export loadavgCPU=$(uptime | awk '{print $12}' | cut -d "," -f 1)   
 
-echo -e "$(date '+%Y-%m-%d %H:%M:%S')\t$availRAM\t$nCPU\t$useRAM\t$loagavgCPU" >> $logfile
+echo -e "$(date '+%Y-%m-%d %H:%M:%S')\t$availRAM\t$nCPU\t$useRAM\t$loadavgCPU" >> $logfile
 
 sleep 60
 done

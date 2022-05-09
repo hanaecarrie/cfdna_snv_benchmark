@@ -83,7 +83,7 @@ if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 
 # $ bcftools view dbSNP.vcf -Oz -o dbSNP.vcf.gz
 # $ bcftools index dbSNP.vcf.gz
 # 2. Split per chromosome
-# $ bcftools filter -r chr${chr} $extdata/dbsnp_vcf/dbSNP.vcf.gz -o $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf
+if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ] ; then bcftools filter -r ${chr} $extdata/dbsnp_vcf/dbSNP.vcf.gz -o $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 # 3. Edit vcf to keep only SNPs with one Alt base
 echo $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf
 if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
