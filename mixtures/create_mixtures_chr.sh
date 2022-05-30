@@ -66,6 +66,8 @@ echo $tumor_chr_coverage
 echo $healthy_chr_coverage
 echo $buffycoat_chr_coverage
 
+echo "START MIXTURE CREATION"
+
 if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 
 # Select chr only
@@ -125,7 +127,7 @@ echo "merge helthy and tumor reads into a silico mixture sample..."
 if [ ! -f $outputdir/${dilutionname}.bam ] ; then $samtools merge -rh $outputdir/$rgname $outputdir/${dilutionname}.unsorted.bam $sample_tumor_chr_downsample $sample_healthy_chr_downsample ; fi
 
 # dilutionfactor healthy == 0
-else  cp  $sample_tumor_chr_downsample $outputdir/${dilutionname}.bam ;
+else if [ ! -f $outputdir/${dilutionname}.bam ] ; then  cp  $sample_tumor_chr_downsample $outputdir/${dilutionname}.bam ; fi
 fi
 
 # sort
@@ -137,9 +139,6 @@ if [ ! -f $outputdir/${dilutionname}.bam.bai ] ; then $samtools index -@ 4 $outp
 
 if [  -f $outputdir/${dilutionname}.unsorted.bam ] ; then rm $outputdir/${dilutionname}.unsorted.bam ; fi
 
-#if [ -f $outputdir/${dilutionname}.sorted.bam ] ; then mv  $outputdir/${dilutionname}.sorted.bam  $outputdir/${dilutionname}.bam ; fi
-#if [ -f $outputdir/${dilutionname}.sorted.bam.bai ] ; then mv $outputdir/${dilutionname}.sorted.bam.bai  $outputdir/${dilutionname}.bam.bai ; fi
-
 # check buffy coat select chr exists
 echo "buffy coat..."
 if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
@@ -149,7 +148,7 @@ if  [ ! -f $buffycoat_chr_coverage ] ; then export buffycoat_cov=$($samtools dep
 
 
 echo "estimate tumor burden by calculation..."
-if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
+#if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
 echo $tffile
 while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
 if [[ "$A" == *${samplename_tumor}* ]] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ;  fi ; done < $tffile
@@ -161,13 +160,15 @@ echo $cov_tot
 mixed_sample_tf=$(echo "$cov_t / $cov_tot" | bc -l)
 echo $mixed_sample_tf
 echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
-fi
+#fi
 
 echo "calculate coverage..."
 if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
 export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
-echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt  ; fi
+echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt 
+fi
 
 echo "estimate tumor burden by ichorCNA..."
 bash ${repopath}/cfdna_snv_benchmark/mixtures/run_ichorcna_chr.sh $outputdir/${dilutionname}.bam $ichorcnaextdata $chr
 
+echo "DONE MIXTURE CREATION"

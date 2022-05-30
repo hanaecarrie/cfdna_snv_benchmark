@@ -12,12 +12,12 @@ samplename:
 
 dilutionfactors: "70-0 70-80 50-100 30-120 20-130 10-140 5-145 70-180"
 
-chr: 2
+chr: M
 
-healthydir: "/mnt/data/initialsamples/initialsamples_chr2/initialsamples_chr2_CRC-123_121115-CW-T"
-tumordir: "/mnt/data/initialsamples/initialsamples_chr2/initialsamples_chr2_CRC-123_310715-CW-T"
-buffycoatdir: "/mnt/data/initialsamples/initialsamples_chr2/initialsamples_chr2_CRC-123-CW-N"
-outputfolder: "/mnt/data/mixtures/mixtures_chr2"
+healthydir: "/mnt/cfdnaseries/initialsamples/initialsamples_chrM/initialsamples_chrM_CRC-123_121115-CW-T"
+tumordir: "/mnt/cfdnaseries/initialsamples/initialsamples_chrM/initialsamples_chrM_CRC-123_310715-CW-T"
+buffycoatdir: "/mnt/cfdnaseries/initialsamples/initialsamples_chrM/initialsamples_chrM_CRC-123-CW-N"
+outputfolder: "/mnt/cfdnaseries/mixtures/mixtures_chrM"
 
 tffile: "/home/ubuntu/cfdna_snv_benchmark/data/initialsamples/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv" 
 

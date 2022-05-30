@@ -21,18 +21,18 @@ export outputdir=$outputdir/ichorcna/
 
 if [ ! -f $outputdir ] ; then mkdir $outputdir ; fi
 
-if [ ! -f "$outputdir/${saveid}.wig" ] ; then
+#if [ ! -f "$outputdir/${saveid}.wig" ] ; then
 echo "Create WIG file $outputdir/${saveid}.wig"
 # Create WIG Files
 #/mnt/projects/carriehc/cfDNA/utils/hmmcopy_utils/bin/readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
 /home/ubuntu/anaconda3/envs/default/bin/readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
 echo "Done WIG file"
-fi
+#fi
 
 
 # ichorCNA run
 echo "ichorCNA processing $outputdir/${saveid}.wig"
-if [ ! -f "$outputdir/${saveid}.cna.seg" ] ; then
+#if [ ! -f "$outputdir/${saveid}.cna.seg" ] ; then
 #/mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/bin/Rscript /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/utils/runIchorCNA.R \
 /home/ubuntu/anaconda3/envs/default/bin/Rscript /home/ubuntu/cfdna_snv_benchmark/utils/runIchorCNA.R \
 --id $saveid \
@@ -45,5 +45,6 @@ if [ ! -f "$outputdir/${saveid}.cna.seg" ] ; then
 --scStates "c(1,3)" --txnE 0.9999 --txnStrength 10000 \
 --outDir $outputdir
 echo "Done ichorCNA"
-fi
+#fi
 
+echo "DONE ICHORCNA"
