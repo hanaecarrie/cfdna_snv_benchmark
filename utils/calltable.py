@@ -248,7 +248,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     # correct for germline calls with GATK Haplotype
-    calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-N-gatk-haplotype-annotated.vcf.gz')
+    calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-N-germline-gatk-haplotype-annotated.vcf.gz')
     if '.' in os.path.basename(calltablemethod_path[:-7]):
         calltablemethod_path = os.path.join(os.path.dirname(calltablemethod_path), os.path.basename(calltablemethod_path)[:-7].replace('.', '_') + '.vcf.gz')
     if not os.path.exists(calltablemethod_path):
