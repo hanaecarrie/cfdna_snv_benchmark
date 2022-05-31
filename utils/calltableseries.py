@@ -57,6 +57,49 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
     return calltablesseries, calltables
 
 
+def concat_calltableseries(config, mixtureid, chroms='all', muttype='snv', filterparam='PASS'):
+    if chroms == 'all':
+           chroms = [str(c) for c in range(1, 23)] + ['X', 'Y']
+           print(chroms)
+    calltablesserieschroms = []
+    tfchrom_dict = {}
+    for chrom in chroms:
+        callfile = os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+mixtureid, 'calls', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv')
+        if os.path.exists(callfile):
+            calltable = pd.read_csv(callfile, index_col=0)
+            tfchrom_dict[chrom] = np.unique([cn.split('_')[0] for cn in list(calltable.columns)])[:-5]
+            tfchrom_dict[chrom] = tfchrom_dict[chrom].astype(float)
+    tfchrom_df = pd.DataFrame.from_dict(tfchrom_dict)
+    tfallchrom = list(tfchrom_df.median(axis=1).values)
+    print(tfallchrom)
+    if len(np.unique(tfallchrom)) < len(tfallchrom):
+        raise ValueError('taking median of TFs gives duplicate values')
+
+    for chrom in chroms:
+        callfile = os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+mixtureid, 'calls', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv')
+        if os.path.exists(callfile):
+            calltable = pd.read_csv(callfile, index_col=0)
+            a = list(np.unique([cn.split('_')[0] for cn in list(calltable.columns)])[:-5])
+            b = tfallchrom
+            newcol = list(calltable.columns)
+            for n, nc in enumerate(newcol):
+                if nc.split('_')[0] in a:
+                    i = a.index(nc.split('_')[0])
+                    # print(a[i], '{:.2f}'.format(b[i]))
+                    newcol[n] = nc.replace(a[i], '{:.2f}'.format(b[i]))
+            calltable.columns = newcol
+            # print(calltable.shape)
+            # print(calltable.loc[calltable.index.duplicated])
+            calltablesserieschroms.append(calltable)
+    calltablesserieschroms = pd.concat(calltablesserieschroms, axis=0)
+    print(calltablesserieschroms.shape)
+    # print(calltablesserieschroms.columns)
+    if not os.path.exists(os.path.join(*config.mixturefolder, 'mixtures_allchr')):
+        os.mkdir(os.path.join(*config.mixturefolder, 'mixtures_allchr'))
+    calltablesserieschroms.to_csv(os.path.join(*config.mixturefolder, 'mixtures_allchr', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv'))
+
+
+
 if __name__ == "__main__":
     import os
     from utils.config import Config
@@ -67,15 +110,27 @@ if __name__ == "__main__":
 
     config = Config("config/", "config_viz.yaml")
 
-    chrom = '22'
+    # chrom = '22'
     reload = True
     save = True
     filterparam = 'all'
     muttypes = ['snv', 'indel']
     mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
 
+    # for muttype in muttypes:
+    #     #for mixtureid in mixtureids:
+    #     # chr6 mixture_chr6_CRC-986_100215-CW-T_70x_CRC-986_300316-CW-T_180x issue Freebayes
+    #     # chr8 mixture_chr8_CRC-986_100215-CW-T_30x_CRC-986_300316-CW-T_120x issue Freebayes
+    #     # chr18 mixture_chr18_CRC-986_100215-CW-T_20x_CRC-986_300316-CW-T_130x issue bcbio probabily Freebayes
+    #     # chr22 mixture_chr22_CRC-986_100215-CW-T_10x_CRC-986_300316-CW-T_140x issue bcbio probabily Freebayes
+    #     for chrom in range(19, 23):
+    #         if chrom not in [10, 11, 12, 13]:
+    #             chrom = str(chrom)
+    #             mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
+    #             print('############# {} {} ############'.format(mixtureid, muttype))
+    #             calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
+    #             print(calltablesseries.head())
+
+    mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
     for muttype in muttypes:
-        for mixtureid in mixtureids:
-            print('############# {} {} ############'.format(mixtureid, muttype))
-            calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
-            print(calltablesseries.head())
+        concat_calltableseries(config, mixtureid, 'all', muttype, filterparam)
