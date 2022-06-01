@@ -69,6 +69,7 @@ def concat_calltableseries(config, mixtureid, chroms='all', muttype='snv', filte
             calltable = pd.read_csv(callfile, index_col=0)
             tfchrom_dict[chrom] = np.unique([cn.split('_')[0] for cn in list(calltable.columns)])[:-5]
             tfchrom_dict[chrom] = tfchrom_dict[chrom].astype(float)
+    print(tfchrom_dict)
     tfchrom_df = pd.DataFrame.from_dict(tfchrom_dict)
     tfallchrom = list(tfchrom_df.median(axis=1).values)
     print(tfallchrom)
@@ -99,6 +100,10 @@ def concat_calltableseries(config, mixtureid, chroms='all', muttype='snv', filte
     calltablesserieschroms.to_csv(os.path.join(*config.mixturefolder, 'mixtures_allchr', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv'))
 
 
+def load_calltableseries_allchr(config, mixtureid, muttype='snv', filterparam='PASS'):
+    calltablesserieschroms = pd.read_csv(os.path.join(*config.mixturefolder, 'mixtures_allchr', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv'), index_col=0)
+    return calltablesserieschroms
+
 
 if __name__ == "__main__":
     import os
@@ -110,27 +115,21 @@ if __name__ == "__main__":
 
     config = Config("config/", "config_viz.yaml")
 
-    # chrom = '22'
     reload = True
     save = True
     filterparam = 'all'
-    muttypes = ['snv', 'indel']
-    mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
-
-    # for muttype in muttypes:
-    #     #for mixtureid in mixtureids:
-    #     # chr6 mixture_chr6_CRC-986_100215-CW-T_70x_CRC-986_300316-CW-T_180x issue Freebayes
-    #     # chr8 mixture_chr8_CRC-986_100215-CW-T_30x_CRC-986_300316-CW-T_120x issue Freebayes
-    #     # chr18 mixture_chr18_CRC-986_100215-CW-T_20x_CRC-986_300316-CW-T_130x issue bcbio probabily Freebayes
-    #     # chr22 mixture_chr22_CRC-986_100215-CW-T_10x_CRC-986_300316-CW-T_140x issue bcbio probabily Freebayes
-    #     for chrom in range(19, 23):
-    #         if chrom not in [10, 11, 12, 13]:
-    #             chrom = str(chrom)
-    #             mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
-    #             print('############# {} {} ############'.format(mixtureid, muttype))
-    #             calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
-    #             print(calltablesseries.head())
-
+    muttypes = ['snv', 'indel', 'snp']
+    # mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
     mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
+
+for muttype in muttypes:
+    # for mixtureid in mixtureids:
+    for chrom in range(1, 23):
+        if chrom not in [10, 11, 12]:
+            chrom = str(chrom)
+            print('############# {} {} ############'.format(mixtureid, muttype))
+            calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)
+            print(calltablesseries.head())
+
     for muttype in muttypes:
         concat_calltableseries(config, mixtureid, 'all', muttype, filterparam)

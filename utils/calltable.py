@@ -104,26 +104,31 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][XUTIRpos[a]][0] for a in range(callmethod.shape[0])]
                     callmethod.drop(['format', 'formatvalue', 'XUTIR'], axis=1, inplace=True)
                 if method == 'freebayes':
-                    callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'] = callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'].apply(lambda x: str(max(x)))
-                callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
-                for ci in callmethod['altcov'].isna().index:
-                    callmethod.at[ci, 'altcov'] = [0]
-                callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] =\
-                    callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] * \
-                    callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'alt'].str.len()
-                checkindex = list(callmethod.loc[(callmethod.alt.str.len() < callmethod.altcov.str.len())].index)
-                for ci in checkindex:
-                    callmethod.at[ci, 'altcov'] = list(map(int, callmethod.loc[ci, 'altcov']))[:int(len(callmethod.loc[ci, 'alt']))]
-                callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
-                callmethod['altcov'] = callmethod['altcov'].astype(int)
-                callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
-                callmethod.loc[callmethod['vaf'] > 1, 'vaf'] = 1  # bug for some complex indels
-                callmethod['type'] = np.nan
-                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() == 0, 'type'] = 'SNV'
-                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
-                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
-                callmethod.loc[callmethod['ID'].str.contains('rs'), 'type'] = 'SNP'
-                callmethod.drop('ID', axis=1, inplace=True)
+                    # callmethod['altcov'] = callmethod['altcov'].astype(str)
+                    if not callmethod.empty :
+                        callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'] = callmethod.loc[(callmethod.altcov.str.contains(',', regex=False)) & (~callmethod.alt.str.contains(',', regex=False)), 'altcov'].apply(lambda x: str(max(x)))
+                if not callmethod.empty:
+                    callmethod = callmethod.assign(alt=callmethod.alt.str.split(",")).assign(altcov=callmethod.altcov.str.split(","))
+                    for ci in callmethod['altcov'].isna().index:
+                        callmethod.at[ci, 'altcov'] = [0]
+                    callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] =\
+                        callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'altcov'] * \
+                        callmethod.loc[(callmethod.alt.str.len() > callmethod.altcov.str.len()), 'alt'].str.len()
+                    checkindex = list(callmethod.loc[(callmethod.alt.str.len() < callmethod.altcov.str.len())].index)
+                    for ci in checkindex:
+                        callmethod.at[ci, 'altcov'] = list(map(int, callmethod.loc[ci, 'altcov']))[:int(len(callmethod.loc[ci, 'alt']))]
+                    callmethod = callmethod.set_index(callmethod.columns.difference(['alt', 'altcov']).tolist()).apply(pd.Series.explode).reset_index()
+                    callmethod['altcov'] = callmethod['altcov'].astype(int)
+                    callmethod['vaf'] = callmethod['altcov']/callmethod['totcov']
+                    callmethod.loc[callmethod['vaf'] > 1, 'vaf'] = 1  # bug for some complex indels
+                    callmethod['type'] = np.nan
+                    callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() == 0, 'type'] = 'SNV'
+                    callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                    callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                    callmethod.loc[callmethod['ID'].str.contains('rs'), 'type'] = 'SNP'
+                    callmethod.drop('ID', axis=1, inplace=True)
+                else:
+                    callmethod = pd.DataFrame(columns=['chrom', method, method+'_score', 'pos', 'ref', 'totcov', 'alt', 'altcov', 'vaf', 'type'])
         elif method == 'abemus':  # NB: no indel method
             calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
             if not os.path.exists(calltablemethod_path):
