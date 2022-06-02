@@ -160,7 +160,7 @@ def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kw
 
 
 def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, metric='auprc', ground_truth_method=3,
-                 refsample='undiluted', muttype='SNV', chrom='22', methods=None, fixedvar='coverage', save=True):
+                 refsample='undiluted', muttype='SNV', chrom='22', methods=None, fixedvar='coverage', xaxis='tumor burden', save=True):
     tb_dict = {}
     cov_dict = {}
     dilutionseries_present = []
@@ -186,52 +186,59 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     aux_tb = []
     aux_cov = []
     baseline = {}
-    for i, d in enumerate(dilutionseries):
-        if ground_truth_method != 'spikein':
-            factorprefix = '{:.2f}'.format(100*round(tb_dict[str(d)], 4))
-        else:
-            factorprefix = '{:.2f}'.format(d)
-        for method in methods:
-            if factorprefix + '_' + method + '_score' in list(df_table.columns):
-                if i != 0 or ground_truth_method == 'spikein':
-                    if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
-                        truth_name = 'truth'
-                    elif ground_truth_method == 'caller':
-                        truth_name = method + '_truth'
-                    else:
-                        raise ValueError('unknown ground truth {}'.format(ground_truth_method))
-                    if metric == 'auprc':
-                        df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
-                        # df_method.dropna(how='all', inplace=True)
-                        df_method[truth_name].fillna(False, inplace=True)
-                        df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
-                        df_method.drop(factorprefix + '_' + method, axis=1, inplace=True)
-                    else:
-                        df_method = df_table[[truth_name, factorprefix + '_' + method]]
-                        # df_method.dropna(how='all', inplace=True)
-                        df_method[truth_name].fillna(False, inplace=True)
-                        df_method[factorprefix + '_' + method].fillna(False, inplace=True)
-                    df_method[truth_name] = df_method[truth_name].fillna(False)
-                    baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
-                    if str(d) not in dilutionseries_present:
-                        dilutionseries_present.append(str(d))
-                    if metric == 'auprc':
-                        aux_metric.append(average_precision_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
-                        aux_metricrelative.append(average_precision_score(
-                            df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
-                    elif metric == 'precision':
-                        aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
-                        # print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
-                    elif metric == 'recall':
-                        aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
-                    elif metric == 'f1':
-                        aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
-                    aux_method.append(method)
-                    if ground_truth_method != 'spikein':
-                        aux_tb.append(round(100*tb_dict[str(d)], 3))
-                        aux_cov.append(int(cov_dict[str(d)]))
-                    else:
-                        aux_tb.append(d)
+    if xaxis == 'tumor burden' or ground_truth_method == 'spikein':
+        for i, d in enumerate(dilutionseries):
+            if ground_truth_method != 'spikein':
+                factorprefix = '{:.2f}'.format(100*round(tb_dict[str(d)], 4))
+            else:
+                factorprefix = '{:.2f}'.format(d)
+            for method in methods:
+                if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                    if i != 0 or ground_truth_method == 'spikein':
+                        if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
+                            truth_name = 'truth'
+                        elif ground_truth_method == 'caller':
+                            truth_name = method + '_truth'
+                        else:
+                            raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+                        if metric == 'auprc':
+                            df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
+                            # df_method.dropna(how='all', inplace=True)
+                            df_method[truth_name].fillna(False, inplace=True)
+                            df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
+                            df_method.drop(factorprefix + '_' + method, axis=1, inplace=True)
+                        else:
+                            df_method = df_table[[truth_name, factorprefix + '_' + method]]
+                            # df_method.dropna(how='all', inplace=True)
+                            df_method[truth_name].fillna(False, inplace=True)
+                            df_method[factorprefix + '_' + method].fillna(False, inplace=True)
+                        df_method[truth_name] = df_method[truth_name].fillna(False)
+                        baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                        if str(d) not in dilutionseries_present:
+                            dilutionseries_present.append(str(d))
+                        if metric == 'auprc':
+                            aux_metric.append(average_precision_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
+                            aux_metricrelative.append(average_precision_score(
+                                df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
+                        elif metric == 'precision':
+                            aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                            # print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
+                        elif metric == 'recall':
+                            aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        elif metric == 'f1':
+                            aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        aux_method.append(method)
+                        if ground_truth_method != 'spikein':
+                            aux_tb.append(round(100*tb_dict[str(d)], 3))
+                            aux_cov.append(int(cov_dict[str(d)]))
+                        else:
+                            aux_tb.append(d)
+    elif xaxis == 'vaf':
+        df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
+        df_table['VAF'] = pd.cut(df_table['median VAF'],
+                                 bins=[0, .01, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, 1],
+                                 labels=['≤1%', '≤5%', '≤10%', '≤15%', '≤20%', '≤25%', '≤30%', '≤35%', '≤40%', '≤45%', '≤50%', '>50%'],
+                                 include_lowest=True)
     # print(baseline)
     results_df[metric.upper() + ' score'] = aux_metric
     if metric == 'auprc':
@@ -239,8 +246,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     # print(aux_tb)
     if ground_truth_method != 'spikein':
         if fixedvar == 'coverage':
-            results_df['tumor burden'] = aux_tb
-            xvar = 'tumor burden'
+            results_df[xaxis] = aux_tb
+            xvar = xaxis
             reverse = True
         else:  # fixedvar = ctdna
             results_df['coverage'] = aux_cov
@@ -279,9 +286,9 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures'))
         if methods != config.methods:
-            plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + config.context), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xaxis + '_' + config.context), bbox_inches='tight')
         else:
-            plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + config.context), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + xaxis + '_' + config.context), bbox_inches='tight')
     #plt.show()
     summary_df = results_df.copy()
     summary_df['plasma sample'] = plasmasample
@@ -293,10 +300,150 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results'))
         if methods != config.methods:
-            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed'+ fixedvar + '.csv'))
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
         else:
-            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_fixed'+ fixedvar + '.csv'))
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_fixed'+ fixedvar + '_' + xaxis + '.csv'))
     return summary_df
+
+
+def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mixtureid, metric='auprc', ground_truth_method=4,
+                 refsample='undiluted', muttype='SNV', methods=None, fixedvar='coverage', xaxis='tumor burden', save=True):
+    tb_dict = {}
+    cov_dict = {}
+    dilutionseries_present = []
+    if methods is None:
+        methods = config.methods
+    color_dict = {}
+    for i, m in enumerate(config.methods):
+        if m in methods:
+            color_dict[m] = config.colors[i]
+    if ground_truth_method != 'spikein':
+        for i, d in enumerate(dilutionseries):
+            tb_dict[str(d)] = dilutionseries_df[str(d)]
+            cov_dict[str(d)] = 150 ###TODO
+    results_df = pd.DataFrame()
+    aux_metric = []
+    aux_metricrelative = []
+    aux_method = []
+    aux_tb = []
+    aux_cov = []
+    baseline = {}
+    if xaxis == 'tumor burden' or ground_truth_method == 'spikein':
+        for i, d in enumerate(dilutionseries):
+            if ground_truth_method != 'spikein':
+                factorprefix = '{:.2f}'.format(round(tb_dict[str(d)], 2))
+            else:
+                factorprefix = '{:.2f}'.format(d)
+            for method in methods:
+                if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                    if i != 0 or ground_truth_method == 'spikein':
+                        if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
+                            truth_name = 'truth'
+                        elif ground_truth_method == 'caller':
+                            truth_name = method + '_truth'
+                        else:
+                            raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+                        if metric == 'auprc':
+                            df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
+                            # df_method.dropna(how='all', inplace=True)
+                            df_method[truth_name].fillna(False, inplace=True)
+                            df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
+                            df_method.drop(factorprefix + '_' + method, axis=1, inplace=True)
+                        else:
+                            df_method = df_table[[truth_name, factorprefix + '_' + method]]
+                            # df_method.dropna(how='all', inplace=True)
+                            df_method[truth_name].fillna(False, inplace=True)
+                            df_method[factorprefix + '_' + method].fillna(False, inplace=True)
+                        df_method[truth_name] = df_method[truth_name].fillna(False)
+                        baseline[method] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                        if str(d) not in dilutionseries_present:
+                            dilutionseries_present.append(str(d))
+                        if metric == 'auprc':
+                            aux_metric.append(average_precision_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
+                            aux_metricrelative.append(average_precision_score(
+                                df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
+                        elif metric == 'precision':
+                            aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                            # print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
+                        elif metric == 'recall':
+                            aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        elif metric == 'f1':
+                            aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        aux_method.append(method)
+                        if ground_truth_method != 'spikein':
+                            aux_tb.append(round(tb_dict[str(d)], 2))
+                            aux_cov.append(int(cov_dict[str(d)]))
+                        else:
+                            aux_tb.append(d)
+    elif xaxis == 'vaf':
+        df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
+        df_table['VAF'] = pd.cut(df_table['median VAF'],
+                                 bins=[0, .01, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, 1],
+                                 labels=['≤1%', '≤5%', '≤10%', '≤15%', '≤20%', '≤25%', '≤30%', '≤35%', '≤40%', '≤45%', '≤50%', '>50%'],
+                                 include_lowest=True)
+    # print(baseline)
+    results_df[metric.upper() + ' score'] = aux_metric
+    if metric == 'auprc':
+        results_df[metric.upper() + ' score - baseline ' + metric.upper() + ' score'] = aux_metricrelative
+    # print(aux_tb)
+    if ground_truth_method != 'spikein':
+        if fixedvar == 'coverage':
+            results_df[xaxis] = aux_tb
+            xvar = xaxis
+            reverse = True
+        else:  # fixedvar = ctdna
+            results_df['coverage'] = aux_cov
+            xvar = 'coverage'
+            reverse = False
+    else:
+        results_df['VAF'] = aux_tb
+        xvar = 'VAF'
+        reverse = True
+    results_df['caller'] = aux_method
+    if config.context == 'paper':
+        sns.set_style("whitegrid")
+    else:
+        sns.set_style("darkgrid")
+
+    sns.catplot(x=xvar, y=metric.upper() + " score", hue="caller",
+                capsize=.1, height=6, aspect=1.5, kind="point",
+                order=sorted(results_df[xvar].unique(), reverse=reverse),
+                palette=sns.color_palette(list(color_dict.values())), data=results_df)
+    plt.title(metric.upper() + " score for {} calling in {} - all chroms".format(muttype, mixtureid))
+
+    plt.ylim([0, max(0.5, max(aux_metric)+0.05)])
+    if metric == 'auprc':
+        if len(np.unique(baseline.values())) == 1:
+            print(baseline[config.methods[0]])
+            plt.axhline(y=baseline[config.methods[0]], color='k', linestyle='--')
+    if type(ground_truth_method) == int:
+        refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+    elif ground_truth_method == 'ranked':
+        refname = 'in'+refsample + 'sampleranked'
+    else:
+        refname = 'in'+refsample + 'samplebythesamecaller'
+    dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
+    dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
+    #if save:
+    #    if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures')):
+    #        os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures'))
+    #    if methods != config.methods:
+    #        plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+    #    else:
+    #        plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+    #plt.show()
+    summary_df = results_df.copy()
+    summary_df['mutation type'] = muttype
+    summary_df['metric'] = metric
+    summary_df['mutation type'] = refname
+    #if save:
+    #    if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results')):
+    #        os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results'))
+    #    if methods != config.methods:
+    #        summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
+    #    else:
+    #        summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_fixed'+ fixedvar + '_' + xaxis + '.csv'))
+    #return summary_df
 
 
 if __name__ == "__main__":
