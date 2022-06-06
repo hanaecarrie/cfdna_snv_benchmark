@@ -13,7 +13,7 @@ for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 echo $plasma
 
 export plasmafastqoutdir=$(dirname $plasma)
-export plasmafastqoutdir=$(echo "${plasmafastqoutdir/cfdnaseries/data}")  
+export plasmafastqoutdir=$(echo "${plasmafastqoutdir/mnt\/cfdnaseries/fastq}")  
 echo $plasmafastqoutdir
 if [ ! -d $plasmafastqoutdir ] ; then mkdir -p $plasmafastqoutdir ; fi
 if [ ! -f $plasmafastqoutdir/$(basename $plasma .bam)_R1.fastq.gz ] ; then
@@ -23,7 +23,7 @@ fi
 done
 
 export normalfastqoutdir=$(dirname $normal)
-export normalfastqoutdir=$(echo "${normalfastqoutdir/cfdnaseries/data}") 
+export normalfastqoutdir=$(echo "${normalfastqoutdir/mnt\/cfdnaseries/fastq}") 
 echo $normalfastqoutdir
 if [ ! -d $normalfastqoutdir ] ; then mkdir -p $normalfastqoutdir ; fi
 if [ ! -f $normalfastqoutdir/$(basename $normal .bam)_R1.fastq.gz ] ; then
