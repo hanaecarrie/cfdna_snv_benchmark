@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# def path and environment
-source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
-conda activate default
-
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -34,6 +29,9 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
+source $condapath
+conda activate default
+
 echo $sample_pseudohealthy
 echo $sample_buffycoat
 echo $samplename_pseudohealthy
@@ -62,6 +60,33 @@ if [ ! -d $pseudohealthydir ] ; then mkdir $pseudohealthydir ; fi
 if [ ! -f $sample_pseudohealthy_chr ] ; then $samtools view -b $sample_pseudohealthy $chr > $sample_pseudohealthy_chr ; fi
 if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseudohealthy_chr ; fi
 
+####################
+
+export pseudohealthy_chr_coverage=$pseudohealthydir/coverage_${samplename_pseudohealthy}_chr${chr}.txt
+if  [ ! -f $pseudohealthy_chr_coverage ] ; then export pseudohealthy_cov=$($samtools depth -a $sample_pseudohealthy_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $pseudohealthy_cov >  $pseudohealthy_chr_coverage ; else export pseudohealthy_cov=$(cat $pseudohealthy_chr_coverage) ; fi
+echo $pseudohealthy_cov
+echo $dilutionfactor_pseudohealthy # 150x
+
+export dilutionfraction_pseudohealthy=$(echo "scale=4; $dilutionfactor_pseudohealthy / $pseudohealthy_cov" | bc -l)
+if [ $(echo "$dilutionfraction_pseudohealthy>1" | bc) == 1 ]; then dilutionfraction_pseudohealthy=1 ; fi
+echo 'Dilution fraction pseudohealthy'
+echo $dilutionfraction_pseudohealthy
+
+export sample_pseudohealthy_chr_downsample=$pseudohealthydir/${samplename_pseudohealthy}_chr${chr}_${dilutionfactor_pseudohealthy}x.bam
+echo $sample_pseudohealthy_chr_downsample
+
+echo "subsample pseudohealthy sample as desired..."
+
+if [ $dilutionfraction_pseudohealthy != 1 ] ;
+then if [ ! -f $sample_pseudohealthy_chr_downsample ] ; then $samtools view -b -s $dilutionfraction_pseudohealthy -o $sample_pseudohealthy_chr_downsample $sample_pseudohealthy_chr ; fi
+else if [ ! -f $sample_pseudohealthy_chr_downsample ] ; then cp $sample_pseudohealthy_chr $sample_pseudohealthy_chr_downsample ; fi
+fi
+if [ ! -f ${sample_pseudohealthy_chr_downsample}.bai ] ; then $samtools index $sample_pseudohealthy_chr_downsample ; fi
+
+####################
+
+export sample_pseudohealthy_chr=$sample_pseudohealthy_chr_downsample
+
 if [ $vaf == 0 ] ; then cp $sample_pseudohealthy_chr $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam 
 cp ${sample_pseudohealthy_chr}.bai  $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam.bai ; fi
 
@@ -85,7 +110,7 @@ cd $outputdir
 # run bamsurgeon with snv
 echo 'run bamsurgeon SNV...'
 if [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv.bam ] && [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv.sorted.bam ];
-then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addsnv.py \
+then python3 $bamsurgeonpath/bamsurgeon/bin/addsnv.py \
     -v $mutsbed_snv \
     -f $sample_pseudohealthy_chr \
     -r $refgenome \
@@ -102,7 +127,7 @@ rm $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplen
 # run bamsurgeon with indel
 echo 'run bamsurgeon INDEL...'
 if [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.bam ] && [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam ];
-then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addindel.py \
+then python3 $bamsurgeonpath/bamsurgeon/bin/addindel.py \
     -v $mutsbed_indel \
     -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv.sorted.bam \
     -r $refgenome \
@@ -111,8 +136,8 @@ then python3 /mnt/projects/carriehc/cfDNA/utils/bamsurgeon/bin/addindel.py \
     --tmpdir $outputdir/addindel.tmp -p 4 --seed 1 ;
 fi
 echo 'sort and index output file...'
-if  [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools sort -o $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam -@ 4 $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.bam ; fi
-if [ ! -f $outputdir/spikein_chr${chr}_${samplename_pseudohealthy}_vaf${vaf}_snv_indel.sorted.bam.bai ] ; then /mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools index -@ 4 $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam ; fi
+if  [ ! -f $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam ] ; then $samtools sort -o $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam -@ 4 $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.bam ; fi
+if [ ! -f $outputdir/spikein_chr${chr}_${samplename_pseudohealthy}_vaf${vaf}_snv_indel.sorted.bam.bai ] ; then $samtools index -@ 4 $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam ; fi
 rm -r $outputdir/addindel.tmp
 rm $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.bam
 

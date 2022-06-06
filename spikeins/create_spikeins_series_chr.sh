@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# def path and environment
-source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
-conda activate default
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -30,6 +26,9 @@ done
 
 # parse config file
 eval $(parse_yaml $config_file)
+
+source $condapath
+conda activate default
 
 echo $sample_pseudohealthy
 echo $sample_buffycoat
@@ -63,10 +62,14 @@ if [ ! -f ${sample_pseudohealthy_chr}.bai ] ; then $samtools index $sample_pseud
 for vaf in $vafs ;
 
 do echo $vaf
+if [ ! -d $outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/logs ] ; then mkdir $outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/logs ; fi
 export outputdirnew=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}
 if [ ! -d $outputdirnew ] ; then mkdir $outputdirnew ; fi
 if [ ! -d $outputdirnew/logs ] ; then mkdir $outputdirnew/logs ; fi
-qsub -pe OpenMP 4 -l mem_free=32G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outputdirnew/logs/ /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf
+if [ $machine == 'Aquila' ] ; then /opt/uge-8.1.7p3/bin/lx-amd64/qsub -pe OpenMP 4 -l mem_free=32G,h_rt=24:00:00 -o $outputdirnew/logs/ -e $outputdirnew/logs/ $repopath/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf ; fi
+if [ $machine == 'Ronin' ] ; then
+        nohup $repopath/cfdna_snv_benchmark/spikeins/create_spikeins_chr.sh -c $config_file -v $vaf > $outputdir/logs/log_mixture_chr${chr}_vaf${vaf}.out 
+fi
 
 done
 
