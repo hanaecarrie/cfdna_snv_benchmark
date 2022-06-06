@@ -9,17 +9,17 @@ samplename:
   pseudohealthy: "CRC-986_300316-CW-T"
   buffycoat: "CRC-986-CW-N"
 
-vafs: "0.2 0.15 0.10 0.05 0.025 0.01 1"
+vafs: "0.2 0.15 0.10 0.05 0.025"
 
-chr: 22
+chr: 3
 
-pseudohealthydir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-986_300316-CW-T"
-buffycoatdir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-986-CW-N"
-outputfolder: "/mnt/cfdnaseries/spikeins/spikeins_chr22"
+pseudohealthydir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr3/initialsamples_chr3_CRC-986_300316-CW-T"
+buffycoatdir: "/mnt/cfdnaseries/initialsamples/initialsamples_chr3/initialsamples_chr3_CRC-986-CW-N"
+outputfolder: "/mnt/cfdnaseries/spikeins/spikeins_chr3"
 
 mutsbed:
-  snv: '/home/ubuntu/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_SNV_vaf1.bed'
-  indel: '/home/ubuntu/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_INDEL_vaf1.bed'
+  snv: '/home/ubuntu/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr3_SNV_vaf1.bed'
+  indel: '/home/ubuntu/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr3_INDEL_vaf1.bed'
 
 dilutionfactor:
   pseudohealthy: 150
