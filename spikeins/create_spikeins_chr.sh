@@ -41,7 +41,7 @@ echo $vaf
 echo $mutsbed_snv
 echo $mutsbed_indel
 
-export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/spikeins_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}
+export outputdir=$outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy}/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}
 if [ ! -d $outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy} ] ; then mkdir $outputfolder/spikeins_chr${chr}_${samplename_knowntumormuts}_${samplename_pseudohealthy} ; fi
 echo $outputdir
 echo $pseudohealthydir
@@ -150,8 +150,8 @@ if [ -f  $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${s
 if [ -f  $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam.bai ] ; then mv $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}_snv_indel.sorted.bam.bai  $outputdir/spikein_chr${chr}_${samplename_knowntumormuts}_vaf${vaf}_${samplename_pseudohealthy}.bam.bai ; fi
 
 # check buffy coat select chr exists
-echo "buffy coat..."
-if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
-if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi
+#echo "buffy coat..."
+#if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
+#if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+#if [ ! -f ${sample_buffycoat_chr}.bai ] ; then $samtools index $sample_buffycoat_chr ; fi
 

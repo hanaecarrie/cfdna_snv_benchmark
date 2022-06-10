@@ -11,15 +11,15 @@ samplename:
 
 vafs: "0.2 0.15 0.10 0.05 0.025 0.01 0"
 
-chr: 13
+chr: 2
 
-pseudohealthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr13/initialsamples_chr13_CRC-986_300316-CW-T"
-buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr13/initialsamples_chr13_CRC-986-CW-N"
-outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/spikeins/spikeins_chr13"
+pseudohealthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr2/initialsamples_chr2_CRC-986_300316-CW-T"
+buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr2/initialsamples_chr2_CRC-986-CW-N"
+outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/spikeins/spikeins_chr2"
 
 mutsbed:
-  snv: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr13_SNV_vaf1.bed'
-  indel: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr13_INDEL_vaf1.bed'
+  snv: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr2_SNV_vaf1.bed'
+  indel: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr2_INDEL_vaf1.bed'
 
 dilutionfactor:
   pseudohealthy: 150
