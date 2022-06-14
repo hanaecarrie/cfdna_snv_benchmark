@@ -1,30 +1,39 @@
 ##### Config file #####
 
 sample:
-  pseudohealthy: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHC433/1014_090516_P-T-sort.bam"
-  buffycoat: "/mnt/projects/skanderupamj/wgs/data/clonal.hema/bams/WHB12844/1014_090516_P-N-sort.bam"
+  pseudohealthy: "/mnt/data/rawdata/1014_090516_P-T-sort.bam"
+  buffycoat: "/mnt/data/rawdata/1014_090516_P-N-sort.bam"
 
 samplename:
   knowntumormuts: "CRC-COSMIC-5p"
   pseudohealthy: "CRC-1014_090516-CW-T"
   buffycoat: "CRC-1014-CW-N"
 
-vafs: "0 0.3 0.2 0.15 0.10 0.05 0.025 0.01"
+vafs: "0.2 0.15 0.10 0.05 0.025 0.01 0"
 
 chr: 22
 
-pseudohealthydir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-1014_090516-CW-T"
-buffycoatdir: "/mnt/projects/huangwt/wgs/hanae/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-1014-CW-N"
-outputfolder: "/mnt/projects/huangwt/wgs/hanae/data/spikeins/spikeins_chr22"
+pseudohealthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-1014_090516-CW-T"
+buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-1014-CW-N"
+outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/spikeins/spikeins_chr22"
 
 mutsbed:
-  snv: '/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_SNV_vaf1.bed'
-  indel:'/mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_INDEL_vaf1.bed'
+  snv: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_SNV_vaf1.bed'
+  indel: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr22_INDEL_vaf1.bed'
 
+dilutionfactor:
+  pseudohealthy: 150
 
-refgenome: "/mnt/projects/carriehc/cfDNA/data/refgenome/GRCh37/GRCh37.fa"
-picardjarfile: "/mnt/projects/carriehc/cfDNA/utils/picard.jar"
+defaultbash: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/spikeins/run_sampleid.sh"
+
+refgenome: "/home/users/astar/gis/carriehc/refgenome/GRCh37/GRCh37.fa"
+picardjarfile: "/home/users/astar/gis/carriehc/utils/picard.jar"
 aligner: mem
 mindepth: 0
 maxdepth: 200000
-samtools: '/mnt/projects/skanderupamj/wgs/bcbio_v107/bin/samtools'
+samtools: '/home/users/astar/gis/carriehc/.conda/envs/default/bin/samtools'
+bamsurgeonpath: '/home/users/astar/gis/carriehc/'
+
+machine: "Pluto"
+condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
+repopath: "/home/users/astar/gis/carriehc/"

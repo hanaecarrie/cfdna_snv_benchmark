@@ -1,20 +1,20 @@
 ##### Config file #####
 
 sample:
-  pseudohealthy: "/mnt/data/rawdata/986_300316_P-T-sort.bam"
-  buffycoat: "/mnt/data/rawdata/986_300316_P-N-sort.bam"
+  pseudohealthy: "/mnt/data/rawdata/1014_090516_P-T-sort.bam"
+  buffycoat: "/mnt/data/rawdata/1014_090516_P-N-sort.bam"
 
 samplename:
   knowntumormuts: "CRC-COSMIC-5p"
-  pseudohealthy: "CRC-986_300316-CW-T"
-  buffycoat: "CRC-986-CW-N"
+  pseudohealthy: "CRC-1014_090516-CW-T"
+  buffycoat: "CRC-1014-CW-N"
 
 vafs: "0.2 0.15 0.10 0.05 0.025 0.01 0"
 
 chr: 10
 
-pseudohealthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr10/initialsamples_chr10_CRC-986_300316-CW-T"
-buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr10/initialsamples_chr10_CRC-986-CW-N"
+pseudohealthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr10/initialsamples_chr10_CRC-1014_090516-CW-T"
+buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr10/initialsamples_chr10_CRC-1014-CW-N"
 outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/spikeins/spikeins_chr10"
 
 mutsbed:
