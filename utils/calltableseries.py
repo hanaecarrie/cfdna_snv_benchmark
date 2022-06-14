@@ -8,7 +8,7 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
 
     if chrom in [str(c) for c in range(1, 23)]:
         # Save table if do not exist and load tables
-        calltables = {'sampleid': [], 'tf': [], 'cov': [], 'snv': [], 'indel': [], 'snp': []}
+        calltables = {'sampleid': [], 'tf': [], 'cov': [], 'ichorcna': [], 'snv': [], 'indel': [], 'snp': []}
         mixturefolder = os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+mixtureid)
         for mixturepath in [l for l in os.listdir(mixturefolder) if l.endswith('x') or l.endswith('T')]:
             print(mixturepath)
@@ -23,6 +23,12 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
             else:
                 calltables['tf'].append(np.round(100*float(pd.read_csv(os.path.join(
                     mixturefolder, mixturepath, 'estimated_tf_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0]), 4))
+            print(os.path.exists(os.path.join(mixturefolder, mixturepath, 'ichorcna', mixturepath[len(('mixture_chr'+chrom)):]+'params.txt')))
+            if os.path.exists(os.path.join(mixturefolder, mixturepath, 'ichorcna', mixturepath[len(('mixture_chr'+chrom)):]+'params.txt')):
+                calltables['ichorcna'].append(np.round(100*float(os.system("cat " +os.path.join(
+                    mixturefolder, mixturepath, 'ichorcna', mixturepath[len(('mixture_chr'+chrom)):]+'params.txt') + " | grep 'Tumor Fraction:'")), 4))
+            else:
+                calltables['ichorcna'].append(np.nan)
             calltables['cov'].append(np.round(float(pd.read_csv(os.path.join(
                 mixturefolder, mixturepath, 'coverage_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0]), 4))
             calltable_snv = pd.read_csv(os.path.join(
@@ -87,7 +93,6 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
         caux_df = pd.DataFrame()
         caux_df['tf'] = pd.concat([c[['tf']] for c in caux_list], axis=1).median(axis=1)
         caux_df['cov'] = pd.concat([c[['cov']] for c in caux_list], axis=1).median(axis=1)
-        print(caux_df)
         if len(np.unique(caux_df['tf'].values)) < len(caux_df['tf'].values):
             raise ValueError('taking median of TFs gives duplicate values')
         calltablesserieschroms = []
@@ -102,7 +107,6 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
             for n, nc in enumerate(newcol):
                 if nc.split('_')[0] in oldtf:
                     i = oldtf.index(nc.split('_')[0])
-                    print(oldtf[i], '{:.2f}'.format(newtf[i]))
                     newcol[n] = nc.replace(oldtf[i], '{:.2f}'.format(newtf[i]))
             calltable.columns = newcol
             calltablesserieschroms.append(calltable)
@@ -134,7 +138,7 @@ if __name__ == "__main__":
         for mixtureid in mixtureids:
             for chrom in range(1, 23):
                 #TODO fix call bugs
-                if (mixtureid == 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T') and (chrom != 17 or chrom != 8):
+                if (mixtureid != 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T') or (chrom != 17 and chrom != 8):
                     chrom = str(chrom)
                     print('############# {} {} ############'.format(mixtureid, muttype))
                     calltablesseries, calltables = get_calltableseries(config, mixtureid, chrom, muttype, filterparam, reload, save)

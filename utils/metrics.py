@@ -141,6 +141,107 @@ def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
         # plt.show()
 
 
+def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', ground_truth_method=3, refsample='undiluted',
+                        muttype='SNV', chrom='all', methods=None, fixedvar='coverage', save=True):
+    color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
+    print(list(dilutionseries.index))
+    alpha_dict = {d: 1-0.1*i for i, d in enumerate(list(dilutionseries.index))}
+    baseline_dict = {}
+    dilutionseries_present = []
+    if methods is None:
+        methods = config.methods
+    for method in methods:
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for i, d in enumerate(list(dilutionseries.index)):
+            if ground_truth_method != 'spikein':
+                factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
+            else:
+                factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
+            print(factorprefix + '_' + method + '_score')
+            if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
+                    truth_name = 'truth'
+                elif ground_truth_method == 'method':
+                    truth_name = method +'_truth'
+                else:
+                    raise ValueError('unknown ground truth {}'.format(ground_truth_method))
+                df_method = df_table[[truth_name, factorprefix + '_' + method + '_score']]
+                df_method[truth_name].fillna(False, inplace=True)
+                df_method[factorprefix + '_' + method + '_score'].fillna(0, inplace=True)
+                baseline_dict[str(d)] = len(df_method[truth_name][df_method[truth_name]])/len(df_method[truth_name])
+                if str(d) not in dilutionseries_present:
+                    dilutionseries_present.append(str(d))
+                if xy == 'pr':
+                    precision, recall, thresholds = precision_recall_curve(df_method[truth_name], df_method[factorprefix + '_' + method + '_score'])
+                    if i == 0:
+                        plot_pr_curve(precision, recall, estimator_name=method, f1_score=None, figax=(fig, ax),
+                                      kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 4-i/3})
+                    else:
+                        plot_pr_curve(precision, recall, estimator_name='', f1_score=None, figax=(fig, ax),
+                                      kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 4-i/3})
+                elif xy == 'roc':
+                    fpr, tpr, thresholds = roc_curve(df_method[truth_name], df_method[factorprefix + '_' + method + '_score'])
+                    if i == 0:
+                        plot_roc_curve(fpr, tpr, estimator_name=method, auc_score=None, figax=(fig, ax),
+                                       kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+                    else:
+                        plot_roc_curve(fpr, tpr, estimator_name='', auc_score=None, figax=(fig, ax),
+                                       kwargs={'color': color_dict[method], 'alpha': alpha_dict[str(d)], 'lw': 3.5-int(i/2)})
+        # print(baseline_dict)
+        # print(tb_dict)
+        print(dilutionseries_present)
+        list_lines_baseline = []
+        if xy == 'pr':
+            if len(np.unique(baseline_dict.values())) == 1:
+                plt.axhline(y=baseline_dict[str(dilutionseries_present[0])], ls='--', c='k')
+                list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', label="baseline = {:.2f}".format(baseline_dict[str(dilutionseries_present[0])])))
+            else:
+                for d in dilutionseries_present:
+                    plt.axhline(y=baseline_dict[str(d)], alpha=alpha_dict[str(d)], ls='--', c='k')
+                    if ground_truth_method != 'spikein':
+                        list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], label="baseline tf {:.2f}% = {:.2f}".format(dilutionseries.loc[d, 'tf'], baseline_dict[str(d)])))
+                    else:
+                        list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], label="baseline vaf {:.2f}% = {:.2f}".format(dilutionseries.loc[d, 'cov'], baseline_dict[str(d)])))
+        handles, labels = plt.gca().get_legend_handles_labels()
+        if fixedvar == 'coverage':
+            if ground_truth_method != 'spikein':
+                list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='tumor burden = {:.2f}%'.format(dilutionseries.loc[d, 'tf'])) for i in dilutionseries_present]
+            else:
+                list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='VAF = {:.2f}%'.format(float(i))) for i in dilutionseries_present]
+        elif fixedvar == 'ctdna':
+            list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='cov = {}x'.format(int(round(dilutionseries.loc[i, 'cov']/10)*10))) for i in dilutionseries_present]
+        if xy == 'pr':
+            legend_list = handles + list_lines + list_lines_baseline
+        else:
+            legend_list = handles + list_lines
+        # Creating legend with color box
+        plt.legend(bbox_to_anchor=(1, 1), loc="upper left", handles=legend_list)
+        if xy == 'pr':
+            plt.title("Precision Recall curve for SNV calling in sample {}".format(mixtureid))
+        elif xy == 'roc':
+            plt.title("Receiver Operation Characteristics curve for SNV calling in sample {}".format(mixtureid))
+        if xy == 'pr':
+            plt.semilogx()
+            plt.xlim([0.01, 1.01])
+        else:
+            plt.xlim([-0.01, 1.01])
+        plt.ylim([-0.01, 1.01])
+        dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
+        dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
+        if save:
+            if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
+                os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
+            if type(ground_truth_method) == int:
+                refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
+            elif ground_truth_method == 'ranked':
+                refname = 'in'+refsample + 'sampleranked'
+            else:
+                refname = 'in'+refsample + 'samplebythesamecaller'
+            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr', 'figures', mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context), bbox_inches='tight')
+        # plt.show()
+
+
+
 def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kwargs={}):
     kwargs["drawstyle"] = "steps-post"
     if auc_score is not None and estimator_name is not None:
@@ -172,13 +273,16 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
             color_dict[m] = config.colors[i]
     if ground_truth_method != 'spikein':
         for i, d in enumerate(dilutionseries):
-            mixturepath = 'mixture_chr'+chrom+'_'+plasmasample +"_" + str(d[0]) +"x_" + healthysample + "_" + str(d[1]) + 'x'
-            tb_dict[str(d)] = float(pd.read_csv(os.path.join(
-                *config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample,
-                mixturepath, 'estimated_tf_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
-            cov_dict[str(d)] = float(pd.read_csv(os.path.join(
-                *config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample,
-                mixturepath, 'coverage_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
+            if chrom in [str(c) for c in range(1, 23)]:
+                mixturepath = 'mixture_chr'+chrom+'_'+plasmasample +"_" + str(d[0]) +"x_" + healthysample + "_" + str(d[1]) + 'x'
+                tb_dict[str(d)] = float(pd.read_csv(os.path.join(
+                    *config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample,
+                    mixturepath, 'estimated_tf_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
+                cov_dict[str(d)] = float(pd.read_csv(os.path.join(
+                    *config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample,
+                    mixturepath, 'coverage_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
+            else:  # chrom == 'all'
+                calltables_aux = pd.read_csv(os.path.join(mixturefolder, 'calls', mixtureid+'_tf_cov.csv'), index_col=0)
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -306,10 +410,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     return summary_df
 
 
-def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mixtureid, metric='auprc', ground_truth_method=4,
+def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='auprc', ground_truth_method=4,
                  refsample='undiluted', muttype='SNV', methods=None, fixedvar='coverage', xaxis='tumor burden', save=True):
-    tb_dict = {}
-    cov_dict = {}
     dilutionseries_present = []
     if methods is None:
         methods = config.methods
@@ -317,10 +419,6 @@ def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mix
     for i, m in enumerate(config.methods):
         if m in methods:
             color_dict[m] = config.colors[i]
-    if ground_truth_method != 'spikein':
-        for i, d in enumerate(dilutionseries):
-            tb_dict[str(d)] = dilutionseries_df[str(d)]
-            cov_dict[str(d)] = 150 ###TODO
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -329,11 +427,11 @@ def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mix
     aux_cov = []
     baseline = {}
     if xaxis == 'tumor burden' or ground_truth_method == 'spikein':
-        for i, d in enumerate(dilutionseries):
+        for i, d in enumerate(list(dilutionseries.index)):
             if ground_truth_method != 'spikein':
-                factorprefix = '{:.2f}'.format(round(tb_dict[str(d)], 2))
+                factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
             else:
-                factorprefix = '{:.2f}'.format(d)
+                factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
             for method in methods:
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
                     if i != 0 or ground_truth_method == 'spikein':
@@ -371,10 +469,10 @@ def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mix
                             aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                         aux_method.append(method)
                         if ground_truth_method != 'spikein':
-                            aux_tb.append(round(tb_dict[str(d)], 2))
-                            aux_cov.append(int(cov_dict[str(d)]))
+                            aux_tb.append(round(dilutionseries.loc[d, 'tf'], 2))
+                            aux_cov.append(int(dilutionseries.loc[d, 'cov']))
                         else:
-                            aux_tb.append(d)
+                            aux_tb.append(round(dilutionseries.loc[d, 'vaf'], 2))
     elif xaxis == 'vaf':
         df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
         df_table['VAF'] = pd.cut(df_table['median VAF'],
@@ -424,26 +522,26 @@ def metric_curve_allchr(config, df_table, dilutionseries, dilutionseries_df, mix
         refname = 'in'+refsample + 'samplebythesamecaller'
     dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
     dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
-    #if save:
-    #    if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures')):
-    #        os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures'))
-    #    if methods != config.methods:
-    #        plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xaxis + '_' + config.context), bbox_inches='tight')
-    #    else:
-    #        plt.savefig(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_' + xaxis + '_' + config.context), bbox_inches='tight')
-    #plt.show()
+    if save:
+        if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
+            os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
+        if methods != config.methods:
+            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr','figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+        else:
+            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr', 'figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+    plt.show()
     summary_df = results_df.copy()
     summary_df['mutation type'] = muttype
     summary_df['metric'] = metric
     summary_df['mutation type'] = refname
-    #if save:
-    #    if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results')):
-    #        os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results'))
-    #    if methods != config.methods:
-    #        summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results',  plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
-    #    else:
-    #        summary_df.to_csv(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'results', plasmasample + '_' + healthysample + '_' + muttype + '_' + metric + '_' + refname + '_fixed'+ fixedvar + '_' + xaxis + '.csv'))
-    #return summary_df
+    if save:
+        if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'results')):
+            os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'results'))
+        if methods != config.methods:
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results',  mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
+        else:
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
+    return summary_df
 
 
 if __name__ == "__main__":
