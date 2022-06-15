@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV, lib.loc='/outdir/Rlibs')
+library(cfSNV)
 library(yaml)
 library(optparse)
  

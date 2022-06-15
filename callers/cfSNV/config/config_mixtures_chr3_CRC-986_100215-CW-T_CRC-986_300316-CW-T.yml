@@ -1,17 +1,16 @@
 ## Params ##
 
-dilutionseriesfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr1/mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
-buffycoatbam: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986-N/CRC-986-CW-N_chr1.bam"
-chr: 1
+dilutionseriesfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr3/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+buffycoatbam: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr3/initialsamples_chr3_CRC-986-N/CRC-986-CW-N_chr3.bam"
+chr: 3
 tmpdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/Rlibs/cfSNV/extdata/tmp"
 extdata: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata/"
-outdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
-finaloutdir : "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfdna_callers/mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+outdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+finaloutdir : "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfdna_callers/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
 preprocessing: 'true'
 
-condapath : "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
-repopath: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark"
-
+condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
+repopath: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers"
 dir:
         samtools: "/home/users/astar/gis/carriehc/.conda/envs/cfSNV/bin/samtools"
         picard: "/home/users/astar/gis/carriehc/.conda/envs/cfSNV/share/picard-2.27.3-0/picard.jar"
