@@ -34,6 +34,7 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
 
 def figure_curve(config, df_table, plasmasample, healthysample, dilutionseries, xy='pr', ground_truth_method=3, refsample='undiluted', muttype='SNV', chrom='22', methods=None, fixedvar='coverage', save=True):
     color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
+    print(list(color_dict.values()))
     alpha_dict = {str(dilutionseries[i]): 1-0.1*i for i in range(len(dilutionseries))}
     tb_dict, cov_dict = {}, {}
     baseline_dict = {}
@@ -205,7 +206,7 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
         handles, labels = plt.gca().get_legend_handles_labels()
         if fixedvar == 'coverage':
             if ground_truth_method != 'spikein':
-                list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='tumor burden = {:.2f}%'.format(dilutionseries.loc[d, 'tf'])) for i in dilutionseries_present]
+                list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='tumor burden = {:.2f}%'.format(dilutionseries.loc[i, 'tf'])) for i in dilutionseries_present]
             else:
                 list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='VAF = {:.2f}%'.format(float(i))) for i in dilutionseries_present]
         elif fixedvar == 'ctdna':
@@ -298,7 +299,7 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                 factorprefix = '{:.2f}'.format(d)
             for method in methods:
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
-                    if i != 0 or ground_truth_method == 'spikein':
+                    if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage':
                         if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                             truth_name = 'truth'
                         elif ground_truth_method == 'caller':
@@ -419,6 +420,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     for i, m in enumerate(config.methods):
         if m in methods:
             color_dict[m] = config.colors[i]
+    print(color_dict)
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -426,7 +428,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     aux_tb = []
     aux_cov = []
     baseline = {}
-    if xaxis == 'tumor burden' or ground_truth_method == 'spikein':
+    if xaxis == 'tumor burden' or xaxis == 'coverage' or ground_truth_method == 'spikein':
         for i, d in enumerate(list(dilutionseries.index)):
             if ground_truth_method != 'spikein':
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
@@ -434,7 +436,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
             for method in methods:
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
-                    if i != 0 or ground_truth_method == 'spikein':
+                    if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage':
                         if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                             truth_name = 'truth'
                         elif ground_truth_method == 'caller':
@@ -502,7 +504,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
         sns.set_style("whitegrid")
     else:
         sns.set_style("darkgrid")
-
+    print(results_df)
     sns.catplot(x=xvar, y=metric.upper() + " score", hue="caller",
                 capsize=.1, height=6, aspect=1.5, kind="point",
                 order=sorted(results_df[xvar].unique(), reverse=reverse),
@@ -522,13 +524,14 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
         refname = 'in'+refsample + 'samplebythesamecaller'
     dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
     dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
+    xa = xaxis if xaxis != 'tumor burden' else 'tb'
     if save:
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
         if methods != config.methods:
-            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr','figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr','figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + '_'.join(methods) + '_' + xa + '_' + config.context), bbox_inches='tight')
         else:
-            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr', 'figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + xaxis + '_' + config.context), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, dilution+'_allchr', 'figures', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_' + xa + '_' + config.context), bbox_inches='tight')
     plt.show()
     summary_df = results_df.copy()
     summary_df['mutation type'] = muttype
@@ -538,9 +541,9 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'results')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'results'))
         if methods != config.methods:
-            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results',  mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results',  mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_'.join(methods) + '_fixed' + fixedvar + '_' + xa + '.csv'))
         else:
-            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_fixed' + fixedvar + '_' + xaxis + '.csv'))
+            summary_df.to_csv(os.path.join(*dilfolder, dilution+'_allchr', 'results', mixtureid + '_' + muttype + '_' + metric + '_' + refname + '_fixed' + fixedvar + '_' + xa + '.csv'))
     return summary_df
 
 

@@ -17,7 +17,7 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
             calltables['sampleid'].append(mixturepath)
             if mixtureid == 'CRC-123_310715-CW-T_CRC-123_121115-CW-T':
                 tx, nx = int(mixturepath.split('_')[4][:-1]), int(mixturepath.split('_')[7][:-1])
-                tf = 0.563 * tx / (tx + nx)
+                tf = 100 * 0.563 * tx / (tx + nx)
                 calltables['tf'].append(tf)
                 print(tf)
             else:
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     save = True
     filterparam = 'all'
     muttypes = ['snv', 'indel', 'snp']
-    mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
+    mixtureids = ['CRC-123_310715-CW-T_CRC-123_121115-CW-T', 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T']
 
     for muttype in muttypes:
         for mixtureid in mixtureids:
