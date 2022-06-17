@@ -22,6 +22,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                     plt.figure(figsize=(15, 10))
                     plt.grid(linewidth=1)
                 plasmasample = '_'.join(mixtureid.split('_')[:2])
+                print(plasmasample)
                 restablesample = restables[muttype][restables[muttype]['plasma sample'] == plasmasample]
                 for method in config.methods:
                     if muttype == 'indel' and method == 'abemus':

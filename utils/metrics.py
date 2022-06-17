@@ -282,8 +282,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                 cov_dict[str(d)] = float(pd.read_csv(os.path.join(
                     *config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+plasmasample+'_'+healthysample,
                     mixturepath, 'coverage_chr'+chrom+mixturepath[len(('mixture_chr'+chrom)):]+'.txt')).columns[0])
-            else:  # chrom == 'all'
-                calltables_aux = pd.read_csv(os.path.join(mixturefolder, 'calls', mixtureid+'_tf_cov.csv'), index_col=0)
+            #else:  # chrom == 'all'
+            #    calltables_aux = pd.read_csv(os.path.join(mixturefolder, 'calls', mixtureid+'_tf_cov.csv'), index_col=0)
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -420,7 +420,6 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     for i, m in enumerate(config.methods):
         if m in methods:
             color_dict[m] = config.colors[i]
-    print(color_dict)
     results_df = pd.DataFrame()
     aux_metric = []
     aux_metricrelative = []
@@ -435,7 +434,9 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
             else:
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
             for method in methods:
+                print(factorprefix + '_' + method + '_score')
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                    print('is present')
                     if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage':
                         if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                             truth_name = 'truth'
@@ -475,6 +476,9 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                             aux_cov.append(int(dilutionseries.loc[d, 'cov']))
                         else:
                             aux_tb.append(round(dilutionseries.loc[d, 'vaf'], 2))
+                else:
+                    print('is not present')
+                    print(np.unique([cn.split('_')[0] for cn in list(df_table.columns)])[:-5].astype(float))
     elif xaxis == 'vaf':
         df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
         df_table['VAF'] = pd.cut(df_table['median VAF'],
