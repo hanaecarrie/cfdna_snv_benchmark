@@ -1,10 +1,5 @@
 #!/bin/bash
 
-source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
-conda activate cfSNV
-
-cd /home/ubuntu/cfSNV
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -32,6 +27,11 @@ done
 
 #parse config file
 eval $(parse_yaml $config_file)
+
+source $condapath
+conda activate cfSNV
+
+cd ${repopath}/cfSNV
 
 echo $config_file
 echo $outdir
@@ -63,10 +63,11 @@ echo "plasma ${plasma}"
 ### Convert BAM to FASTQ ###
 export plasmafastqoutdir=$(dirname $plasma)
 echo $plasmafastqoutdir
-if [ ! -f $(dirname $plasma)/$(basename $plasma .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py  -i $plasma -t $(dirname $plasma)/tmp -o $plasmafastqoutdir -c $config_file ; fi
+echo $(which python)
+if [ ! -f $(dirname $plasma)/$(basename $plasma .bam)_R1.fastq.gz ] ; then python ${repopath}/cfSNV/generate_fastqs_yaml.py  -i $plasma -t $(dirname $plasma)/tmp -o $plasmafastqoutdir -c $config_file ; fi
 export normalfastqoutdir=$(dirname $normal)
 echo $normalfastqoutdir
-if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
+if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python ${repopath}/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
 
 ### Run cfSNV pipeline ###
 
