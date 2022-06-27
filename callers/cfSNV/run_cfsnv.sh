@@ -48,11 +48,21 @@ exec 1>$outdir/log.out 2>&1
 # Start logging the RAM usage and CPU usage
 bash ${repopath}/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
-echo 'Clean tmp folder'
-echo $tmpdir
-rm -r $tmpdir
+#echo 'Clean tmp folder'
+#echo $tmpdir
+#rm -r $tmpdir
 
 touch $outdir/logtime.out
+
+
+###### prepare bedfile ######
+# Download reference genome (here all with hg19)
+# Index it
+# Create dictionary
+# Create bed file chr
+# Split bed file chr by chunks of 5,000 lines
+if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+
 
 echo "dilfolder ${dilutionseriesfolder}"
 

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 #SBATCH -p normal
-#SBATCH -J 3_986_cfsnv
-#SBATCH -t 2-00:00:00
+#SBATCH -J 18_986_cfsnv
+#SBATCH -t 3-00:00:00
 #SBATCH -N 1
-#SBATCH --mem 32000
-#SBATCH --output=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.3_986_cfsnv.o
-#SBATCH --error=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.3_986_cfsnv.e
+#SBATCH --mem 64000
+#SBATCH --output=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.18_986_cfsnv.o
+#SBATCH --error=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.18_986_cfsnv.e
 
-export chr=3
+export chr=18
 
 cd /home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers/cfSNV
 

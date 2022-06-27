@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV)
+library(cfSNV,  lib.loc='/rfs-storageservice/GIS/Projects/LOCCG/carriehc/Rlibs/')
 library(yaml)
 library(optparse)
  
@@ -33,7 +33,7 @@ normaloutputdir <- file.path(config$outdir, normalid)
 normal <-  file.path(normaloutputdir, paste0(normalid, ".recal.bam"))
 print(normal)
 
-targetbeddir <- file.path(config$extdata, 'wholegenome_bed')
+targetbeddir <- file.path(config$extdata, 'exome_bed')
 reference <- file.path(config$extdat, 'GRCh37', 'GRCh37.fa')
 SNPdatabase <- file.path(config$extdata, 'dbsnp_vcf', paste0('dbSNP_hg19_chr', config$chr, '.vcf'))
 print(targetbeddir)
@@ -50,7 +50,7 @@ print(config$dir$python)
 print(config$dir$java)
 
 print('Parameter recommend')
-targetbedfull <- file.path(targetbeddir, paste0('wholegenome_hg19_chr', config$chr, '.bed'))
+targetbedfull <- file.path(targetbeddir, paste0('exome_hg19_chr', config$chr, '.bed'))
 parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, reference, SNPdatabase, config$dir$samtools, plasmaid, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
 # read parameter recommended 
 MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV)
+library(cfSNV,  lib.loc='/rfs-storageservice/GIS/Projects/LOCCG/carriehc/Rlibs/')
 library(yaml)
 library(optparse)
 library(callr)

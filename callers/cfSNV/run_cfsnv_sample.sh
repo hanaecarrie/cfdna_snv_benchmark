@@ -85,7 +85,7 @@ fi
 
 # apply cfSNV mutation calling function per batch
 if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-for targetbed in $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed ; do 
+for targetbed in $extdata/exome_bed/exome_hg19_chr${chr}_*.bed ; do 
 	echo $targetbed 
 	Rscript run_variantcalling.R --config_file $config_file --plasmaid $plasmaid --targetbed $targetbed
 done

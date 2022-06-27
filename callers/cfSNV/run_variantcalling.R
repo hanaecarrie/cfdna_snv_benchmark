@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV)
+library(cfSNV,  lib.loc='/rfs-storageservice/GIS/Projects/LOCCG/carriehc/Rlibs/')
 library(yaml)
 library(optparse)
  
@@ -42,7 +42,7 @@ normaloutputdir <- file.path(config$outdir, normalid)
 normal <-  file.path(normaloutputdir, paste0(normalid, ".recal.bam"))
 print(normal)
 
-targetbeddir <- file.path(config$extdata, 'wholegenome_bed')
+targetbeddir <- file.path(config$extdata, 'exome_bed')
 reference <- file.path(config$extdat, 'GRCh37', 'GRCh37.fa')
 SNPdatabase <- file.path(config$extdata, 'dbsnp_vcf', paste0('dbSNP_hg19_chr', config$chr, '.vcf'))
 print(targetbeddir)

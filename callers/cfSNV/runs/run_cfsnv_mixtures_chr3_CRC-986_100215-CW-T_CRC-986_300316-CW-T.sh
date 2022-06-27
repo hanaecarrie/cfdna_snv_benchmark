@@ -2,9 +2,9 @@
 
 #SBATCH -p normal
 #SBATCH -J 3_986_cfsnv
-#SBATCH -t 2-00:00:00
+#SBATCH -t 3-00:00:00
 #SBATCH -N 1
-#SBATCH --mem 32000
+#SBATCH --mem 64000
 #SBATCH --output=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.3_986_cfsnv.o
 #SBATCH --error=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.3_986_cfsnv.e
 
