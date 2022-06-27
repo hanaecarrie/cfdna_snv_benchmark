@@ -60,11 +60,6 @@ if [ ! -d $outdir/$(basename $normal .bam) ] ; then mkdir $outdir/$(basename $no
 
 echo "plasma ${plasma}"
 
-export plasmaid=$(basename $plasma .bam)
-echo $plasmaid
-
-if [ $preprocessing == 'true' ] ; then
-
 ### Convert BAM to FASTQ ###
 export plasmafastqoutdir=$(dirname $plasma)
 echo $plasmafastqoutdir
@@ -72,29 +67,16 @@ if [ ! -f $(dirname $plasma)/$(basename $plasma .bam)_R1.fastq.gz ] ; then pytho
 export normalfastqoutdir=$(dirname $normal)
 echo $normalfastqoutdir
 if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
-# get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
-# run parameter recommend function
-Rscript run_getbamalign.R --config_file $config_file --plasmaid $plasmaid
-
-else
-	echo "Create empty bams for extendedFrags.recal.bam and notCombined.recal.bam"
-	# empty bam files
-	if [ ! -f $outdir/$(basename $normal .bam)/$(basename $normal .bam).recal.bam ] ; then cp $normal $outdir/$(basename $normal .bam)/$(basename $normal .bam).recal.bam ; fi
-	cp ${normal}.bai $outdir/$(basename $normal .bam)/$(basename $normal .bam).recal.bai
-	# empty bam files
-	if [ ! -f $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).recal.bam ] ; then cp $plasma $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).recal.bam ; fi
-	cp ${plasma}.bai $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).recal.bai
-        samtools view -b $plasma -o $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).extendedFrags.recal.bam chrM:1-2
-	samtools index $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).extendedFrags.recal.bam
-	mv $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).extendedFrags.recal.bam.bai $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).extendedFrags.recal.bai
-        samtools view -b $plasma -o $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).notCombined.recal.bam chrM:1-2
-	samtools index $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).notCombined.recal.bam
-	mv $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).notCombined.recal.bam.bai $outdir/$(basename $plasma .bam)/$(basename $plasma .bam).notCombined.recal.bai
-fi
 
 ### Run cfSNV pipeline ###
 
 startcfsnv=$(date +%s)
+
+# get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
+# run parameter recommend function
+export plasmaid=$(basename $plasma .bam)
+echo $plasmaid
+Rscript run_getbamalign.R --config_file $config_file --plasmaid $plasmaid
 
 if [ ! -f $outdirplasma/parameter.txt ] ; then Rscript run_parameter.R --config_file $config_file --plasmaid $plasmaid ;
 tail -n 13 $outdirplasma/log.out > $outdirplasma/parameter.txt ;
@@ -102,7 +84,7 @@ fi
 
 # apply cfSNV mutation calling function per batch
 if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-for targetbed in $extdata/exome_bed/exome_hg19_chr${chr}_*.bed ; do 
+for targetbed in $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed ; do 
 	echo $targetbed 
 	Rscript run_variantcalling.R --config_file $config_file --plasmaid $plasmaid --targetbed $targetbed
 done

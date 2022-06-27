@@ -1,5 +1,10 @@
 #!/bin/bash
 
+source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+conda activate cfSNV
+
+cd /home/ubuntu/cfSNV
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -27,12 +32,6 @@ done
 #parse config file
 eval $(parse_yaml $config_file)
 
-source $condapath
-conda activate cfSNV
-
-cd ${repopath}/cfSNV
-
-
 echo $config_file
 echo $outdir
 echo $tmpdir
@@ -46,7 +45,7 @@ exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out':
 
 # Start logging the RAM usage and CPU usage
-bash ${repopath}/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
+bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
 #echo 'Clean tmp folder'
 #echo $tmpdir
@@ -69,16 +68,20 @@ echo "dilfolder ${dilutionseriesfolder}"
 export normal=$buffycoatbam
 if [ ! -d $outdir/$(basename $normal .bam) ] ; then mkdir $outdir/$(basename $normal .bam) ; fi
 
-export normalfastqoutdir=$(dirname $normal)
-echo $normalfastqoutdir
-if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python ${repopath}/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
+
+echo "Preprocessing: ${preprocessing}"
+if [ $preprocessing == 'true' ] ; then
+	export normalfastqoutdir=$(dirname $normal)
+	echo $normalfastqoutdir
+	if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python /home/ubuntu/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
+fi
 
 export npid=0
 for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
         echo "plasma ${plasma}" ;
 	export npid=$((npid+1))
 	echo "n PID ${npid}" 
-        bash ${repopath}/cfSNV/run_cfsnv_sample.sh -c $config_file -p $plasma  &  pids[${npid}]=$!
+        bash /home/ubuntu/cfSNV/run_cfsnv_sample.sh -c $config_file -p $plasma  &  pids[${npid}]=$!
 done
 
 # wait for all pids

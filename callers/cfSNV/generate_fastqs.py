@@ -71,16 +71,17 @@ def main():
 
     # Step 1: convert bam file to sam
     print("Generating SAM file")
-    cmd = "samtools view -h %s > %s" %(inbam, unfiltered_sam)
-    if samtools is not None:
-        cmd = "%s view -h %s > %s" %(samtools, inbam, unfiltered_sam)
-    try:
-        print(cmd)
-        subprocess.call(cmd, shell = True)
-    except subprocess.CalledProcessError as e:
-        print("BAM to SAM error")
-        print(e)
-        sys.exit(1)
+    if not os.path.exists(unfiltered_sam):
+        cmd = "samtools view -h -@ 4 %s > %s" %(inbam, unfiltered_sam)
+        if samtools is not None:
+            cmd = "%s view -h -@ 4 %s > %s" %(samtools, inbam, unfiltered_sam)
+        try:
+            print(cmd)
+            subprocess.call(cmd, shell = True)
+        except subprocess.CalledProcessError as e:
+            print("BAM to SAM error")
+            print(e)
+            sys.exit(1)
 
     # Step 2: filter out unpaired reads from sam
     reads = {} # K00115:204:H7G7GBBXX:1:1111:14387:45379 -> cnt
@@ -140,9 +141,9 @@ def main():
 
     # Step 3: Generate bam from sam
     print("Creating BAM file from SAM file")
-    cmd = "samtools view -b %s > %s" %(filtered_sam, filtered_bam)
+    cmd = "samtools view -b -@ 4 %s > %s" %(filtered_sam, filtered_bam)
     if samtools is not None:
-        cmd = "%s view -b %s > %s" %(samtools, filtered_sam, filtered_bam)
+        cmd = "%s view -b -@ 4 %s > %s" %(samtools, filtered_sam, filtered_bam)
 
     
     try:

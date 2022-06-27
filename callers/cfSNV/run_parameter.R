@@ -33,6 +33,10 @@ normaloutputdir <- file.path(config$outdir, normalid)
 normal <-  file.path(normaloutputdir, paste0(normalid, ".recal.bam"))
 print(normal)
 
+<<<<<<< HEAD
+=======
+#targetbeddir <- file.path(config$extdata, 'wholegenome_bed')
+>>>>>>> 780a4c706bb3caf22803322d1a6e69c1d998771f
 targetbeddir <- file.path(config$extdata, 'exome_bed')
 reference <- file.path(config$extdat, 'GRCh37', 'GRCh37.fa')
 SNPdatabase <- file.path(config$extdata, 'dbsnp_vcf', paste0('dbSNP_hg19_chr', config$chr, '.vcf'))
@@ -50,6 +54,10 @@ print(config$dir$python)
 print(config$dir$java)
 
 print('Parameter recommend')
+<<<<<<< HEAD
+=======
+#targetbedfull <- file.path(targetbeddir, paste0('wholegenome_hg19_chr', config$chr, '.bed'))
+>>>>>>> 780a4c706bb3caf22803322d1a6e69c1d998771f
 targetbedfull <- file.path(targetbeddir, paste0('exome_hg19_chr', config$chr, '.bed'))
 parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, reference, SNPdatabase, config$dir$samtools, plasmaid, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
 # read parameter recommended 

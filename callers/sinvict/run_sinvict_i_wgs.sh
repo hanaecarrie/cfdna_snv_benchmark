@@ -64,7 +64,7 @@ if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam ] ;
 	then java -Xmx16G -jar /home/ubuntu/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar \
 	--in $buffycoatbam,$plasma \
 	--out ${outdirplasma}/abra/$(basename $buffycoatbam .bam)_${i}.abra.bam,${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam \
-	--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets ${extdata}/exome_bed/exome_hg19_chr${chr}_${i}.bed  --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra_${i}.log
+	--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets ${extdata}/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed  --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra_${i}.log
 fi
 endabra=$(date +%s)
 timeabra=$(($endabra-$startabra))
@@ -86,7 +86,7 @@ if [ ! -f ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv ] ; th
 	-f ${extdata}/GRCh37/GRCh37.fa \
 	$bamfile \
 	-w 1 \
-	-l ${extdata}/exome_bed/exome_hg19_chr${chr}_${i}.bed  >  ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv
+	-l ${extdata}/wholegenome_bed/wholegenome_hg19_chr${chr}_${i}.bed  >  ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv
 fi
 endreadcount=$(date +%s)
 timereadcount=$(($endreadcount-$startreadcount))

@@ -93,6 +93,9 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
         caux_df = pd.DataFrame()
         caux_df['tf'] = pd.concat([c[['tf']] for c in caux_list], axis=1).median(axis=1)
         caux_df['cov'] = pd.concat([c[['cov']] for c in caux_list], axis=1).median(axis=1)
+        #print('new tb for columns names')
+        newtf_dict = dict(zip(list(caux_df['tf'].index), ['{:.2f}'.format(c) for c in caux_df['tf'].values]))
+        #print(newtf_dict)
         if len(np.unique(caux_df['tf'].values)) < len(caux_df['tf'].values):
             raise ValueError('taking median of TFs gives duplicate values')
         calltablesserieschroms = []
@@ -101,13 +104,22 @@ def get_calltableseries(config, mixtureid, chrom, muttype='snv', filterparam='PA
             callfile = os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+mixtureid, 'calls', mixtureid+'_'+muttype+'_calls_'+filterparam+'.csv')
             calltable = pd.read_csv(callfile, index_col=0)
             caux = pd.read_csv(os.path.join(*config.mixturefolder, 'mixtures_chr'+chrom, 'mixtures_chr'+chrom+'_'+mixtureid, 'calls', mixtureid+'_tf_cov.csv'), index_col=0)
-            oldtf = caux['tf'].values
-            newtf = [caux_df.loc[caux[caux['tf'] == otf].index[0].split('_')[0] + '_' + '_'.join(caux[caux['tf'] == otf].index[0].split('_')[2:]), 'tf'] for otf in oldtf]
+            caux.index = [c.split('_')[0] + '_' +  '_'.join(c.split('_')[2:]) for c in list(caux.index)]
+            #print(list(caux['tf'].index))
+            #oldtf = ['{:.2f}'.format(c) for c in caux['tf'].values]
+            #print('old tf in col names')
+            oldtf_dict = dict(zip(list(caux['tf'].index), ['{:.2f}'.format(c) for c in caux['tf'].values]))
+            #print(oldtf_dict)
+            oldtf_dict_inverted = dict(zip(['{:.2f}'.format(c) for c in caux['tf'].values], list(caux['tf'].index)))
+            # newtf = [caux_df.loc[caux[caux['tf'] == otf].index[0].split('_')[0] + '_' + '_'.join(caux[caux['tf'] == otf].index[0].split('_')[2:]), 'tf'] for otf in oldtf]
             newcol = list(calltable.columns)
             for n, nc in enumerate(newcol):
-                if nc.split('_')[0] in oldtf:
-                    i = oldtf.index(nc.split('_')[0])
-                    newcol[n] = nc.replace(oldtf[i], '{:.2f}'.format(newtf[i]))
+                #print(nc.split('_')[0])
+                if nc.split('_')[0] in list(oldtf_dict_inverted.keys()):
+                    dilid = oldtf_dict_inverted[nc.split('_')[0]]
+                    # i = oldtf.index(nc.split('_')[0])
+                    newcol[n] = nc.replace(nc.split('_')[0], newtf_dict[dilid])
+                    #print(nc, newcol[n])
             calltable.columns = newcol
             calltablesserieschroms.append(calltable)
         calltablesserieschroms = pd.concat(calltablesserieschroms, axis=0)
