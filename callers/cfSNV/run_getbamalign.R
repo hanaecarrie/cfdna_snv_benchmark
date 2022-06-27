@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV)
+library(cfSNV, lib.loc='/outdir/Rlibs')
 library(yaml)
 library(optparse)
 library(callr)
@@ -73,16 +73,16 @@ if (!file.exists(plasma.unmerged) ) {
 if (!file.exists(plasma.merged.extendedFrags) ) {
         print('Get BAM align after merge plasma')
         getbam_align_after_merge(plasmafastq1, plasmafastq2, reference, SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, config$dir$GATK, config$dir$bwa, config$dir$flash, plasmaid, outputdir, java.dir=config$dir$java)
+	plasma.merge.notCombined.oldname <- list.files(path=outputdir, pattern=paste0(plasmaid, '[^a-zA-Z]*.notCombined.recal.bam'), full.names=TRUE)
+        print(plasma.merge.notCombined.oldname)
+        print(plasma.merge.notCombined)
+        file.rename(plasma.merge.notCombined.oldname, plasma.merge.notCombined)
+        file.rename(paste0(substring(plasma.merge.notCombined.oldname, 1, nchar(plasma.merge.notCombined.oldname)-1), 'i'), paste0(substring(plasma.merge.notCombined,1, nchar(plasma.merge.notCombined)-1), 'i'))
 	plasma.merged.extendedFrags.oldname <- list.files(path=outputdir, pattern=paste0(plasmaid, '[^a-zA-Z]*.extendedFrags.recal.bam'), full.names=TRUE)
 	print(plasma.merged.extendedFrags.oldname)
 	print(plasma.merged.extendedFrags)
 	file.rename(plasma.merged.extendedFrags.oldname, plasma.merged.extendedFrags)
 	file.rename(paste0(substring(plasma.merged.extendedFrags.oldname, 1, nchar(plasma.merged.extendedFrags.oldname)-1), 'i'), paste0(substring(plasma.merged.extendedFrags,1, nchar(plasma.merged.extendedFrags)-1), 'i'))
-	plasma.merge.notCombined.oldname <- list.files(path=outputdir, pattern=paste0(plasmaid, '[^a-zA-Z]*.notCombined.recal.bam'), full.names=TRUE)
-	print(plasma.merge.notCombined.oldname)
-	print(plasma.merge.notCombined)
-	file.rename(plasma.merge.notCombined.oldname, plasma.merge.notCombined)
-	file.rename(paste0(substring(plasma.merge.notCombined.oldname, 1, nchar(plasma.merge.notCombined.oldname)-1), 'i'), paste0(substring(plasma.merge.notCombined,1, nchar(plasma.merge.notCombined)-1), 'i'))
 }
 
 if (!file.exists(normal)) {

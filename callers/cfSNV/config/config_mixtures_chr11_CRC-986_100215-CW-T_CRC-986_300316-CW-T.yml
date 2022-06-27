@@ -1,12 +1,12 @@
 ## Params ###
 
-dilutionseriesfolder: "/outdir/data/mixtures/mixtures_chr3/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
-buffycoatbam: "/outdir/data/initialsamples/initialsamples_chr3/initialsamples_chr3_CRC-986-CW-N/CRC-986-CW-N_chr3.bam"
-chr: 3
+dilutionseriesfolder: "/outdir/data/mixtures/mixtures_chr11/mixtures_chr11_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+buffycoatbam: "/outdir/data/initialsamples/initialsamples_chr11/initialsamples_chr11_CRC-986-CW-N/CRC-986-CW-N_chr11.bam"
+chr: 11
 tmpdir: '/outdir/Rlibs/cfSNV/extdata/tmp'
 extdata: '/outdir/extdata/'
-outdir: "/outdir/cfsnv_outdir/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
-finaloutdir: '/outdir/cfdna_callers/mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T/'
+outdir: "/outdir/cfsnv_outdir/mixtures_chr11_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+finaloutdir: '/outdir/cfdna_callers/mixtures_chr11_CRC-986_100215-CW-T_CRC-986_300316-CW-T/'
 preprocessing: 'true'
 
 dir:
