@@ -53,11 +53,19 @@ bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid
 # Index it
 # Create dictionary
 # Create bed file chr
+export nbbasechr=$(cat $extdata/GRCh37/GRCh37.dict | grep SN:${chr} | awk 'BEGIN { FS = "LN:" } ; {print $2}' | awk 'BEGIN { FS = "\t" } ; {print $1}')
+echo $nbbasechr
+if [ ! -d $extdata/wholegenome_bed ] ; then mkdir $extdata/wholegenome_bed ; fi
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ] ;
+then touch $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ;
+for ((i = 1; i <= $nbbasechr; i+=1000)) ; 
+do echo -e "$chr\t$i\t$(($i+999))" >> $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed ; done
+fi
 # Split bed file chr by chunks of 5,000 lines
-if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+if [ ! -f $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}.bed $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_ ; fi
 
 ###### run SINVICT per chunk in parallel ######
-export nchunk=$(ls $extdata/exome_bed/exome_hg19_chr${chr}_*.bed | wc -l)
+export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
 echo "dilfolder ${dilutionseriesfolder}"
 
@@ -117,7 +125,7 @@ if [ $abra = 'False' ] ; then  # wait for all pids
 		if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
 		#export cpid=$(($cpid + 1))
 		#echo job $cpid
-		if [ ! -f $outdirplasma/results/calls_level6.sinvict ] ; then /home/ubuntu/sinvict/sinvict -minDepth 5 -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results ; fi #&  pids[${cpid}]=$!
+		if [ ! -f $outdirplasma/results/calls_level6.sinvict ] ; then /home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results ; fi #&  pids[${cpid}]=$!
 	done
 
 	# wait for all pids

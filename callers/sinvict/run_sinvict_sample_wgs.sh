@@ -51,7 +51,7 @@ exec 1>$outdirplasma/log.out 2>&1
 echo 'Start sinvict per sample'
 echo $plasma
 
-export nchunk=$(ls $extdata/exome_bed/exome_hg19_chr${chr}_*.bed | wc -l)
+export nchunk=$(ls $extdata/wholegenome_bed/wholegenome_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
 
 export outdirplasma=$outdir/$(basename $plasma .bam)
