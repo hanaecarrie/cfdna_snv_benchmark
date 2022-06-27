@@ -17,9 +17,9 @@ do
 	export search="chr: 21"
         export replace="chr: ${i}"
         sed -i "s/$search/$replace/g" $configfile
-
 done
 
+"""
 for i in {4..21}
 do
         export oldconfigfile="config_mixtures_chr3_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T.yml"
