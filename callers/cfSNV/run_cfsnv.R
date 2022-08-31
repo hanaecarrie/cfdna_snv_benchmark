@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-library(cfSNV,  lib.loc='/rfs-storageservice/GIS/Projects/LOCCG/carriehc/Rlibs/')
+library(cfSNV)
 library(yaml)
 library(optparse)
 library(callr)
@@ -20,8 +20,8 @@ print(plasmaid)
 print(config$outdir)
 outputdir <- file.path(config$outdir, plasmaid)
 print(outputdir)
-plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R1.fastq.gz'))
-plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '_R2.fastq.gz'))
+plasmafastq1 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R1.fastq.gz'))
+plasmafastq2 <- file.path(config$dilutionseriesfolder, plasmaid, paste0(plasmaid, '.sorted_R2.fastq.gz'))
 print(plasmafastq1)
 print(plasmafastq2)
 plasma.unmerged <-  file.path(outputdir, paste0(plasmaid, '.recal.bam'))
@@ -32,14 +32,13 @@ print(plasma.merged.extendedFrags)
 print(plasma.merge.notCombined)
 
 print(config$buffycoatbam)
-normalid <- tools::file_path_sans_ext(basename(config$buffycoatbam))
+normalid <- tools::file_path_sans_ext(config$buffycoatbam)
 normaldir <- dirname(config$buffycoatbam)
-normalfastq1 <- file.path(normaldir, paste0(normalid, '_R1.fastq.gz'))
-normalfastq2 <- file.path(normaldir, paste0(normalid, '_R2.fastq.gz'))
+normalfastq1 <- file.path(normaldir, paste0(normalid, '.sorted_R1.fastq.gz'))
+normalfastq2 <- file.path(normaldir, paste0(normalid, '.sorted_R2.fastq.gz'))
 print(normalfastq1)
 print(normalfastq2)
-normaloutputdir <- file.path(config$outdir, normalid)
-normal <-  file.path(normaloutputdir, paste0(normalid, ".recal.bam"))
+normal <-  file.path(outputdir, paste0(normalid, ".recal.bam"))
 print(normal)
 
 targetbeddir <- file.path(config$extdata, 'wholegenome_bed')
@@ -67,7 +66,6 @@ if (!file.exists(plasma.unmerged) ) {
 	print(plasma.unmerged)
 	file.rename(plasma.unmerged.oldname, plasma.unmerged)
 	file.rename(paste0(substring(plasma.unmerged.oldname, 1, nchar(plasma.unmerged.oldname)-1), 'i'), paste0(substring(plasma.unmerged,1, nchar(plasma.unmerged)-1), 'i'))
-
 }
 
 if (!file.exists(plasma.merged.extendedFrags) ) {
@@ -87,12 +85,20 @@ if (!file.exists(plasma.merged.extendedFrags) ) {
 
 if (!file.exists(normal)) {
         print('Get BAM align normal')
-        getbam_align(normalfastq1, normalfastq2, reference, SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, config$dir$GATK, config$dir$bwa, normalid, normaloutputdir, java.dir=config$dir$java)
-	normal.oldname <- list.files(path=normaloutputdir, pattern=paste0(normalid, '[^a-zA-Z]*.recal.bam'), full.names=TRUE)
+        getbam_align(normalfastq1, normalfastq2, reference, SNPdatabase, config$dir$samtools, config$dir$picard, config$dir$bedtools, config$dir$GATK, config$dir$bwa, normalid, outputdir, java.dir=config$dir$java)
+	normal.oldname <- list.files(path=outputdir, pattern=paste0(normalid, '[^a-zA-Z]*.recal.bam'), full.names=TRUE)
 	print(normal.oldname)
 	print(normal)
 	file.rename(normal.oldname, normal)
 	file.rename(paste0(substring(normal.oldname, 1, nchar(normal.oldname)-1), 'i'), paste0(substring(normal,1, nchar(normal)-1), 'i'))
 }
 
+
+print('Parameter recommend')
+targetbedfull <- file.path(targetbeddir, paste0('wholegenome_hg19_chr', config$chr, '.bed'))
+parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, reference, SNPdatabase, config$dir$samtools, plasmaid, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
+# read parameter recommended 
+MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])
+MIN_PASS_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], 'MIN_PASS_SUPPORT_COUNT = '))[2], ';'))[1])
+print(paste0('MIN_HOLD_SUPPORT_COUNT = ', MIN_HOLD_SUPPORT_COUNT, ', MIN_PASS_SUPPORT_COUNT = ', MIN_PASS_SUPPORT_COUNT))
 

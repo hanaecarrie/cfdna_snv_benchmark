@@ -1,21 +1,18 @@
 #!/bin/bash
 
-cd config
+cd runs
 
 for i in {1..22}
 do
-	export oldconfigfile="config_cfsnv_mixtures_chr21_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
-	export configfile=$(echo "${oldconfigfile/chr21/"chr${i}"}")    
+	export oldconfigfile="run_cfsnv_mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T.sh"
+	export configfile=$(echo "${oldconfigfile/chr3/"chr${i}"}")    
 	echo $configfile
 	cp $oldconfigfile $configfile
-	export search="chr21"
-	export replace="chr${i}"
+	export search="3_986"
+	export replace="${i}_986"
 	sed -i "s/$search/$replace/g" $configfile
-	export search="_chr21_"
-        export replace="_chr${i}_"
-        sed -i "s/$search/$replace/g" $configfile
-	export search="chr: 21"
-        export replace="chr: ${i}"
+	export search="chr=3"
+        export replace="chr=${i}"
         sed -i "s/$search/$replace/g" $configfile
 done
 
