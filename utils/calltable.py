@@ -136,9 +136,9 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
             else:
                 callmethod = pd.read_csv(calltablemethod_path)
-                callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'af_case']]
+                callmethod = callmethod[['chr', 'pos', 'ref', 'alt', 'dbsnp', 'cov_case', 'cov.alt', 'af_case', 'filter.pbem_coverage']]
                 callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
-                callmethod['abemus_score'] = callmethod['abemus_score']
+                callmethod['abemus_score'] = callmethod['vaf'] - callmethod['abemus_score']  # af_case - filter.pbem_coverage
                 callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
                 callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
                 callmethod['abemus'] = True
@@ -211,6 +211,7 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
             callmethod = pd.concat(list(callmethod_dict.values()), axis=1)
             callmethod = callmethod.loc[:, ~callmethod.columns.duplicated()]
             callmethod[method+'_score'] = callmethod[[method+'_level'+str(le) for le in range(1, 7)]].sum(axis=1) / 6
+            callmethod[method+'_score'] = 0.5 + (callmethod[method+'_score'] / 2)  # between 0.55 to 0.8
             callmethod[method] = False
             callmethod[method].loc[callmethod[method+'_score'] > 0] = True
             callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'sinvict', 'sinvict_score']]
@@ -237,7 +238,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
     calltable_snv[['chrom', 'pos', 'ref', 'alt']] = calltable_snv['chrom_pos_ref_alt'].str.split('_', expand=True)
     calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
-    calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
+    if not calltable_snp.empty:
+        calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
     calltable_snv['type'] = 'SNV'
     calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() > 0, 'type'] = 'INS'
     calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() < 0, 'type'] = 'DEL'
@@ -251,7 +253,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         calltable_snp[m] = calltable_snp[m].astype(bool)
     calltable_snv = calltable_snv[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
-    calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    if not calltable_snp.empty:
+        calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     # correct for germline calls with GATK Haplotype
     calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-N-germline-gatk-haplotype-annotated.vcf.gz')
     if '.' in os.path.basename(calltablemethod_path[:-7]):

@@ -293,12 +293,14 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     baseline = {}
     if xaxis == 'tumor burden' or ground_truth_method == 'spikein':
         for i, d in enumerate(dilutionseries):
+            print(d)
             if ground_truth_method != 'spikein':
                 factorprefix = '{:.2f}'.format(100*round(tb_dict[str(d)], 4))
             else:
                 factorprefix = '{:.2f}'.format(d)
             for method in methods:
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
+                    print(factorprefix + '_' + method + '_score')
                     if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage':
                         if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
                             truth_name = 'truth'
@@ -429,10 +431,14 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     baseline = {}
     if xaxis == 'tumor burden' or xaxis == 'coverage' or ground_truth_method == 'spikein':
         for i, d in enumerate(list(dilutionseries.index)):
+            print(d)
             if ground_truth_method != 'spikein':
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
             else:
-                factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
+                factorprefix = '{:.2f}'.format(dilutionseries.loc[d, 'vaf']) \
+                    if d != 'spikein_CRC-COSMIC-5p_vaf0.025_CRC-986_300316-CW-T' \
+                    else '0.03' #'{:.3f}'.format(dilutionseries.loc[d, 'vaf']) #TODO fix
+                print(factorprefix)
             for method in methods:
                 print(factorprefix + '_' + method + '_score')
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
@@ -475,16 +481,18 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                             aux_tb.append(round(dilutionseries.loc[d, 'tf'], 2))
                             aux_cov.append(int(dilutionseries.loc[d, 'cov']))
                         else:
-                            aux_tb.append(round(dilutionseries.loc[d, 'vaf'], 2))
+                            aux_tb.append(round(dilutionseries.loc[d, 'vaf'], 3))
                 else:
                     print('is not present')
-                    print(np.unique([cn.split('_')[0] for cn in list(df_table.columns)])[:-5].astype(float))
-    elif xaxis == 'vaf':
-        df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
-        df_table['VAF'] = pd.cut(df_table['median VAF'],
-                                 bins=[0, .01, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, 1],
-                                 labels=['≤1%', '≤5%', '≤10%', '≤15%', '≤20%', '≤25%', '≤30%', '≤35%', '≤40%', '≤45%', '≤50%', '>50%'],
-                                 include_lowest=True)
+                    # print(np.unique([cn.split('_')[0] for cn in list(df_table.columns)])[:-5].astype(float))
+                    print(np.unique([cn.split('_')[0] for cn in list(df_table.columns[5:-1])]).astype(float))
+    #elif xaxis == 'vaf':
+        #df_table['median VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]].median()
+        #df_table['VAF'] = pd.cut(df_table['median VAF'],
+        #                         bins=[0, .01, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, 1],
+        #                         labels=['≤1%', '≤5%', '≤10%', '≤15%', '≤20%', '≤25%', '≤30%', '≤35%', '≤40%', '≤45%', '≤50%', '>50%'],
+        #                         include_lowest=True)
+        #df_table['VAF'] = df_table[[c for c in list(df_table.columns) if c.endswith('vaf')]]
     # print(baseline)
     results_df[metric.upper() + ' score'] = aux_metric
     if metric == 'auprc':
