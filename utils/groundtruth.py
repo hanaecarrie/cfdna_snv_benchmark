@@ -30,7 +30,34 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
             plt.title(m)
         truthpos = list(calltablesseries[calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=1) >= ground_truth_method].index)
         calltablesseries.loc[truthpos, 'truth'] = True
-
+    elif ground_truth_method == 'spikein':
+        chroms = list(calltablesseries.chrom.unique().astype(str))
+        if chroms in [str(c) for c in range(1, 23)]:
+            gt = pd.read_csv(os.path.join(*config.extdatafolder, 'cosmic_mutations_atleast5patients', 'CRC_chr'+str(chroms)+'_'+muttype.upper()+'_tf1.bed'), sep='\t', header=None)
+        else:
+            gt_list = [pd.read_csv(os.path.join(*config.extdatafolder, 'cosmic_mutations_atleast5patients', 'CRC_chr'+str(chrom)+'_'+muttype.upper()+'_tf1.bed'), sep='\t', header=None) for chrom in chroms]
+            gt = pd.concat(gt_list)
+            print(gt)
+            calltablesseries['truth'] = False
+        if muttype == 'snv':
+            gt.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'alt']
+        else:  # indel
+            gt.columns = ['chrom', 'startpos', 'endpos', 'vaf', 'type', 'alt']
+        truthpos = []
+        posvalues = calltablesseries['pos'].values
+        c = 0
+        for igt, gtv in enumerate(gt['startpos'].values):
+            if gtv in posvalues:
+                if calltablesseries[calltablesseries['pos'] == gtv].shape[0] > 1:
+                    print('ISSUE: cannot retrieve reference easily')
+                    print(calltablesseries[calltablesseries['pos'] == gtv].shape[0])
+                # print(gt)
+                truthpos.append(str(gt.iloc[igt]['chrom']) +'_'+ str(gt.iloc[igt]['startpos']) +'_'+calltablesseries[calltablesseries['pos'] == gtv]['ref'].values[0] +'_'+str(gt.iloc[igt]['alt']))
+            c +=1
+        print(c)
+        calltablesseries['truth'] = False
+        calltablesseries = calltablesseries.reindex(list(set(list(calltablesseries.index) + truthpos)))
+        calltablesseries['truth'].loc[truthpos] = True
     # Approach 2: rank mutations
     # pseudo ground truth = best K mutations found by each caller
     # number mutations found by each method

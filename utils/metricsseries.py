@@ -12,6 +12,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                        allpatients=True, logscale=False,  save=False):
             xlab = 'tumor burden' if fixedvar == 'coverage' else 'coverage'
             print(xlab)
+            res = {'x' : [], 'y': [], 'label': []}
             color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
             lc = 'logscale' if logscale else 'linearscale'
             if allpatients:
@@ -47,6 +48,10 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                             #     restablesample = restablesample[restablesample['coverage'] != 250]
                         plt.plot(restablesample[restablesample['caller'] == method][xlab], restablesample[restablesample['caller'] == method][metric.upper()+' score'],
                                  c=color_dict[method], marker=config.markers[mi], markersize=15, lw=2, label = method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
+                        res['x'].append(restablesample[restablesample['caller'] == method][xlab])
+                        res['y'].append(restablesample[restablesample['caller'] == method][metric.upper()+' score'])
+                        res['label'].append(method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
+
                 if not allpatients:
                     if fixedvar == 'coverage':
                         plt.gca().invert_xaxis()
@@ -82,6 +87,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                         os.mkdir(os.path.join(*dilfolder, 'figures'))
                     plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_'  + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
             # plt.show()
+            return res
 
 
 if __name__ == '__main__':
