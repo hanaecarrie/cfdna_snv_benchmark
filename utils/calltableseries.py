@@ -7,16 +7,22 @@ from utils.calltable import *
 def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='PASS', reload=False, save=False, diltype='mixture'):
     if diltype == 'mixture':
         confdilfolder = config.mixturefolder
+    elif diltype == 'mixture_wes':
+        confdilfolder = config.mixturefolderultradeep
     else: # spikein
         confdilfolder = config.spikeinfolder
     print(diltype, confdilfolder)
-    if chrom in [str(c) for c in range(1, 23)]:
+    if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes':
+        if diltype == 'mixture_wes':
+            diltype = 'mixture'
         # Save table if do not exist and load tables
         calltables = {'sampleid': [], 'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'snv': [], 'indel': [], 'snp': []}
         dilutionfolder = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid)
         for dilutionpath in [l for l in os.listdir(dilutionfolder) if l.endswith('x') or l.endswith('T')]:
             print(dilutionpath)
-            if not os.path.exists(os.path.join(dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv')) or reload:
+            print(reload, 'reload')
+            if reload or not os.path.exists(os.path.join(dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv')):
+                print('hello')
                 calltable_snv, calltable_indel, calltable_snp = get_calltable(os.path.join(dilutionfolder, dilutionpath), config.methods, save=save, filter=filterparam)
             calltables['sampleid'].append(dilutionpath)
             if diltype == 'mixture':
@@ -66,6 +72,8 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
                         cols.append('{:.2f}_{}_altcov'.format(calltables[varname][ci], m))
                         cols.append('{:.2f}_{}_totcov'.format(calltables[varname][ci], m))
                         cols.append('{:.2f}_{}_vaf'.format(calltables[varname][ci], m))
+                    #print(csnv.columns)
+                    #print(cols)
                     csnv.columns = cols
                 # ensure no duplicated index
                 print(calltables[mt][0].loc[calltables[mt][0].index[calltables[mt][0].index.duplicated(keep=False)]].shape[0])
@@ -80,9 +88,10 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
                 calltables_aux.pop('snv')
                 calltables_aux.pop('indel')
                 calltables_aux.pop('snp')
-                print(calltables_aux)
+                #print(calltables_aux)
                 calltables_aux = pd.DataFrame.from_dict(calltables_aux)
                 calltables_aux.set_index('sampleid', inplace=True)
+                calltables_aux.sort_values(by='tf', ascending=False, inplace=True)
                 calltables_aux.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_tf_cov.csv'))
         calltablesseries = pd.read_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'), index_col=0)
         calltablesaux = pd.read_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
@@ -97,11 +106,11 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         # get median tf and cov estimates
         caux_list = []
         for chrom in chroms:
-            if os.path.exists(os.path.join(*confdilfolder, diltype+'s_chr'+chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv')):
+            if os.path.exists(os.path.join(*confdilfolder, diltype+'s_chr'+chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv')) and not reload:
                 caux = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
             else:
                 _, caux = get_calltableseries(config, dilutionid, chrom, muttype=muttype, filterparam=filterparam, reload=reload, save=save, diltype=diltype)
-            caux.index = [ci.split('_')[0] + '_'+'_'.join(ci.split('_')[2:]) for ci in list(caux.index)]
+            caux.index = [ci.split('_')[0] + '_'+ '_'.join(ci.split('_')[2:]) for ci in list(caux.index)]
             caux_list.append(caux)
         caux_df = pd.DataFrame()
         caux_df['tf'] = pd.concat([c[['tf']] for c in caux_list], axis=1).median(axis=1)
