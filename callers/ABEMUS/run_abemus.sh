@@ -1,9 +1,5 @@
 #!/bin/bash
 
-source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
-conda activate ABEMUS
-
-cd /home/ubuntu/ABEMUS
 
 # function to parse config file
 function parse_yaml {
@@ -32,6 +28,11 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
+source $condapath
+conda activate ABEMUS
+
+cd ${repopath}/ABEMUS
+
 echo $config_file
 echo $dilutionseriesfolder
 echo $buffycoatbam
@@ -39,7 +40,7 @@ echo $chr
 echo $extdata
 echo $outdir
 echo $finaloutdir
-
+echo $mode
 
 ####### generate info file #######
 if [ ! -d $outdir ] ; then mkdir $outdir ; fi
@@ -51,7 +52,7 @@ exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out'
 
 # Start logging the RAM usage and CPU usage
-bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
+bash ${repopath}/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
 if [ ! -f $outdir/infofile.tsv ] ; then touch $outdir/infofile.tsv ; fi
 
@@ -63,7 +64,12 @@ for dil in ${dilutionseriesfolder}/*/*[Tx].bam ; do
 	echo $dil ;
         echo -e $patientid'\t'$(basename $dil .bam)'\t'$dil'\t'$(basename $buffycoatbam .bam)'\t'$buffycoatbam >> $outdir/infofile.tsv ;
 done
-
+# add list of buffycoat to build GSE distribution
+echo $panelofnormalbcdir
+for bc in ${panelofnormalbcdir}/PoNbuffycoat_chr${chr}/*chr${chr}.bam ; do
+        echo $bc ;	
+	echo -e $(echo $(basename $bc .bam) | cut -d'-' -f2)'\t'NA'\t'NA'\t'$(basename $bc .bam)'\t'$bc >> $outdir/infofile.tsv
+done
 
 ###### prepare bedfile ######
 # Download reference genome (here all with hg19)
@@ -71,7 +77,7 @@ done
 # Create dictionary
 # Create bed file chr
 # Split bed file chr by chunks of 5,000 lines
-if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+if [ ! -f $extdata/${mode}_bed/${mode}_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/${mode}_bed/${mode}_hg19_chr${chr}.bed $extdata/${mode}_bed/${mode}_hg19_chr${chr}_ ; fi
 
 ###### prepare dbSNP database ######
 # 1. Download it in /data/extdata folder
@@ -94,7 +100,7 @@ echo $nchunk
 for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
 	echo "run abemus on chunk ${n}" ; 
 	export npid=$((${n#0} + 1))
-	bash /home/ubuntu/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
+	bash ${repopath}/ABEMUS/run_abemus_i.sh -c $config_file -i $n  &  pids[${npid}]=$!
 done
 
 # wait for all pids
@@ -105,7 +111,7 @@ done
 if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
 
 ###### concat results #####
-python /home/ubuntu/ABEMUS/concat_results.py $dilutionseriesfolder $outdir
+python ${repopath}/ABEMUS/concat_results.py $dilutionseriesfolder $outdir
 
 ####### copy results to common folder ########
 echo $finaloutdir

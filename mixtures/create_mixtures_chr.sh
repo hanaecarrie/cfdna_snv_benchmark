@@ -74,18 +74,18 @@ if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 echo "Select chr ${chr} only for the tumor and the healthy sample..."
 if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
 
-if [ $chr = 'all' ] ; then
-  if [ ! -f $sample_tumor_chr ] ; then cp $sample_tumor $sample_tumor_chr ; fi
+if [ "$chr" == 'all' ] ; then
+	if [ ! -f $sample_tumor_chr ] ; then cp $sample_tumor $sample_tumor_chr ; fi 
 else
-  if [ ! -f $sample_tumor_chr ] ; then $samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
+	if [ ! -f $sample_tumor_chr ] ; then $samtools view -b $sample_tumor $chr > $sample_tumor_chr ; fi
 fi
 if [ ! -f ${sample_tumor_chr}.bai ] ; then $samtools index $sample_tumor_chr ; fi
 if  [ ! -f $tumor_chr_coverage ] ; then export tumor_cov=$($samtools depth -a $sample_tumor_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $tumor_cov >  $tumor_chr_coverage ; else export tumor_cov=$(cat $tumor_chr_coverage) ; fi
 if [ ! -d $healthydir ] ; then mkdir $healthydir ; fi
-if [ $chr = 'all' ] ; then
-  if [ ! -f $sample_healthy_chr ] ; then cp $sample_healthy $sample_healthy_chr ; fi
-else
-  if [ ! -f $sample_healthy_chr ] ; then $samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
+if [ "$chr" == 'all' ] ; then
+	if [ ! -f $sample_healthy_chr ] ; then cp $sample_healthy $sample_healthy_chr ; fi
+else	
+	if [ ! -f $sample_healthy_chr ] ; then $samtools view -b $sample_healthy $chr > $sample_healthy_chr ; fi
 fi
 if [ ! -f ${sample_healthy_chr}.bai ] ; then $samtools index $sample_healthy_chr ; fi
 if  [ ! -f $healthy_chr_coverage ] ; then export healthy_cov=$($samtools depth -a $sample_healthy_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $healthy_cov >  $healthy_chr_coverage ; else export healthy_cov=$(cat $healthy_chr_coverage) ; fi
@@ -95,12 +95,14 @@ echo $dilutionfactor_tumor
 echo $dilutionfactor_healthy
                                    
 export dilutionfraction_tumor=$(echo "scale=4; $dilutionfactor_tumor / $tumor_cov" | bc -l)
-if [ $(echo "$dilutionfraction_tumor>1" | bc) == 1 ]; then dilutionfraction_tumor=1 ; fi
+echo $dilutionfraction_tumor
+echo $(echo "$dilutionfraction_tumor>1" | bc)  
+if [[ $(echo "$dilutionfraction_tumor>1" | bc) == 1 ]]; then dilutionfraction_tumor=1 ; fi
 export dilutionfraction_healthy=$(echo "scale=4; $dilutionfactor_healthy / $healthy_cov" | bc -l)
-if [ $(echo "$dilutionfraction_healthy>1" | bc) == 1 ]; then dilutionfraction_healthy=1 ; fi
+if [[ $(echo "$dilutionfraction_healthy>1" | bc) == 1 ]]; then dilutionfraction_healthy=1 ; fi
 echo 'Dilution fraction tumor'
 echo $dilutionfraction_tumor
-echo 'Dilution fractio healthy'
+echo 'Dilution fraction healthy'
 echo $dilutionfraction_healthy
 
 export sample_tumor_chr_downsample=$tumordir/${samplename_tumor}_chr${chr}_${dilutionfactor_tumor}x.bam
@@ -114,15 +116,15 @@ echo $rgname
 
 echo "subsample tumor and healthy samples as desired..."
 
-if [ $dilutionfraction_tumor != 1 ] ;
+if [[ $dilutionfraction_tumor != 1 ]] ;
 then if [ ! -f $sample_tumor_chr_downsample ] ; then $samtools view -b -s $dilutionfraction_tumor -o $sample_tumor_chr_downsample $sample_tumor_chr ; fi
 else if [ ! -f $sample_tumor_chr_downsample ] ; then cp $sample_tumor_chr $sample_tumor_chr_downsample ; fi
 fi
 
 
-if [ $dilutionfraction_healthy != 0 ] ;
+if [[ $dilutionfraction_healthy != 0 ]] ;
 
-then if [ $dilutionfraction_healthy != 1 ] ;
+then if [[ $dilutionfraction_healthy != 1 ]] ;
 then if [ ! -f $sample_healthy_chr_downsample ] ; then $samtools view -b -s $dilutionfraction_healthy -o $sample_healthy_chr_downsample $sample_healthy_chr ; fi
 
 else if [ ! -f $sample_healthy_chr_downsample ] ; then cp $sample_healthy_chr $sample_healthy_chr_downsample ; fi
@@ -150,10 +152,10 @@ if [  -f $outputdir/${dilutionname}.unsorted.bam ] ; then rm $outputdir/${diluti
 # check buffy coat select chr exists
 echo "buffy coat..."
 if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
-if [ $chr = 'all' ] ; then
-  if [ ! -f $sample_buffycoat_chr ] ; then cp $sample_buffycoat $sample_buffycoat_chr ; fi
-then
-  if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
+if [ "$chr" == 'all' ] ; then
+	if [ ! -f $sample_buffycoat_chr ] ; then cp $sample_buffycoat $sample_buffycoat_chr ; fi
+else
+	if [ ! -f $sample_buffycoat_chr ] ; then $samtools view -b $sample_buffycoat $chr > $sample_buffycoat_chr ; fi
 fi
 if [ ! -f ${sample_buffycoat_chr}.bai ] ; then  $samtools index $sample_buffycoat_chr ; fi
 if  [ ! -f $buffycoat_chr_coverage ] ; then export buffycoat_cov=$($samtools depth -a $sample_buffycoat_chr | awk '{sum+=$3} END {print sum/NR}') ; echo $buffycoat_cov >  $buffycoat_chr_coverage ; else export buffycoat_cov=$(cat $buffycoat_chr_coverage) ; fi
@@ -176,8 +178,13 @@ echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${
 
 echo "calculate coverage..."
 if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
-export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
+if [ $befile == 'wgs' ] ; then
+	export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt 
+else
+	export cov=$($samtools depth -b $bedfile -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
+echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
+
 fi
 
 echo "estimate tumor burden by ichorCNA..."

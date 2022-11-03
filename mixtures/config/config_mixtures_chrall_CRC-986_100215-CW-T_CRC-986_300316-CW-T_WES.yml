@@ -14,15 +14,15 @@ dilutionfactors: "1000-0 1000-1000 750-1250 500-1500 400-1600 200-1800 100-1900 
 
 chr: 'all'
 
-healthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986_300316-CW-T"
-tumordir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986_100215-CW-T"
-buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chr1/initialsamples_chr1_CRC-986-CW-N"
-outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/mixtures/mixtures_chr1"
+healthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chrall/initialsamples_chrall_CRC-986_300316-CW-T"
+tumordir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chrall/initialsamples_chrall_CRC-986_100215-CW-T"
+buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/initialsamples/initialsamples_chrall/initialsamples_chrall_CRC-986-CW-N"
+outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/mixtures/mixtures_chrall"
 
 tffile: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/ctDNA_burden_estimation_deepwgs_plasma_CRC_samples.csv" 
 ichorcnaextdata: "/home/users/astar/gis/carriehc/.conda/envs/default/lib/R/library/ichorCNA/extdata/"
 samtools: "/home/users/astar/gis/carriehc/.conda/envs/default/bin/samtools"
 condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
-bedfile: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata/exome_chr1.bed"
+bedfile: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata/exome.bed"
 machine: 'Pluto'
 repopath: "/home/users/astar/gis/carriehc/"
