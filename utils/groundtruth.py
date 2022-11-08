@@ -6,10 +6,10 @@ from utils.metrics import *
 from utils.calltable import *
 
 
-def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv'):
+def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv', matchedtissuepath=None):
     refmethods = list(np.copy(config.methods))
-
-    # Approach 1: optimal threshold for each method + consensus
+    res = {}
+    # Approach 1: CONSENSUS
     # pseudo ground truth = mutations found by at least k callers
     if type(ground_truth_method) == int:
         calltablesseries['truth'] = False
@@ -106,9 +106,77 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
 
         print(calltablesseries[calltablesseries['truth'] == True][['{:.2f}_{}'.format(max(calltablestf), m) for m in config.methods]].sum(axis=1).value_counts())
 
-    print(calltablesseries['truth'].value_counts())
+    # Approach 3: tissue as matched ground truth
+    elif ground_truth_method == 'tissue':
+        print('tissue')
+        calltablesseries['truth'] = False
+        tissuetable_snv, tissuetable_indel, tissuetable_snp = get_calltable(matchedtissuepath, config.methods_tissue, save=True, filter='PASS')  # 10% VAF filter fine for tissue
+        if muttype == 'snv':
+            tissuetable = tissuetable_snv
+        elif muttype == 'indel':
+            tissuetable = tissuetable_indel
+        elif muttype == 'snp':
+            tissuetable = tissuetable_snp
+        else:
+            raise ValueError('muttype should be in snv, indel or snp but equals {}'.format(muttype))
+        # which chroms as represented in cfDNA
+        chromlist = np.unique(calltablesseries['chrom'].values)
+        chromlist = [str(c) for c in chromlist]
+        print(chromlist)
+        tissuetable = tissuetable[tissuetable['chrom'].isin(chromlist)]
+        refmethods = list(np.copy(config.methods_tissue))
+        print(refmethods)
+        ncallsinundiluted = tissuetable[['{}'.format(m) for m in refmethods]].sum(axis=0)
+        callsinundiluted = tissuetable[['{}_score'.format(m) for m in refmethods]]
+        print(ncallsinundiluted)
+        callsinundiluted.columns = refmethods
+        callsinundiluted = callsinundiluted.stack().reset_index(level=0, drop=False).reset_index()
+        callsinundiluted.set_index('chrom_pos_ref_alt', inplace=True)
+        callsinundiluted.columns = ['method', 'score']
+        for mi, m in enumerate(refmethods):
+            plt.figure()
+            sns.histplot(callsinundiluted[callsinundiluted['method'] == m], x='score', stat="probability", color=config.colors[config.methods.index(m)], binwidth=0.01)
+            plt.xlim([0, 1])
+            plt.ylim([0, 1])
+            plt.title(m)
 
-    return calltablesseries
+        for i in range(5):
+            print(i)
+            aux = list(tissuetable[tissuetable[['{}'.format(m) for m in refmethods]].sum(axis=1) >= i].index)
+            auxf = [t for t in aux if t in list(calltablesseries.index)]
+            print(len(aux), len(auxf))
+            res[i] = auxf
+        truthpos = list(tissuetable[tissuetable[['{}'.format(m) for m in refmethods]].sum(axis=1) >= 3].index)  # all callers on tissue
+        print(len(truthpos))
+        truthpos = [t for t in truthpos if t in list(calltablesseries.index)]
+        print(len(truthpos))
+        calltablesseries.loc[truthpos, 'truth'] = True
+    print(calltablesseries['truth'].value_counts())
+    return calltablesseries, res
+
+
+def compare_groundtruth(calltabledict):
+    res = {}
+    for j in range(1, 8): # 7 methods
+        c = 0
+        for gttype, calltable in calltabledict.items():
+            print(gttype)
+            refmethods = np.unique([r.split('_')[0] for r in calltable.columns[5:]])
+            if c == 0:
+                refcalltable = calltable[calltable[['{}'.format(m) for m in refmethods]].sum(axis=1) >= j]
+            print(refmethods)
+            print(calltable.shape[0])
+            for i in range(1, len(refmethods)+1):
+                aux = list(calltable[calltable[['{}'.format(m) for m in refmethods]].sum(axis=1) >= i].index)
+                auxf = [t for t in aux if t in list(refcalltable.index)]
+                print(i, len(aux), len(auxf))
+                res[gttype + '_' + str(j) + '_' + str(i)] = auxf
+            c += 1
+    return res
+
+
+
+
 
 
 if __name__ == "__main__":
