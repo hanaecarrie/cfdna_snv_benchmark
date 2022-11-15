@@ -22,7 +22,6 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
             print(dilutionpath)
             print(reload, 'reload')
             if reload or not os.path.exists(os.path.join(dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv')):
-                print('hello')
                 calltable_snv, calltable_indel, calltable_snp = get_calltable(os.path.join(dilutionfolder, dilutionpath), config.methods, save=save, filter=filterparam)
             calltables['sampleid'].append(dilutionpath)
             if diltype == 'mixture':

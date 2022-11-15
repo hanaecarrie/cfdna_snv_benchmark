@@ -129,6 +129,30 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     callmethod.drop('ID', axis=1, inplace=True)
                 else:
                     callmethod = pd.DataFrame(columns=['chrom', method, method+'_score', 'pos', 'ref', 'totcov', 'alt', 'altcov', 'vaf', 'type'])
+        elif method == 'smurf':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, 'snv-parse.txt')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = pd.read_csv(calltablemethod_path, sep='\t')
+                callmethod = callmethod[['Chr', 'START_POS_REF', 'REF', 'ALT', 'T_refDepth', 'T_altDepth', 'Alt_Allele_Freq', 'predict','TRUE.']]
+                callmethod['T_refDepth'] = callmethod['T_refDepth'].astype(int) + callmethod['T_altDepth'].astype(int)
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'totcov', 'altcov', 'vaf', method, method+'_score']
+                callmethod[method] = callmethod[method].astype(bool)
+                callmethod['type'] = 'SNV'
+            calltablemethod_path = os.path.join(calldir, 'calls', method, 'indel-parse.txt')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+            else:
+                callmethodindel = pd.read_csv(calltablemethod_path, sep='\t')
+                callmethodindel = callmethodindel[['Chr', 'START_POS_REF', 'REF', 'ALT', 'T_refDepth', 'T_altDepth', 'Alt_Allele_Freq', 'predict','TRUE.']]
+                callmethodindel['T_refDepth'] = callmethodindel['T_refDepth'].astype(int) + callmethodindel['T_altDepth'].astype(int)
+                callmethodindel.columns = ['chrom', 'pos', 'ref', 'alt', 'totcov', 'altcov', 'vaf', method, method+'_score']
+                callmethodindel[method] = callmethodindel[method].astype(bool)
+                callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = pd.concat([callmethod, callmethodindel])
         elif method == 'abemus':  # NB: no indel method
             calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
             if not os.path.exists(calltablemethod_path):
@@ -229,7 +253,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         callmethods_snp[method] = callmethod_snp.drop_duplicates()
         callmethods_snv[method] = callmethods_snv[method].loc[~callmethods_snv[method].index.duplicated(keep='last')]
         callmethods_indel[method] = callmethods_indel[method].loc[~callmethods_indel[method].index.duplicated(keep='last')]
-        callmethod_snp[method] = callmethod_snp[method].loc[~callmethod_snp[method].index.duplicated(keep='last')]
+        if not callmethod_snp[method].empty:
+            callmethod_snp[method] = callmethod_snp[method].loc[~callmethod_snp[method].index.duplicated(keep='last')]
     calltable_snv = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snv.values())], axis=1, sort=True)
     calltable_indel = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_indel.values())], axis=1, sort=True)
     calltable_snp = pd.concat([cm.drop(['chrom', 'pos', 'ref', 'alt', 'type'], axis=1) for cm in list(callmethods_snp.values())], axis=1, sort=True)
@@ -317,7 +342,7 @@ if __name__ == "__main__":
     config = Config("config/", "config_viz.yaml")
 
     calltable_snv_reject, calltable_indel_reject, calltable_snp_reject = get_calltable(
-        'data/mixtures/mixtures_chr22/mixtures_chr22_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr22_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
+        'data/mixtures/mixtures_chr3/mixtures_chr3_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T/mixture_chr3_CRC-1014_180816-CW-T_50x_CRC-1014_090516-CW-T_100x',
         config.methods, save=False, filter='all')
     print(calltable_snv_reject)
     res = calltable_snv_reject[[m+'_vaf' for m in config.methods]].min(axis=1)
