@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-def read_vcf(path):
+def read_vcf(path, varnet=False):
     if path.endswith('.gz'):
         path = path[:-3]
     if not os.path.exists(path) and os.path.exists(path + '.gz'):
@@ -17,11 +17,19 @@ def read_vcf(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
             lines = [l for l in f if not l.startswith('##')]
+        if varnet:
+            l0 = [l for l in lines[0].split(' ') if l != '']
+            ll = '\t'.join(l0) + ''.join(lines[1:])
+            index_col=False
+        else:
+            ll = ''.join(lines)
+            index_col=None
         res = pd.read_csv(
-            io.StringIO(''.join(lines)),
+            io.StringIO(ll),
             dtype={'#CHROM': str, 'POS': int, 'ID': str, 'REF': str, 'ALT': str,
                    'QUAL': str, 'FILTER': str, 'INFO': str},
-            sep='\t'
+            sep='\t',
+            index_col=index_col
         ).rename(columns={'#CHROM': 'CHROM'})
         return res
 
@@ -153,6 +161,31 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() > 0, 'type'] = 'INS'
                 callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() < 0, 'type'] = 'DEL'
                 callmethod = pd.concat([callmethod, callmethodindel])
+        elif method == 'varnet':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid+'.vcf')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = read_vcf(calltablemethod_path, varnet=True)
+                if filter == 'PASS':
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]
+                elif filter == 'REJECT':
+                    callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+                #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'INFO', 'SAMPLE']]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, method+'_score', 'sample']
+                callmethod['type'] = callmethod[method+'_score'].str.split('TYPE=').str[1].str.split(';').str[0].astype(str)
+                callmethod[method+'_score'] = callmethod[method+'_score'].str.split('SCORE=').str[1].str.split(';').str[0].astype(float)
+                callmethod['totcov'] = callmethod['sample'].str.split(':').str[1].astype(int)
+                callmethod['altcov'] = callmethod['sample'].str.split(':').str[3].astype(int)
+                callmethod['vaf'] = callmethod['sample'].str.split(':').str[4].astype(float)
+                callmethod[method][callmethod[method] == 'PASS'] = True
+                callmethod[method][callmethod[method] == 'REJECT'] = False
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'varnet', 'varnet_score']]
+                print(callmethod)
         elif method == 'abemus':  # NB: no indel method
             calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
             if not os.path.exists(calltablemethod_path):
