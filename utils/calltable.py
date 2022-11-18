@@ -287,8 +287,12 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     if '.' in os.path.basename(calltablemethod_path[:-7]):
         calltablemethod_path = os.path.join(os.path.dirname(calltablemethod_path), os.path.basename(calltablemethod_path)[:-7].replace('.', '_') + '.vcf.gz')
     if not os.path.exists(calltablemethod_path):
-        print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
-        print('cannot use GATK Haplotype calls to filter germline calls')
+        calltablemethod_path = os.path.join(calldir, 'calls', 'bcbio', sampleid+'-N-gatk-haplotype-annotated.vcf.gz')
+        if '.' in os.path.basename(calltablemethod_path[:-7]):
+            calltablemethod_path = os.path.join(os.path.dirname(calltablemethod_path), os.path.basename(calltablemethod_path)[:-7].replace('.', '_') + '.vcf.gz')
+        if not os.path.exists(calltablemethod_path):
+            print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+            print('cannot use GATK Haplotype calls to filter germline calls')
     else:
         callmethod = read_vcf(calltablemethod_path)
         callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER']]
