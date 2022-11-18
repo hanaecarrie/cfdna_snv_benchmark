@@ -126,6 +126,9 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
         elif diltype == 'mixture_wes':
             dilfolder = config.mixturefolderultradeep
             dilution = 'mixtures'
+        elif diltype == 'mixture_wgs':
+            dilfolder = config.mixturefolderwholegenome
+            dilution = 'mixtures'
         if save:
             if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
                 os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
@@ -153,13 +156,13 @@ def plot_roc_curve(fpr, tpr, estimator_name=None, auc_score=None, figax=None, kw
     xlabel = "False Positive Rate"
     ylabel = "True Positive Rate"
     ax.set(xlabel=xlabel, ylabel=ylabel)
-    ax.legend(loc="upper right")
+    ax.legend() #(loc="upper right")
     plt.plot([0, 1], [0, 1], ls='--', color='grey')
     plt.annotate('baseline', xy=(0.9, 0.9), color='grey')
 
 
 def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, metric='auprc', ground_truth_method=3,
-                 refsample='undiluted', muttype='SNV', chrom='22', methods=None, fixedvar='coverage', xaxis='tumor burden', save=True):
+                 refsample='undiluted', muttype='SNV', chrom='22', methods=None, fixedvar='coverage', xaxis='tumor burden', save=True, diltype='mixture'):
     tb_dict = {}
     cov_dict = {}
     dilutionseries_present = []
@@ -285,7 +288,18 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
     else:
         refname = 'in'+refsample + 'samplebythesamecaller'
     dilution = 'spikeins' if ground_truth_method == 'spikein' else 'mixtures'
-    dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
+    if ground_truth_method == 'spikein':
+        dilfolder = config.spikeinfolder
+        dilution = 'spikeins'
+    elif diltype == 'mixture':
+        dilfolder = config.mixturefolder
+        dilution = 'mixtures'
+    elif diltype == 'mixture_wes':
+        dilfolder = config.mixturefolderultradeep
+        dilution = 'mixtures'
+    elif diltype == 'mixture_wgs':
+        dilfolder = config.mixturefolderwholegenome
+        dilution = 'mixtures'
     if save:
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_chr'+chrom, dilution+'_chr'+chrom+'_'+plasmasample+'_'+healthysample, 'figures'))
@@ -440,8 +454,13 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     elif diltype == 'mixture_wes':
         dilfolder = config.mixturefolderultradeep
         dilution = 'mixtures'
+    elif diltype == 'mixture_wgs':
+        dilfolder = config.mixturefolderwholegenome
+        dilution = 'mixtures'
     xa = xaxis if xaxis != 'tumor burden' else 'tb'
     if save:
+        if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr')):
+            os.mkdir(os.path.join(*dilfolder, dilution+'_allchr'))
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
             os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
         if methods != config.methods:

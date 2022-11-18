@@ -9,7 +9,7 @@ from utils.viz import function_to_split
 
 def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='snv', ground_truth_method='mixture',
                        fixedvar='coverage', refname='inundilutedsamplebyatleast5callers',
-                       allpatients=True, logscale=False,  save=False):
+                       allpatients=True, logscale=False,  save=False, diltype='mixtures'):
             xlab = 'tumor burden' if fixedvar == 'coverage' else 'coverage'
             print(xlab)
             res = {'x' : [], 'y': [], 'label': []}
@@ -19,6 +19,8 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                 plt.figure(figsize=(15, 10))
                 plt.grid(linewidth=1)
             for mi, mixtureid in enumerate(mixtureids):
+                if mixtureid == '':
+                    break
                 if not allpatients:  # one patient per plot
                     plt.figure(figsize=(15, 10))
                     plt.grid(linewidth=1)
@@ -48,6 +50,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                             #     restablesample = restablesample[restablesample['coverage'] != 250]
                         plt.plot(restablesample[restablesample['caller'] == method][xlab], restablesample[restablesample['caller'] == method][metric.upper()+' score'],
                                  c=color_dict[method], marker=config.markers[mi], markersize=15, lw=2, label = method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
+                        plt.grid()
                         res['x'].append(restablesample[restablesample['caller'] == method][xlab])
                         res['y'].append(restablesample[restablesample['caller'] == method][metric.upper()+' score'])
                         res['label'].append(method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
@@ -64,7 +67,14 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                     plt.title(metric.upper() + " score for {} calling in chr{} with ref {}".format(muttype.upper(), chrom, refname))
                     if logscale:
                         plt.semilogy()
-                    dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
+                    if ground_truth_method == 'spikein':
+                        dilfolder = config.spikeinfolder
+                    elif diltype == 'mixture':
+                        dilfolder = config.mixturefolder
+                    elif diltype == 'mixture_wes':
+                        dilfolder = config.mixturefolderultradeep
+                    elif diltype == 'mixture_wgs':
+                        dilfolder = config.mixturefolderwholegenome
                     if save:
                         if not os.path.exists(os.path.join(*dilfolder, 'figures')):
                             os.mkdir(os.path.join(*dilfolder, 'figures'))

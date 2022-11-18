@@ -9,15 +9,18 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         confdilfolder = config.mixturefolder
     elif diltype == 'mixture_wes':
         confdilfolder = config.mixturefolderultradeep
+    elif diltype == 'mixture_wgs':
+        confdilfolder = config.mixturefolderwholegenome
     else: # spikein
         confdilfolder = config.spikeinfolder
     print(diltype, confdilfolder)
     if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes':
-        if diltype == 'mixture_wes':
+        if diltype.startswith('mixture_'):
             diltype = 'mixture'
         # Save table if do not exist and load tables
         calltables = {'sampleid': [], 'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'snv': [], 'indel': [], 'snp': []}
         dilutionfolder = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid)
+        print(dilutionfolder)
         for dilutionpath in [l for l in os.listdir(dilutionfolder) if l.endswith('x') or l.endswith('T')]:
             print(dilutionpath)
             print(reload, 'reload')
@@ -97,6 +100,8 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         return calltablesseries, calltablesaux
 
     else:  # chrom == 'all'
+        if diltype.startswith('mixture_'):
+            diltype = 'mixture'
         if chrom == 'all':
             chroms = [str(c) for c in range(1, 23)]
         else:
