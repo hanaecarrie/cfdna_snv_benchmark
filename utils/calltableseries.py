@@ -4,24 +4,26 @@ warnings.filterwarnings('ignore')
 from utils.calltable import *
 
 
-def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='PASS', reload=False, save=False, diltype='mixture'):
+def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='PASS', reload=False, save=False, diltype='mixture', concat='tf'):
     if diltype == 'mixture':
         confdilfolder = config.mixturefolder
     elif diltype == 'mixture_wes':
         confdilfolder = config.mixturefolderultradeep
     elif diltype == 'mixture_wgs':
         confdilfolder = config.mixturefolderwholegenome
+    elif diltype == 'SEQC2':
+        confdilfolder = config.mixturefolderSEQC2
     else: # spikein
         confdilfolder = config.spikeinfolder
     print(diltype, confdilfolder)
-    if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes':
+    if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes' or diltype == 'SEQC2':
         if diltype.startswith('mixture_'):
             diltype = 'mixture'
         # Save table if do not exist and load tables
-        calltables = {'sampleid': [], 'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'snv': [], 'indel': [], 'snp': []}
+        calltables = {'sampleid': [], 'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'samplename' : [], 'snv': [], 'indel': [], 'snp': []}
         dilutionfolder = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid)
         print(dilutionfolder)
-        for dilutionpath in [l for l in os.listdir(dilutionfolder) if l.endswith('x') or l.endswith('T')]:
+        for dilutionpath in [l for l in os.listdir(dilutionfolder) if l.endswith('x') or l.endswith('T') or l.startswith('Sample')]:
             print(dilutionpath)
             print(reload, 'reload')
             if reload or not os.path.exists(os.path.join(dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv')):
@@ -45,10 +47,18 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
                     calltables['ichorcna'].append(np.nan)
                 calltables['cov'].append(np.round(float(pd.read_csv(os.path.join(
                     dilutionfolder, dilutionpath, 'coverage_chr'+chrom+dilutionpath[len((diltype+'_chr'+chrom)):]+'.txt')).columns[0]), 4))
+                calltables['samplename'].append(np.nan)
+            elif diltype == 'SEQC2':
+                calltables['samplename'].append(dilutionpath.split('_')[0])  # SampleDf or SampleEf
+                calltables['tf'].append(np.nan)
+                calltables['vaf'].append(np.nan)
+                calltables['ichorcna'].append(np.nan)
+                calltables['cov'].append(3000) #TODO fix
             else: # diltype spikein
                 calltables['vaf'].append(float(dilutionpath.split('vaf')[1].split('_')[0]))
                 calltables['tf'].append(np.nan)
                 calltables['ichorcna'].append(np.nan)
+                calltables['samplename'].append(np.nan)
                 calltables['cov'].append(150) #TODO fix
             calltable_snv = pd.read_csv(os.path.join(
                 dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv'), index_col=0)
@@ -60,42 +70,83 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
             calltables['indel'].append(calltable_indel)
             calltables['snp'].append(calltable_snp)
 
-        for mt in ['snv', 'indel', 'snp']:
-            if not os.path.exists(os.path.join(dilutionfolder, 'calls')):
-                os.mkdir(os.path.join(dilutionfolder, 'calls'))
-            if not os.path.exists(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '.csv')) or reload:
-                for ci, csnv in enumerate(calltables[mt]):
-                    cols = ['chrom', 'pos', 'ref', 'alt', 'type']
-                    varname = 'tf' if diltype == 'mixture' else 'vaf'
-                    for m in config.methods:
-                        cols.append('{:.2f}_{}'.format(calltables[varname][ci], m))
-                        cols.append('{:.2f}_{}_score'.format(calltables[varname][ci], m))
-                    for m in config.methods:
-                        cols.append('{:.2f}_{}_altcov'.format(calltables[varname][ci], m))
-                        cols.append('{:.2f}_{}_totcov'.format(calltables[varname][ci], m))
-                        cols.append('{:.2f}_{}_vaf'.format(calltables[varname][ci], m))
-                    #print(csnv.columns)
-                    #print(cols)
-                    csnv.columns = cols
-                # ensure no duplicated index
-                print(calltables[mt][0].loc[calltables[mt][0].index[calltables[mt][0].index.duplicated(keep=False)]].shape[0])
-                # get call series
-                calltablesseries = pd.concat([ct.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for ct in calltables[mt]], axis=1)
-                calltablesseries.reset_index(inplace=True)
-                calltablesseries['chrom_pos_ref_alt'] = calltablesseries['chrom'].astype('str').str.cat(calltablesseries['pos'].astype('str'), sep="_").str.cat(calltablesseries['ref'].astype('str'), sep='_').str.cat(calltablesseries['alt'].astype('str'), sep='_')
-                calltablesseries.set_index('chrom_pos_ref_alt', inplace=True)
-                print(calltablesseries.shape)
-                calltablesseries.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '.csv'))
-                calltables_aux = dict(calltables)
-                calltables_aux.pop('snv')
-                calltables_aux.pop('indel')
-                calltables_aux.pop('snp')
-                #print(calltables_aux)
-                calltables_aux = pd.DataFrame.from_dict(calltables_aux)
-                calltables_aux.set_index('sampleid', inplace=True)
-                calltables_aux.sort_values(by='tf', ascending=False, inplace=True)
-                calltables_aux.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_tf_cov.csv'))
-        calltablesseries = pd.read_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'), index_col=0)
+            if concat == 'tf':
+                for mt in ['snv', 'indel', 'snp']:
+                    if not os.path.exists(os.path.join(dilutionfolder, 'calls')):
+                        os.mkdir(os.path.join(dilutionfolder, 'calls'))
+                    if not os.path.exists(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '.csv')) or reload:
+                        for ci, csnv in enumerate(calltables[mt]):
+                            cols = ['chrom', 'pos', 'ref', 'alt', 'type']
+                            if diltype == 'mixture':
+                                varname = 'tf'
+                            elif diltype == 'SEQC2':
+                                varname = 'samplename'
+                            else:
+                                varname = 'vaf'
+                            if diltype == 'SEQC2':
+                                for m in config.methods:
+                                    cols.append('{}_{}'.format(calltables[varname][ci], m))
+                                    cols.append('{}_{}_score'.format(calltables[varname][ci], m))
+                                for m in config.methods:
+                                    cols.append('{}_{}_altcov'.format(calltables[varname][ci], m))
+                                    cols.append('{}_{}_totcov'.format(calltables[varname][ci], m))
+                                    cols.append('{}_{}_vaf'.format(calltables[varname][ci], m))
+                            else:
+                                for m in config.methods:
+                                    cols.append('{:.2f}_{}'.format(calltables[varname][ci], m))
+                                    cols.append('{:.2f}_{}_score'.format(calltables[varname][ci], m))
+                                for m in config.methods:
+                                    cols.append('{:.2f}_{}_altcov'.format(calltables[varname][ci], m))
+                                    cols.append('{:.2f}_{}_totcov'.format(calltables[varname][ci], m))
+                                    cols.append('{:.2f}_{}_vaf'.format(calltables[varname][ci], m))
+                            #print(csnv.columns)
+                            #print(cols)
+                            csnv.columns = cols
+                        # ensure no duplicated index
+                        print(calltables[mt][0].loc[calltables[mt][0].index[calltables[mt][0].index.duplicated(keep=False)]].shape[0])
+                        # get call series
+                        calltablesseries = pd.concat([ct.set_index(['chrom', 'pos', 'ref', 'alt', 'type']) for ct in calltables[mt]], axis=1)
+                        calltablesseries.reset_index(inplace=True)
+                        calltablesseries['chrom_pos_ref_alt'] = calltablesseries['chrom'].astype('str').str.cat(calltablesseries['pos'].astype('str'), sep="_").str.cat(calltablesseries['ref'].astype('str'), sep='_').str.cat(calltablesseries['alt'].astype('str'), sep='_')
+                        calltablesseries.set_index('chrom_pos_ref_alt', inplace=True)
+                        print(calltablesseries.shape)
+                        calltablesseries.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '.csv'))
+                        calltables_aux = dict(calltables)
+                        calltables_aux.pop('snv')
+                        calltables_aux.pop('indel')
+                        calltables_aux.pop('snp')
+                        calltables_aux = pd.DataFrame.from_dict(calltables_aux)
+                        calltables_aux.set_index('sampleid', inplace=True)
+                        calltables_aux.sort_values(by='tf', ascending=False, inplace=True)
+                        calltables_aux.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_tf_cov.csv'))
+                calltablesseries = pd.read_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'), index_col=0)
+            elif concat == 'vaf':
+                for mt in ['snv', 'indel', 'snp']:
+                    if not os.path.exists(os.path.join(dilutionfolder, 'calls')):
+                        os.mkdir(os.path.join(dilutionfolder, 'calls'))
+                    if not os.path.exists(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '_' + concat + '.csv')) or reload:
+                        for ci, csnv in enumerate(calltables[mt]):
+                            varname = 'tf' if diltype == 'mixture' else 'vaf'
+                            print(varname, ci, mt)
+                            print('{:.2f}'.format(calltables[varname][ci]))
+                            calltables[mt][ci]['sampletf'] = '{:.2f}'.format(calltables[varname][ci])
+                        # ensure no duplicated index
+                        print(calltables[mt][0].loc[calltables[mt][0].index[calltables[mt][0].index.duplicated(keep=False)]].shape[0])
+                        # get call series
+                        calltablesseries = pd.concat(calltables[mt], axis=0)
+                        calltablesseries.reset_index(inplace=True)
+                        calltablesseries['chrom_pos_ref_alt'] = calltablesseries['chrom'].astype('str').str.cat(calltablesseries['pos'].astype('str'), sep="_").str.cat(calltablesseries['ref'].astype('str'), sep='_').str.cat(calltablesseries['alt'].astype('str'), sep='_')
+                        calltablesseries.set_index('chrom_pos_ref_alt', inplace=True)
+                        print(calltablesseries.shape)
+                        calltablesseries.to_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_' + mt + '_calls_' + filterparam + '_' + concat + '.csv'))
+                        calltables_aux = dict(calltables)
+                        calltables_aux.pop('snv')
+                        calltables_aux.pop('indel')
+                        calltables_aux.pop('snp')
+                        #print(calltables_aux)
+                        calltables_aux = pd.DataFrame.from_dict(calltables_aux)
+                        calltables_aux.set_index('sampleid', inplace=True)
+                        calltables_aux.sort_values(by='tf', ascending=False, inplace=True)
         calltablesaux = pd.read_csv(os.path.join(dilutionfolder, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
         return calltablesseries, calltablesaux
 
@@ -113,7 +164,7 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
             if os.path.exists(os.path.join(*confdilfolder, diltype+'s_chr'+chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv')) and not reload:
                 caux = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
             else:
-                _, caux = get_calltableseries(config, dilutionid, chrom, muttype=muttype, filterparam=filterparam, reload=reload, save=save, diltype=diltype)
+                _, caux = get_calltableseries(config, dilutionid, chrom, muttype=muttype, filterparam=filterparam, reload=reload, save=save, diltype=diltype, concat=concat)
             caux.index = [ci.split('_')[0] + '_'+ '_'.join(ci.split('_')[2:]) for ci in list(caux.index)]
             caux_list.append(caux)
         caux_df = pd.DataFrame()
@@ -127,7 +178,10 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         calltablesserieschroms = []
         # get concatenated calltable
         for chrom in chroms:
-            callfile = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv')
+            if concat == 'vaf':
+                callfile = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '_' + concat + '.csv')
+            else:
+                callfile = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv')
             calltable = pd.read_csv(callfile, index_col=0)
             if diltype == 'mixture':
                 caux = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
@@ -143,8 +197,12 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         calltablesserieschroms = pd.concat(calltablesserieschroms, axis=0)
         if not os.path.exists(os.path.join(*confdilfolder, diltype+'s_allchr')):
             os.mkdir(os.path.join(*confdilfolder, diltype+'s_allchr'))
-        calltablesserieschroms.to_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'))
-        calltablesserieschroms = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'), index_col=0)
+        if concat == 'vaf':
+            calltablesserieschroms.to_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '_' + concat + '.csv'))
+            calltablesserieschroms = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '_' + concat + '.csv'), index_col=0)
+        else:
+            calltablesserieschroms.to_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'))
+            calltablesserieschroms = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_' + muttype + '_calls_' + filterparam + '.csv'), index_col=0)
         return calltablesserieschroms, caux_df
 
 

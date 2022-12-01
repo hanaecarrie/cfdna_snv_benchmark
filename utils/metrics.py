@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import seaborn as sns
 import warnings
-from sklearn.metrics import precision_recall_curve, roc_curve, f1_score, precision_score, recall_score, average_precision_score
+from sklearn.metrics import precision_recall_curve, auc, roc_curve, f1_score, precision_score, recall_score, average_precision_score, roc_auc_score
 
 warnings.filterwarnings("ignore")
 
@@ -44,13 +44,15 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
     for method in methods:
         fig, ax = plt.subplots(figsize=(10, 10))
         for i, d in enumerate(list(dilutionseries.index)):
-            if ground_truth_method != 'spikein':
+            if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
+            elif ground_truth_method == 'SEQC2':
+                factorprefix = '{}'.format(dilutionseries.loc[d, 'samplename'])
             else:
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'vaf'], 2))
             print(factorprefix + '_' + method + '_score')
             if factorprefix + '_' + method + '_score' in list(df_table.columns):
-                if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
+                if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked' or ground_truth_method == 'SEQC2':
                     truth_name = 'truth'
                 elif ground_truth_method == 'method':
                     truth_name = method +'_truth'
@@ -89,14 +91,18 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
             else:
                 for d in dilutionseries_present:
                     plt.axhline(y=baseline_dict[str(d)], alpha=alpha_dict[str(d)], ls='--', c='k')
-                    if ground_truth_method != 'spikein':
+                    if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
                         list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], label="baseline tf {:.2f}% = {:.2f}".format(dilutionseries.loc[d, 'tf'], baseline_dict[str(d)])))
+                    elif ground_truth_method == 'SEQC2':
+                        list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], label="baseline sample {}% = {:.2f}".format(dilutionseries.loc[d, 'samplename'], baseline_dict[str(d)])))
                     else:
                         list_lines_baseline.append(Line2D([0], [0], color='black', ls='--', alpha=alpha_dict[str(d)], label="baseline vaf {:.2f}% = {:.2f}".format(dilutionseries.loc[d, 'cov'], baseline_dict[str(d)])))
         handles, labels = plt.gca().get_legend_handles_labels()
         if fixedvar == 'coverage':
-            if ground_truth_method != 'spikein':
+            if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
                 list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='tumor burden = {:.2f}%'.format(dilutionseries.loc[i, 'tf'])) for i in dilutionseries_present]
+            elif ground_truth_method == 'SEQC2':
+                list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='sample = {}'.format(dilutionseries.loc[i, 'samplename'])) for i in dilutionseries_present]
             else:
                 list_lines = [Line2D([0], [0], color='black', alpha=alpha_dict[str(i)], label='VAF = {:.2f}%'.format(float(i))) for i in dilutionseries_present]
         elif fixedvar == 'ctdna':
@@ -129,6 +135,9 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
         elif diltype == 'mixture_wgs':
             dilfolder = config.mixturefolderwholegenome
             dilution = 'mixtures'
+        elif diltype == 'SEQC2':
+            dilfolder = config.mixturefolderSEQC2
+            dilution = 'SEQC2'
         if save:
             if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr', 'figures')):
                 os.mkdir(os.path.join(*dilfolder, dilution+'_allchr', 'figures'))
@@ -136,6 +145,8 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
                 refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
             elif ground_truth_method == 'ranked':
                 refname = 'in'+refsample + 'sampleranked'
+            elif ground_truth_method == 'SEQC2':
+                refname = 'inKnownVariants'
             else:
                 refname = 'in'+refsample + 'samplebythesamecaller'
             plt.savefig(os.path.join(*dilfolder, dilution+'_allchr', 'figures', mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context), bbox_inches='tight')
@@ -234,6 +245,8 @@ def metric_curve(config, df_table, plasmasample, healthysample, dilutionseries, 
                             aux_metric.append(recall_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                         elif metric == 'f1':
                             aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
+                        elif metric == 'auc':
+                            aux_metric.append(roc_auc_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
                         aux_method.append(method)
                         if ground_truth_method != 'spikein':
                             aux_tb.append(round(100*tb_dict[str(d)], 3))
@@ -339,12 +352,15 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     aux_method = []
     aux_tb = []
     aux_cov = []
+    aux_samplename = []
     baseline = {}
     if xaxis == 'tumor burden' or xaxis == 'coverage' or ground_truth_method == 'spikein':
         for i, d in enumerate(list(dilutionseries.index)):
             print(d)
-            if ground_truth_method != 'spikein':
+            if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
                 factorprefix = '{:.2f}'.format(round(dilutionseries.loc[d, 'tf'], 2))
+            elif ground_truth_method == 'SEQC2':
+                factorprefix = '{}'.format(dilutionseries.loc[d, 'samplename'])
             else:
                 factorprefix = '{:.2f}'.format(dilutionseries.loc[d, 'vaf']) \
                     if d != 'spikein_CRC-COSMIC-5p_vaf0.025_CRC-986_300316-CW-T' \
@@ -354,14 +370,14 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                 print(factorprefix + '_' + method + '_score')
                 if factorprefix + '_' + method + '_score' in list(df_table.columns):
                     print('is present')
-                    if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage':
-                        if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked':
+                    if i != 0 or ground_truth_method == 'spikein' or xaxis == 'coverage' or ground_truth_method == 'SEQC2':
+                        if type(ground_truth_method) == int or ground_truth_method == 'spikein' or ground_truth_method == 'ranked' or ground_truth_method =='SEQC2':
                             truth_name = 'truth'
                         elif ground_truth_method == 'caller':
                             truth_name = method + '_truth'
                         else:
                             raise ValueError('unknown ground truth {}'.format(ground_truth_method))
-                        if metric == 'auprc':
+                        if metric == 'auprc' or metric == 'maxf1':
                             df_method = df_table[[truth_name, factorprefix + '_' + method + '_score', factorprefix + '_' + method]]
                             # df_method.dropna(how='all', inplace=True)
                             df_method[truth_name].fillna(False, inplace=True)
@@ -380,6 +396,9 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                             aux_metric.append(average_precision_score(df_method[truth_name], df_method[factorprefix + '_' + method + '_score']))
                             aux_metricrelative.append(average_precision_score(
                                 df_method[truth_name], df_method[factorprefix + '_' + method + '_score']) - baseline[method])
+                        elif metric == 'maxf1':
+                            precision, recall, _ = precision_recall_curve(df_method[truth_name], df_method[factorprefix + '_' + method + '_score'])
+                            aux_metric.append(max([2 * (precision[idx] * recall[idx]) / (precision[idx] + recall[idx]) for idx in range(len(precision))]))
                         elif metric == 'precision':
                             aux_metric.append(precision_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                             # print(df_method[factorprefix + '_' + method][df_method[truth_name] == True])
@@ -388,9 +407,11 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                         elif metric == 'f1':
                             aux_metric.append(f1_score(df_method[truth_name], df_method[factorprefix + '_' + method]))
                         aux_method.append(method)
-                        if ground_truth_method != 'spikein':
+                        if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
                             aux_tb.append(round(dilutionseries.loc[d, 'tf'], 2))
                             aux_cov.append(int(dilutionseries.loc[d, 'cov']))
+                        elif ground_truth_method == 'SEQC2':
+                            aux_samplename.append(dilutionseries.loc[d, 'samplename'])
                         else:
                             aux_tb.append(round(dilutionseries.loc[d, 'vaf'], 3))
                 else:
@@ -409,7 +430,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     if metric == 'auprc':
         results_df[metric.upper() + ' score - baseline ' + metric.upper() + ' score'] = aux_metricrelative
     # print(aux_tb)
-    if ground_truth_method != 'spikein':
+    if ground_truth_method != 'spikein' and ground_truth_method != 'SEQC2':
         if fixedvar == 'coverage':
             results_df[xaxis] = aux_tb
             xvar = xaxis
@@ -418,6 +439,10 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
             results_df['coverage'] = aux_cov
             xvar = 'coverage'
             reverse = False
+    elif ground_truth_method == 'SEQC2':
+        results_df['samplename'] = aux_samplename
+        xvar = 'samplename'
+        reverse = False
     else:
         results_df['VAF'] = aux_tb
         xvar = 'VAF'
@@ -434,7 +459,7 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
                 palette=sns.color_palette(list(color_dict.values())), data=results_df)
     plt.title(metric.upper() + " score for {} calling in {} - all chroms".format(muttype, mixtureid))
 
-    plt.ylim([0, max(0.5, max(aux_metric)+0.05)])
+    # plt.ylim([0, max(0.5, max(aux_metric)+0.05)])
     if metric == 'auprc':
         if len(np.unique(baseline.values())) == 1:
             print(baseline[config.methods[0]])
@@ -443,6 +468,8 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
         refname = 'in'+refsample + 'samplebyatleast' + str(ground_truth_method) +'callers'
     elif ground_truth_method == 'ranked':
         refname = 'in'+refsample + 'sampleranked'
+    elif ground_truth_method == 'SEQC2':
+        refname = 'inKnownVariants'
     else:
         refname = 'in'+refsample + 'samplebythesamecaller'
     if ground_truth_method == 'spikein':
@@ -457,6 +484,9 @@ def metric_curve_allchr(config, df_table, dilutionseries, mixtureid, metric='aup
     elif diltype == 'mixture_wgs':
         dilfolder = config.mixturefolderwholegenome
         dilution = 'mixtures'
+    elif diltype == 'SEQC2':
+        dilfolder = config.mixturefolderSEQC2
+        dilution = 'SEQC2'
     xa = xaxis if xaxis != 'tumor burden' else 'tb'
     if save:
         if not os.path.exists(os.path.join(*dilfolder, dilution+'_allchr')):
