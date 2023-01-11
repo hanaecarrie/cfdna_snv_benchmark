@@ -76,9 +76,9 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                     callmethod[method + '_score'] = [np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))) / (1 + np.exp(np.log(float(i.split('ODDS=')[1].split(';')[0]))))
                                                      if 'ODDS' in i else np.nan for i in info.to_list()]
                 elif method == 'mutect2':  # logodds to probability score prob = exp(TLOD)/(1+exp(TLOD))
-                    callmethod[method + '_score'] = [np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0])))
+                    callmethod[method + '_score'] = [min(1.0, np.exp(float(i.split('TLOD=')[1].split(';')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0]))))
                                                      if 'TLOD' in i and ',' not in i.split('TLOD=')[1].split(';')[0]
-                                                     else np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])))
+                                                     else min(1.0, np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0])) / (1 + np.exp(float(i.split('TLOD=')[1].split(';')[0].split(',')[0]))))
                                                      if 'TLOD' in i and ',' in i.split('TLOD=')[1].split(';')[0]
                                                      else np.nan for i in info.to_list()]
                 if method == 'strelka2':  # phred score to probability, prob = 1-10^(-SomaticEVS/10)
@@ -298,6 +298,121 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
                 callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
                 callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
                 callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        elif method == 'IDT':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid[:-2]+'.vcf.gz')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = read_vcf(calltablemethod_path)
+                if filter == 'PASS':
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]
+                elif filter == 'REJECT':
+                    callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+                #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'tumor']]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'tumor']
+                callmethod['type'] = 'SNV'
+                callmethod['totcov'] = callmethod['tumor'].str.split(':').str[1].astype(int)
+                callmethod['altcov'] = callmethod['tumor'].str.split(':').str[2].astype(int)
+                callmethod['vaf'] = callmethod['tumor'].str.split(':').str[4].astype(float)
+                callmethod[method+'_score'] = callmethod['vaf'] # vardict not present
+                callmethod[method][callmethod[method] == 'PASS'] = True
+                callmethod[method][callmethod[method] == 'REJECT'] = False
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        elif method == 'ILM':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid[:-2]+'.vcf.gz')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = read_vcf(calltablemethod_path)
+                if filter == 'PASS':
+                    callmethod = callmethod[callmethod['FILTER'] == "LowSupport"]
+                elif filter == 'REJECT':
+                    callmethod = callmethod[callmethod['FILTER'] != "LowSupport"]
+                callmethod = callmethod[callmethod['FILTER'] == "LowSupport"]
+                #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+                samplename, met, st, ng, libp = sampleid.split('_')
+                print('WG2_'+met+'_'+ st + '_' + samplename[-2:]+'_' + ng[:-2]+'_' + libp[3]+'.sorted.stitched.bam')
+                samplen = 'WG2_'+met+'_'+ st + '_' + samplename[-2:]+'_' + ng[:-2]+'_' + libp[3]+'.sorted.stitched.bam'
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', samplen]]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'sample']
+                callmethod['type'] = 'SNV'
+                callmethod['totcov'] = callmethod['sample'].str.split(':').str[3].astype(int)
+                callmethod['altcov'] = callmethod['sample'].str.split(':').str[2].str.split(',').str[1].astype(int)
+                callmethod['vaf'] = callmethod['sample'].str.split(':').str[4].astype(float)
+                callmethod[method+'_score'] = callmethod['sample'].str.split(':').str[-1].astype(float)
+                callmethod = callmethod[callmethod[method+'_score'] > 0]
+                callmethod[method][callmethod[method] == 'LowSupport'] = True
+                callmethod[method][callmethod[method] != True] = False
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        elif method == 'ROC':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid[:-2]+'.vcf.gz')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = read_vcf(calltablemethod_path)
+                if filter == 'PASS':
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]
+                elif filter == 'REJECT':
+                    callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+                #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+                samplename, met, st, ng, libp = sampleid.split('_')
+                samplen = samplename[-2:] + '_' + ng[:-2] + '_Rep' + libp[3]
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'INFO']]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'INFO']
+                callmethod['type'] = 'SNV'
+                callmethod['totcov'] = callmethod['INFO'].str.split(';').str[0].str.split('=').str[1].astype(int)
+                callmethod['altcov'] = callmethod['INFO'].str.split(';').str[1].str.split('=').str[1].astype(int)
+                callmethod['vaf'] = callmethod['INFO'].str.split(';').str[5].str.split('=').str[1].astype(float)
+                callmethod[method+'_score'] = callmethod['INFO'].str.split('SCORE').str[1].str.split(';').str[0].str.split('=').str[1].astype(float)
+                callmethod[method][callmethod[method] == 'PASS'] = True
+                callmethod[method][callmethod[method] == 'REJECT'] = False
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        elif method == 'TFS':
+            calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid[:-2]+'.vcf.gz')
+            if not os.path.exists(calltablemethod_path):
+                print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+                callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            else:
+                callmethod = read_vcf(calltablemethod_path)
+                if filter == 'PASS':
+                    callmethod = callmethod[callmethod['FILTER'] == "PASS"]
+                elif filter == 'REJECT':
+                    callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+                #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+                samplen = callmethod.columns[-1]
+                callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', samplen]]
+                callmethod.columns = ['chrom', 'pos', 'ref', 'alt', method, 'INFO']
+                callmethod['type'] = 'SNV'
+                callmethod = callmethod[~callmethod['alt'].str.contains('[', regex=False)]
+                print(callmethod)
+                callmethod['totcov'] = callmethod['INFO'].str.split(':').str[6]
+                callmethod['totcov'][callmethod['totcov'] == '.'] = 0
+                callmethod['totcov'].fillna(0, inplace=True)
+                callmethod['totcov'] = callmethod['totcov'].astype(int)
+                callmethod['altcov'] = callmethod['INFO'].str.split(':').str[10]
+                callmethod['altcov'][callmethod['altcov'] == '.'] = 0
+                callmethod['altcov'].fillna(0, inplace=True)
+                callmethod['altcov'] = callmethod['altcov'].astype(int)
+                callmethod['vaf'] = callmethod['INFO'].str.split(':').str[12]
+                callmethod['vaf'][callmethod['vaf'] == '.'] = 0
+                callmethod['vaf'].fillna(0, inplace=True)
+                callmethod['vaf'] = callmethod['vaf'].astype(float)
+                callmethod[method+'_score'] = callmethod['vaf']
+                callmethod[method][callmethod[method] == 'PASS'] = True
+                callmethod[method][callmethod[method] == 'REJECT'] = False
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+                callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+                callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
         else:
             raise ValueError('caller {} is unknown'.format(method))
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
@@ -321,12 +436,14 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
     calltable_indel['chrom_pos_ref_alt'] = list(calltable_indel.index)
     calltable_snp['chrom_pos_ref_alt'] = list(calltable_snp.index)
     calltable_snv[['chrom', 'pos', 'ref', 'alt']] = calltable_snv['chrom_pos_ref_alt'].str.split('_', expand=True)
-    calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
+    if not calltable_indel.empty:
+        calltable_indel[['chrom', 'pos', 'ref', 'alt']] = calltable_indel['chrom_pos_ref_alt'].str.split('_', expand=True)
     if not calltable_snp.empty:
         calltable_snp[['chrom', 'pos', 'ref', 'alt']] = calltable_snp['chrom_pos_ref_alt'].str.split('_', expand=True)
     calltable_snv['type'] = 'SNV'
-    calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() > 0, 'type'] = 'INS'
-    calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() < 0, 'type'] = 'DEL'
+    if not calltable_indel.empty:
+        calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() > 0, 'type'] = 'INS'
+        calltable_indel.loc[calltable_indel['alt'].str.len() - calltable_indel['ref'].str.len() < 0, 'type'] = 'DEL'
     calltable_snp['type'] = 'SNP'
     for m in methods:
         calltable_snv[m] = calltable_snv[m].fillna(False)
@@ -336,7 +453,8 @@ def get_calltable(calldir, methods, save=False, filter='PASS'):
         calltable_snp[m] = calltable_snp[m].fillna(False)
         calltable_snp[m] = calltable_snp[m].astype(bool)
     calltable_snv = calltable_snv[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
-    calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
+    if not calltable_indel.empty:
+        calltable_indel = calltable_indel[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     if not calltable_snp.empty:
         calltable_snp = calltable_snp[['chrom', 'pos', 'ref', 'alt', 'type'] + [m+suffix for m in methods  for suffix in ['', '_score']] + [m+suffix for m in methods for suffix in ['_altcov', '_totcov', '_vaf']]]
     else:

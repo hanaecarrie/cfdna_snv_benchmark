@@ -6,8 +6,11 @@ from utils.metrics import *
 from utils.calltable import *
 
 
-def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv', matchedtissuepath=None):
-    refmethods = list(np.copy(config.methods))
+def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv', matchedtissuepath=None, methods=None):
+    if methods:
+        refmethods = methods
+    else:
+        refmethods = list(np.copy(config.methods))
     # Approach 1: CONSENSUS
     # pseudo ground truth = mutations found by at least k callers
     if type(ground_truth_method) == int:
@@ -113,8 +116,10 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
         # which chroms as represented in cfDNA
         print(calltablesseries['chrom'].values)
         chromlist = np.unique(calltablesseries['chrom'].values)
-        chromlist = [str(c) for c in chromlist]
-        print(chromlist)
+        try:
+            chromlist = [str(c) for c in chromlist]
+        except:
+            print(chromlist)
         tissuetable = tissuetable[tissuetable['chrom'].isin(chromlist)]
         refmethods = list(np.copy(config.methods_tissue))
         print(refmethods)
