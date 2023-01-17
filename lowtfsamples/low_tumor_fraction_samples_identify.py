@@ -82,6 +82,7 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
     # left y-axis -> treatment information
     df_patient['date'] = df_patient['date'].astype(str)
     df_patient['treatment'] = df_patient['treatment'].astype(str)
+    df_patient['treatment'][df_patient['treatment'] == 'nan'] = 'cfDNA'
     sns.stripplot(y='treatment', x='date', data=df_patient, color='grey', marker='X', size=10, ax=ax2)
     ax2.grid(False)
     plt.legend((), ())
@@ -122,6 +123,7 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
         col = ['#CHROM', 'POS', 'REF', 'ALT', 'GENE', 'TIERS']
         if mutation_df_226[mutation_df_226["TIERS"] == 'Trusted'].shape[0] != 0:  # Trusted mutations
             mutation_df_226 = mutation_df_226[mutation_df_226["TIERS"] == 'Trusted']
+            mutation_df_226.drop_duplicates(['#CHROM', 'POS'], inplace=True)
         else:  # Low Evidence mutations
             mutation_df_226 = mutation_df_226[mutation_df_226["TIERS"] == 'LowEvidence']
         if mutation_df_226.shape[0] > 0:  # if mutations are detected in targeted seq
@@ -173,7 +175,7 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
                                mutations_acrosstime.index[i] in df_patient['date'].values]
                 elei = ax.plot(xacrosstime, yacrosstime, color=collist[gi % len(collist)], ls=lstype, linewidth=lwd,
                                label=gene)
-                ax.plot(xacrosstime, yacrosstime, color=collist[gi % len(collist)], ls=lstype, marker='D',
+                ax.plot(xacrosstime, yacrosstime, color=collist[gi % len(collist)], ls=lstype, marker='^',
                         markersize=10)
                 eles.append(elei)
             # indicate dates when tumor burden is available, that is to say timepoints with lpWGS
@@ -207,7 +209,12 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
                     os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png')):
                 plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png'),
                             bbox_inches='tight')
+            if not os.path.exists(
+                    os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.svg')):
+                plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.svg'),
+                            bbox_inches='tight')
     plt.show()
+    return mutation_df_226
 
 
 def get_mutations_stats(config, patient):
