@@ -80,6 +80,7 @@ if __name__ == "__main__":
             restable = pd.read_csv(os.path.join(*config.mixturefolder, 'mixtures_allchr', 'results', mixtureid + '_'
                                                 + mt + '_'+metric+'_' + refname+'_fixed' + fixedvar + '_' + xa + '.csv'),
                                    index_col=0)
+            print(restable['caller'].unique())
             restable['plasma sample'] = plasmasample
             restables[mt].append(restable)
         restables[mt] = pd.concat(restables[mt])
@@ -87,16 +88,30 @@ if __name__ == "__main__":
                                   ground_truth_method='mixture', fixedvar=fixedvar, refname=refname,
                                   allpatients=True, logscale=False, save=False)
         resx = np.array([rx.values for rx in res1['x']])
-
-        resx.mean(axis=0)
+        #for i in range(len(list(res1['x']))):
+        #    print(i)
+        #    print(list(res1['x'])[i].values)#
+        #print(resx.shape)
+        #resx.mean(axis=0)
         resy = np.array([ry.values for ry in res1['y']])
+        print(len(list(res1['x'])))
+        print(list(res1['x'][0]))
         lmaux = list(set(config.methods) & set(restable['caller'].unique()))
-        lm = config.methods[:]
-        for lmi in lm:
-            if lmi not in lmaux:
-                lm.remove(lmi)
-        if mt == 'indel':
-            lm.remove('abemus')
+        lmold = config.methods[:]
+        print(lmold)
+        lm = []
+        for i, lmi in enumerate(lmold):
+            print(lmi, (lmi not in lmaux), (lmi == 'abemus' and mt == 'indel'))
+            if (lmi not in lmaux) or (lmi == 'abemus' and mt == 'indel'):
+                print('yes', lmi)
+            else:
+                lm.append(lmi)
+        #if mt == 'indel':
+        #    lm.remove('abemus')
+        print(lm)
+        resx.mean(axis=0)
+        print(resx)
+        print(resx.mean(axis=0))
         res = {m: [] for m in lm}
         for mi, m in enumerate(lm):
             resmean = np.mean([resy[mi], resy[mi+len(lm)], resy[mi+2*len(lm)]], axis=0)
@@ -136,7 +151,7 @@ if __name__ == "__main__":
                   pad=50)
         if mt == 'snv':
             plt.ylim([0, .9])
-        if not os.path.exists(os.path.join(*config.outputpath, 'figure2a')):
-            os.mkdir(os.path.join(*config.outputpath, 'figure2a'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2a',
+        if not os.path.exists(os.path.join(*config.outputpath, 'supplfigure2b')):
+            os.mkdir(os.path.join(*config.outputpath, 'supplfigure2b'))
+        plt.savefig(os.path.join(*config.outputpath, 'supplfigure2b',
                                  'perf_auprc_3patients_150x_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
