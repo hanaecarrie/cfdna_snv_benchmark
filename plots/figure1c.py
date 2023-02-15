@@ -4,6 +4,7 @@ if __name__ == "__main__":
     import os
     import numpy as np
     import pandas as pd
+    import seaborn as sns
     import matplotlib.pyplot as plt
     import warnings
     warnings.filterwarnings('ignore')
@@ -55,8 +56,12 @@ if __name__ == "__main__":
 
     ##### Identify elligible patients ############
 
-    for patient in [986, 123, 1014]:
-        res = plot_patient_timeline(config, patient, figsize=(26, 10), mutations=True)
+    if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
+        os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
+
+    for patient in [1014, 986, 123]:
+        res = plot_patient_timeline(config, patient, figsize=(30, 8), mutations=True, check=False, treatment=False,
+                                    save=True, savepath=os.path.join(*config.outputpath, 'figure1c'))
     lowtftimepoints_pd = get_mutations_stats(config, patient)
     lowtftimepoints_pd.dropna()
 
@@ -66,12 +71,12 @@ if __name__ == "__main__":
     fillstyles=['full', 'none']
     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:grey']
 
-    for patient in ['986', '123', '1014']:
-        plt.figure(figsize=(10,10))
+    for patient in ['1014', '986', '123']:
+        plt.figure(figsize=(10, 10))
         plt.grid()
 
         maxx = 0
-        for si, seqtype in enumerate([ 'deepWGS', 'targeted']):
+        for si, seqtype in enumerate(['deepWGS', 'targeted']):
 
             mutationfile = pd.read_excel(os.path.join(*config.mutationfolder, [f for f in os.listdir(os.path.join(*config.mutationfolder)) if f.startswith('CCG_226_'+patient)][0]))
             mutationfile['chrom_pos'] = mutationfile['#CHROM'].astype('str').str.cat(mutationfile['POS'].astype('str'), sep="_")
@@ -147,21 +152,27 @@ if __name__ == "__main__":
                 print(maxx)
                 paired_vaf['gene'] = mutationfile.loc[paired_vaf.index, 'GENE']
                 if patient == '986' and seqtype == 'targeted':
-                    paired_vaf.iat[0,0] = -0.00015 # (intead of 0 for APC, for visualisation)
+                    paired_vaf.iat[0, 0] = -0.00015  # (intead of 0 for APC, for visualisation)
                 print(paired_vaf)
                 print(patientsample_dict[patient][pi].split('-')[1])
                 for gi, g in enumerate(list(paired_vaf['gene'])):
+                    if g in config.genelist:
+                        print(g, config.genelist.index(g))
+                        c = sns.color_palette('tab10') + [sns.color_palette('Accent')[5]] + [sns.color_palette('tab20b')[14]] + [sns.color_palette('tab20b')[0]]
+                        c = c[config.genelist.index(g)]
+                    else:
+                        c = colors[gi % len(colors)]
                     plt.plot(paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][2].split('-')[1]].values[0],
                              paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][pi].split('-')[1]].values[0], lw=5, markeredgewidth=1,
-                             c=colors[gi], markersize=20, marker=markers[si], fillstyle=fillstyles[0], markeredgecolor='k', label=g + '*' + seqtype + ' sample')
+                             c=c, markersize=20, marker=markers[si], fillstyle=fillstyles[0], markeredgecolor='k', label=g + '*' + seqtype + ' sample')
                     #c=colors[gi], markersize=20, marker=markers[pi], alpha=alphas[si], label=g + '*' + 'high TF sample '+patientsample_dict[patient][pi].split('-')[1])
 
         #plt.xlim([-0.002, max(0.05,round(maxx+0.01, 2))])
         plt.ylim([-.02, 0.60])
         #plt.plot([0,1], [0,1], ls='--', c='k')
         plt.axvline(x=0.000, ls='--', c='k')
-        plt.axvline(x=0.01, ls='--', c='k')
-        plt.axvline(x=0.03, ls='--', c='k')
+        #plt.axvline(x=0.01, ls='--', c='k')
+        #plt.axvline(x=0.03, ls='--', c='k')
         plt.title('Paired VAF plot for patient ' +patient)
         ax = plt.gca()
         hand, labl = ax.get_legend_handles_labels()
@@ -178,7 +189,10 @@ if __name__ == "__main__":
         else:
             plt.xticks([i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))], [i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))])
         #plt.xticks([0, 0.01, 0.03, 0.05], [0, 0.01, 0.03, 0.05])
-        plt.savefig(os.path.join(*config.outputpath, 'lowtbsamples', 'check', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
+        if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
+            os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
+        plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
+        #plt.savefig(os.path.join(*config.outputpath, 'lowtbsamples', 'check', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
         plt.show()
 
 
@@ -195,7 +209,7 @@ if __name__ == "__main__":
         plt.grid()
 
         maxx = 0
-        for si, seqtype in enumerate([ 'deepWGS', 'targeted']):
+        for si, seqtype in enumerate(['deepWGS', 'targeted']):
 
             mutationfile = pd.read_excel(os.path.join(*config.mutationfolder, [f for f in os.listdir(os.path.join(*config.mutationfolder)) if f.startswith('CCG_226_'+patient)][0]))
             mutationfile['chrom_pos'] = mutationfile['#CHROM'].astype('str').str.cat(mutationfile['POS'].astype('str'), sep="_")
@@ -273,9 +287,15 @@ if __name__ == "__main__":
                 if patient == '986' and seqtype == 'targeted':
                     paired_vaf.iat[0,0] = -0.005 # (intead of 0 for APC, for visualisation
                 for gi, g in enumerate(list(paired_vaf['gene'])):
+                    if g in config.genelist:
+                        print(g, config.genelist.index(g))
+                        c = sns.color_palette('tab10') + [sns.color_palette('Accent')[5]] + [sns.color_palette('tab20b')[14]] + [sns.color_palette('tab20b')[0]]
+                        c = c[config.genelist.index(g)]
+                    else:
+                        c = colors[gi % len(colors)]
                     plt.plot(paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][2].split('-')[1]].values[0],
                              paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][pi].split('-')[1]].values[0], lw=5, markeredgewidth=1,
-                             c=colors[gi], markersize=20, marker=markers[si], fillstyle=fillstyles[0], markeredgecolor='k', label=g + '*' + ' ' + seqtype + ' sample')
+                             c=c, markersize=20, marker=markers[si], fillstyle=fillstyles[0], markeredgecolor='k', label=g + '*' + ' ' + seqtype + ' sample')
                     #c=colors[gi], markersize=20, marker=markers[pi], alpha=alphas[si], label=g + '*' + 'high TF sample '+patientsample_dict[patient][pi].split('-')[1])
 
         #plt.xlim([-0.002, max(0.05,round(maxx+0.01, 2))])
@@ -283,8 +303,8 @@ if __name__ == "__main__":
         plt.xlim([-.02, 0.6])
         #plt.plot([0,1], [0,1], ls='--', c='k')
         plt.axvline(x=0.000, ls='--', c='k')
-        plt.axvline(x=0.01, ls='--', c='k')
-        plt.axvline(x=0.03, ls='--', c='k')
+        #plt.axvline(x=0.01, ls='--', c='k')
+        #plt.axvline(x=0.03, ls='--', c='k')
         plt.title('Paired VAF plot for patient ' +patient)
         ax = plt.gca()
         hand, labl = ax.get_legend_handles_labels()
@@ -292,5 +312,7 @@ if __name__ == "__main__":
         ax.legend(hand, labl, bbox_to_anchor=(1, 1), loc="upper left")
         plt.xlabel('VAF in ultra low TF sample')
         plt.ylabel('VAF in high TF sample')
-        plt.savefig(os.path.join(*config.outputpath, 'lowtbsamples', 'check', 'pairedplot_vaf_trusted_'+patient+'_samescale.svg'), bbox_inches='tight')
+        if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
+            os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
+        plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_samescale.svg'), bbox_inches='tight')
         plt.show()
