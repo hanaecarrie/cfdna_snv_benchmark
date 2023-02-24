@@ -31,7 +31,7 @@ if __name__ == "__main__":
     print(config.methods)
 
     # Chomosome
-    mixtureids =  ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
+    mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
     mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
     reload = False
     save = True
@@ -56,10 +56,10 @@ if __name__ == "__main__":
             xaxis = 'coverage'
         mt = 'snv'
         if mt == 'snv':
-            gtm = 4
+            gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 2
+            gtm = 3
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
@@ -67,12 +67,12 @@ if __name__ == "__main__":
         # load results tables
         restables = {'snv': [], 'indel': []}
         mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
-        if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-            gtm = 3
-            refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
-        else:
-            gtm = 4
-            refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+        #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+        #    gtm = 3
+        #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
+        #else:
+        #    gtm = 4
+        #    refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         plasmasample = '_'.join(mixtureid.split('_')[:2])
         print(mixtureid, plasmasample)
         xa = xaxis if xaxis != 'tumor burden' else 'tb'
@@ -96,10 +96,11 @@ if __name__ == "__main__":
             ax.grid(which='major', alpha=1.)
         else:
             plt.grid(linewidth=1)
-        plt.ylim([0, .85])
+        plt.ylim([0, .5])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_exomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_exomecalling_'+fixedvar+'_'+mt+'_'+str(gtm)+'callers.svg'), bbox_inches='tight')
+        plt.show()
 
    ###### Ultra deep test: 2,000x WES exome calling #########
 
@@ -112,14 +113,16 @@ if __name__ == "__main__":
             xaxis = 'coverage'
         mt = 'snv'
         if mt == 'snv':
-            if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-                gtm = 3
-                refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
-            else:
-                gtm = 3
-                refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+            gtm = 5
+            refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+            #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+            #    gtm = 3
+            #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
+            #else:
+            #    gtm = 3
+            #    refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 2
+            gtm = 3
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
@@ -154,7 +157,8 @@ if __name__ == "__main__":
         plt.ylim([0, 0.85])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_2000x_exomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        #plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_2000x_exomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        plt.show()
 
     ############ 150x WGS whole genome calling #############
 
@@ -166,10 +170,10 @@ if __name__ == "__main__":
             xaxis = 'coverage'
         mt = 'snv'
         if mt == 'snv':
-            gtm = 4
+            gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 2
+            gtm = 3
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
@@ -177,12 +181,12 @@ if __name__ == "__main__":
         # load results tables
         restables = {'snv': [], 'indel': []}
         mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
-        if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-            gtm = 3
-            refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
-        else:
-            gtm = 4
-            refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+        #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+        #    gtm = 3
+        #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
+        #else:
+        #    gtm = 4
+        #    refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         plasmasample = '_'.join(mixtureid.split('_')[:2])
         print(mixtureid, plasmasample)
         xa = xaxis if xaxis != 'tumor burden' else 'tb'
@@ -197,6 +201,7 @@ if __name__ == "__main__":
         plt.ylim([0, 0.85])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_chr22calling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        #plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_chr22calling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        plt.show()
 
 

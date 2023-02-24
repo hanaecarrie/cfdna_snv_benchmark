@@ -54,10 +54,10 @@ if __name__ == "__main__":
         mt = 'indel'
         print('####### ' + mt + ' #######')
         if mt == 'snv':
-            gtm = 4
+            gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 2
+            gtm = 3
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
@@ -65,14 +65,14 @@ if __name__ == "__main__":
         # load results tables
         restables = {'snv': [], 'indel': []}
         for mixtureid in mixtureids:
-            if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T' and mt == 'snv':
-                gtm = 3
-                refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
+            #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T' and mt == 'snv':
+            #    gtm = 3
+            #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
+            #else:
+            if mt == 'snv':
+                gtm = 5
             else:
-                if mt == 'snv':
-                    gtm = 4
-                else:
-                    gtm = 2
+                gtm = 3
                 refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
             plasmasample = '_'.join(mixtureid.split('_')[:2])
             print(mixtureid, plasmasample)
@@ -154,4 +154,4 @@ if __name__ == "__main__":
         if not os.path.exists(os.path.join(*config.outputpath, 'supplfigure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'supplfigure2b'))
         plt.savefig(os.path.join(*config.outputpath, 'supplfigure2b',
-                                 'perf_auprc_3patients_150x_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+                                 'perf_auprc_3patients_150x_'+fixedvar+'_'+mt+'_'+str(gtm)+'callers.svg'), bbox_inches='tight')
