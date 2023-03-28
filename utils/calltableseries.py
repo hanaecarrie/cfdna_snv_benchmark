@@ -175,6 +175,7 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         return calltablesseries, calltablesaux
 
     else:  # chrom == 'all'
+        diltypesave = diltype
         if diltype.startswith('mixture_'):
             diltype = 'mixture'
         if chrom == 'all':
@@ -188,7 +189,7 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
             if os.path.exists(os.path.join(*confdilfolder, diltype+'s_chr'+chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv')) and not reload:
                 caux = pd.read_csv(os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid, 'calls', dilutionid + '_tf_cov.csv'), index_col=0)
             else:
-                _, caux = get_calltableseries(config, dilutionid, chrom, muttype=muttype, filterparam=filterparam, reload=reload, save=save, diltype=diltype, concat=concat, bcbiovaf=bcbiovaf, gatkcorr=gatkcorr)
+                _, caux = get_calltableseries(config, dilutionid, chrom, muttype=muttype, filterparam=filterparam, reload=reload, save=save, diltype=diltypesave, concat=concat, bcbiovaf=bcbiovaf, gatkcorr=gatkcorr)
             print(list(caux.index))
             caux.index = [ci.split('_')[0] + '_' + '_'.join(ci.split('_')[2:]) for ci in list(caux.index)]
             caux_list.append(caux)
