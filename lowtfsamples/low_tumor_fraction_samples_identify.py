@@ -59,7 +59,7 @@ def get_patient_tf_treatment(config, patient):
     return df_patient, tf_patient, tf_df
 
 
-def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, check=False):
+def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, check=False, treatment=True, save=False, savepath=None):
     patient = int(patient)
     print(patient)
     # Display parameter
@@ -82,19 +82,27 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
     # left y-axis -> treatment information
     df_patient['date'] = df_patient['date'].astype(str)
     df_patient['treatment'] = df_patient['treatment'].astype(str)
-    sns.stripplot(y='treatment', x='date', data=df_patient, color='grey', marker='X', size=10, ax=ax2)
+    df_patient['treatment'][df_patient['treatment'] == 'nan'] = 'cfDNA'
+    if treatment:
+        sns.stripplot(y='treatment', x='date', data=df_patient, color='grey', marker='X', size=10, ax=ax2)
     ax2.grid(False)
     plt.legend((), ())
     # right y-axis ->  tumor fraction (ichorCNA estimate) and VAF information, in [0,1]
-    ax = ax2.twinx()
+    if treatment:
+        ax = ax2.twinx()
+    else:
+        ax = ax2
     ele0 = ax.plot(df_patient['date'], df_patient['tumor_burden'], lc + '.', marker='s', markersize=10,
                    label='ichorCNA tumor burden')
     ax.plot(df_patient['date'][~df_patient['tumor_burden'].isna()],
             df_patient['tumor_burden'][~df_patient['tumor_burden'].isna()], lc + '-', linewidth=4)
     ax.plot(df_patient['date'][~df_patient['tumor_burden'].isna()],
             df_patient['tumor_burden'][~df_patient['tumor_burden'].isna()], lc + '.', marker='s', markersize=10)
-    ax.set_ylabel('fraction (tumor burden or VAF)', fontsize=30)
-    ax.set_ylim(-0.01, 1)
+    ax.set_ylabel('ctDNA or VAF fraction', fontsize=30)
+    if treatment:
+        ax.set_ylim(-0.01, 1)
+    else:
+        ax.set_ylim(-0.01, 0.8)
     fig.legend([ele0], ['ichorCNA tumor burden'], loc='upper left')
     labels = [ad if ad in tumorburden_dates else '' for ad in alldates]
     ax2.set_xticklabels(labels, rotation=90, fontsize=fs)
@@ -122,6 +130,7 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
         col = ['#CHROM', 'POS', 'REF', 'ALT', 'GENE', 'TIERS']
         if mutation_df_226[mutation_df_226["TIERS"] == 'Trusted'].shape[0] != 0:  # Trusted mutations
             mutation_df_226 = mutation_df_226[mutation_df_226["TIERS"] == 'Trusted']
+            mutation_df_226.drop_duplicates(['#CHROM', 'POS'], inplace=True)
         else:  # Low Evidence mutations
             mutation_df_226 = mutation_df_226[mutation_df_226["TIERS"] == 'LowEvidence']
         if mutation_df_226.shape[0] > 0:  # if mutations are detected in targeted seq
@@ -161,6 +170,17 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
                                                                             aggfunc='first')
             mutations_acrosstime_226 = mutations_acrosstime_226.T
             mutations_acrosstime = mutations_acrosstime_226
+            print(mutations_acrosstime)
+            print(list(mutations_acrosstime.columns))
+            if patient == 1014: ## add 101 panel mutation calls by Sarah timepoint 2016-08-18
+                add = pd.read_excel(os.path.join(*config.mutationfolder, 'CHB1461_CHC1126_variantcalls.xlsx'))
+                add = add[['Symbol', 'freebayes_VAFTumour', 'mutect_VAFTumour', 'varscan_VAFTumour']].iloc[:83,:]
+                add = add[add['Symbol'].isin(mutations_acrosstime.columns)]
+                add['VAF'] = add[['freebayes_VAFTumour', 'mutect_VAFTumour', 'varscan_VAFTumour']].median(axis=1, skipna=True)
+                add.set_index('Symbol', inplace=True)
+                add = add.reindex(list(mutations_acrosstime.columns))
+                print(add)
+                mutations_acrosstime.loc['2016-08-18'] = add['VAF'].values
             xacrosstime = [i for i in mutations_acrosstime.index if i in df_patient['date'].values]
             eles = [ele0]
             collist = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
@@ -171,9 +191,14 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
             for gi, gene in enumerate(mutations_acrosstime.columns):
                 yacrosstime = [m for i, m in enumerate(mutations_acrosstime[gene].values) if
                                mutations_acrosstime.index[i] in df_patient['date'].values]
-                elei = ax.plot(xacrosstime, yacrosstime, color=collist[gi % len(collist)], ls=lstype, linewidth=lwd,
+                if gene in config.genelist:
+                    c = sns.color_palette('tab10') + [sns.color_palette('Accent')[5]] + [sns.color_palette('tab20b')[14]] + [sns.color_palette('tab20b')[0]]
+                    c = c[config.genelist.index(gene)]
+                else:
+                    c = collist[gi % len(collist)]
+                elei = ax.plot(xacrosstime, yacrosstime, color=c, ls=lstype, linewidth=lwd,
                                label=gene)
-                ax.plot(xacrosstime, yacrosstime, color=collist[gi % len(collist)], ls=lstype, marker='D',
+                ax.plot(xacrosstime, yacrosstime, color=c, ls=lstype, marker='^',
                         markersize=10)
                 eles.append(elei)
             # indicate dates when tumor burden is available, that is to say timepoints with lpWGS
@@ -195,19 +220,28 @@ def plot_patient_timeline(config, patient, figsize=(40, 10), mutations=False, ch
             print(listdeepwgs)
             if not check:
                 for ldw in listdeepwgs:
-                    ax.get_xticklabels()[labels.index(ldw)].set_color('red')
-                    ax2.get_xticklabels()[labels.index(ldw)].set_color('red')
+                    ax.get_xticklabels()[labels.index(ldw)].set_color('orange')
+                    ax2.get_xticklabels()[labels.index(ldw)].set_color('orange')
             else:
                 for htfsample in config.hightfsamples[patient]:
-                    ax.get_xticklabels()[labels.index(htfsample)].set_color('red')
-                    ax2.get_xticklabels()[labels.index(htfsample)].set_color('red')
+                    ax.get_xticklabels()[labels.index(htfsample)].set_color('orange')
+                    ax2.get_xticklabels()[labels.index(htfsample)].set_color('orange')
             #fig.legend()
-            ax.legend(loc='upper left')
-            if not os.path.exists(
-                    os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png')):
+            if treatment:
+                ax.legend(loc='upper left')
+            else:
+                ax.legend(bbox_to_anchor=(1, 1),  loc='upper left')
+                plt.ylim([-0.01, 0.8])
+            if save and savepath is None:
                 plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.png'),
                             bbox_inches='tight')
+                plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + '_mutations.svg'),
+                            bbox_inches='tight')
+            if save and savepath is not None:
+                plt.savefig(os.path.join(savepath, 'timeline_patient_' + str(patient) + '_mutations.png'), bbox_inches='tight')
+                plt.savefig(os.path.join(savepath, 'timeline_patient_' + str(patient) + '_mutations.svg'), bbox_inches='tight')
     plt.show()
+    return mutation_df_226
 
 
 def get_mutations_stats(config, patient):

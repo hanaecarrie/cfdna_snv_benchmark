@@ -5,6 +5,7 @@ from pyliftover import LiftOver
 
 
 def liftover(coords, chainfile):
+    # hg19to38: chr7_1920403
     # coords = chrom_startpos_endpos or chrom_pos
     lo = LiftOver(chainfile)
     sc = coords.split('_')
