@@ -44,7 +44,7 @@ if __name__ == "__main__":
     metrics = ['auprc', 'precision', 'recall']
 
     chrom = 'all'
-    """
+
     for fixedvar in fixedvars:
         if fixedvar == 'coverage':
             xaxis = 'tumor burden'
@@ -60,7 +60,9 @@ if __name__ == "__main__":
                 refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
             print(refname)
             # for metric in metrics:
-            metric = 'auprc'
+            #metric = 'auprc'
+            #metric = 'recall'
+            metric = 'maxrecallatleast0_05precision'
             # load results tables
             restables = {'snv': [], 'indel': []}
             for mixtureid in mixtureids:
@@ -135,12 +137,14 @@ if __name__ == "__main__":
             plt.ylabel(metric.upper()+' score')
             plt.title(metric.upper() + " score for {} calling in chr{} with ref {}".format(mt.upper(), chrom, refname),
                       pad=50)
-            if mt == 'snv':
-                plt.ylim([0, .5])  #plt.ylim([0, .9])
+            if mt == 'snv' and metric == 'auprc':
+                plt.ylim([0, .5])
+            else:
+                plt.ylim([0, 1.])
             if not os.path.exists(os.path.join(*config.outputpath, 'figure2a')):
                 os.mkdir(os.path.join(*config.outputpath, 'figure2a'))
-            #plt.savefig(os.path.join(*config.outputpath, 'figure2a',
-            #                         'perf_auprc_3patients_150x_'+fixedvar+'_'+mt+'_'+refname+'.svg'), bbox_inches='tight')
+            plt.savefig(os.path.join(*config.outputpath, 'figure2a',
+                                     'perf_'+metric+'_3patients_150x_'+fixedvar+'_'+mt+'_'+refname+'.svg'), bbox_inches='tight')
             plt.show()
     """
 
@@ -246,4 +250,6 @@ if __name__ == "__main__":
         plt.ylim([1, 5e5])
         ax = plt.gca()
         ax.set_xticklabels(labels=gtanalysis.columns,rotation=90)
-        plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_SNV.svg'), bbox_inches='tight')
+        #plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_SNV.svg'), bbox_inches='tight')
+        
+        """

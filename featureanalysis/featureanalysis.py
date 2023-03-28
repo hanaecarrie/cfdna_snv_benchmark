@@ -132,6 +132,50 @@ def parse_caller_feature(calldir, method, save=False):
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
     # bcbio parsing INFO
+    elif method == 'varnet':  # NB: no indel method
+        calltablemethod_path = os.path.join(calldir, 'calls', method, sampleid+'_v1.vcf')
+        if not os.path.exists(calltablemethod_path):
+            print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+            callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+        else:
+            callmethod = read_vcf(calltablemethod_path, varnet=True)
+            if filter == 'PASS':
+                callmethod = callmethod[callmethod['FILTER'] == "PASS"]
+            elif filter == 'REJECT':
+                callmethod = callmethod[callmethod['FILTER'] != "PASS"]
+            #callmethod['#CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  SAMPLE']
+            #callmethod = callmethod[['CHROM', 'POS', 'REF', 'ALT', 'FILTER', 'INFO', 'SAMPLE']]
+            callmethod = callmethod.rename(columns={'CHROM': 'chrom', 'POS': 'pos', 'REF':'ref', 'ALT':'alt', 'SAMPLE':'sample'})
+            callmethod[method] = callmethod['FILTER']
+            callmethod[method+'_score'] = callmethod['INFO']
+            callmethod['type'] = callmethod[method+'_score'].str.split('TYPE=').str[1].str.split(';').str[0].astype(str)
+            callmethod[method+'_score'] = callmethod[method+'_score'].str.split('SCORE=').str[1].str.split(';').str[0].astype(float)
+            callmethod['totcov'] = callmethod['sample'].str.split(':').str[1].astype(int)
+            callmethod['altcov'] = callmethod['sample'].str.split(':').str[3].astype(int)
+            callmethod['vaf'] = callmethod['sample'].str.split(':').str[4].astype(float)
+            callmethod[method][callmethod[method] == 'PASS'] = True
+            callmethod[method][callmethod[method] == 'REJECT'] = False
+            callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() > 0, 'type'] = 'INS'
+            callmethod.loc[callmethod['alt'].str.len() - callmethod['ref'].str.len() < 0, 'type'] = 'DEL'
+            colnames = []
+            info = callmethod['INFO']
+            for i in info.to_list():
+                # print([j.split('=')[0] for j in str(i).split(';')])
+                for j in str(i).split(';'):
+                    colnames.append(j.split('=')[0])
+            colnames = np.unique(colnames)
+            print(colnames)
+            print(len(colnames))
+            for c in colnames:
+                #print(c)
+                #print(len([i.split(c+'=')[1].split(';')[0] if c+'=' in i else np.nan for i in info.to_list()]))
+                #print(callmethod.shape)
+                callmethod[c] = [i.split(c+'=')[1].split(';')[0] if c+'=' in i else np.nan for i in info.to_list()]
+            callmethod.drop('INFO', axis=1, inplace=True)
+            callmethod_snv = callmethod[callmethod['type'] == 'SNV']
+            callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
+            callmethod_snp = callmethod[callmethod['type'] == 'SNP']
+            #callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'varnet', 'varnet_score']]
     # cfdna callers parsing
     elif method == 'abemus':  # NB: no indel method
         calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
@@ -139,13 +183,15 @@ def parse_caller_feature(calldir, method, save=False):
             print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
             callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
         else:
-            callmethod = pd.read_csv(calltablemethod_path)
-            callmethod = callmethod.rename(columns={'chr': 'chrom', 'dbsnp': 'type', 'cov_case': 'totcov', 'cov.alt': 'altcov', 'af_case': 'vaf', 'filter.pbem_coverage': 'abemus_score'})
-            callmethod.columns = ['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', 'abemus_score']
-            callmethod['abemus_score'] = callmethod['vaf'] / (callmethod['vaf'] + callmethod['abemus_score'])  # af_case / (af_case + filter.pbem_coverage)
+            callmethod = pd.read_csv(calltablemethod_path, index_col=0)
+            callmethod = callmethod.rename(columns={'chr': 'chrom', 'dbsnp': 'type', 'cov_case': 'abemus_totcov', 'cov.alt': 'abemus_altcov', 'af_case': 'abemus_vaf', 'filter.pbem_coverage': 'abemus_score'})
+            callmethod['abemus_score'] = callmethod['abemus_vaf'] / (callmethod['abemus_vaf'] + callmethod['abemus_score'])  # af_case / (af_case + filter.pbem_coverage)
             callmethod.loc[~callmethod['type'].isna(), 'type'] = 'SNV'
             callmethod.loc[callmethod['type'].isna(), 'type'] = 'SNP'
             callmethod['abemus'] = True
+            callmethod_snv = callmethod[callmethod['type'] == 'SNV']
+            callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
+            callmethod_snp = callmethod[callmethod['type'] == 'SNP']
     return callmethod_snv, callmethod_indel, callmethod_snp
 
 

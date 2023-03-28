@@ -7,18 +7,24 @@ from utils.calltable import *
 
 
 def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv', matchedtissuepath=None, methods=None):
-    if methods:
+    if methods is not None:
         refmethods = methods
     else:
         refmethods = list(np.copy(config.methods))
+    print(refmethods)
     # Approach 1: CONSENSUS
     # pseudo ground truth = mutations found by at least k callers
     if type(ground_truth_method) == int:
         calltablesseries['truth'] = False
-        refmethods = list(np.copy(config.methods))
+        #refmethods = list(np.copy(config.methods))
         print(refmethods)
-        ncallsinundiluted = calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=0)
-        callsinundiluted = calltablesseries[['{:.2f}_{}_score'.format(max(calltablestf), m) for m in refmethods]]
+        if '{:.2f}_{}'.format(max(calltablestf), refmethods[0]) in list(calltablesseries.columns):
+            print('test')
+            ncallsinundiluted = calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=0)
+            callsinundiluted = calltablesseries[['{:.2f}_{}_score'.format(max(calltablestf), m) for m in refmethods]]
+        else:
+            ncallsinundiluted = calltablesseries[calltablesseries['sampletf'] == max(calltablestf)][refmethods].sum(axis=0)
+            callsinundiluted = calltablesseries[calltablesseries['sampletf'] == max(calltablestf)][[m+'_score' for m in refmethods]]
         print(ncallsinundiluted)
         callsinundiluted.columns = refmethods
         callsinundiluted = callsinundiluted.stack().reset_index(level=0, drop=False).reset_index()
@@ -30,7 +36,12 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
             plt.xlim([0, 1])
             plt.ylim([0, 1])
             plt.title(m)
-        truthpos = list(calltablesseries[calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=1) >= ground_truth_method].index)
+        if '{:.2f}_{}'.format(max(calltablestf), refmethods[0]) in list(calltablesseries.columns):
+            truthpos = list(calltablesseries[calltablesseries[['{:.2f}_{}'.format(max(calltablestf), m) for m in refmethods]].sum(axis=1) >= ground_truth_method].index)
+        else:
+            aux = calltablesseries[calltablesseries['sampletf'] == max(calltablestf)]
+            print(aux[refmethods])
+            truthpos = list(aux[aux[refmethods].sum(axis=1) >= ground_truth_method].index)
         calltablesseries.loc[truthpos, 'truth'] = True
     elif ground_truth_method == 'spikein':
         chroms = list(calltablesseries.chrom.unique().astype(str))
@@ -114,12 +125,15 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
         calltablesseries['truth'] = False
         tissuetable = pd.read_csv(matchedtissuepath, index_col=0)  # 10% VAF filter fine for tissue
         # which chroms as represented in cfDNA
+        print(tissuetable['chrom'])
         print(calltablesseries['chrom'].values)
-        chromlist = np.unique(calltablesseries['chrom'].values)
-        try:
-            chromlist = [str(c) for c in chromlist]
-        except:
-            print(chromlist)
+        calltablesseries['chrom'] = calltablesseries['chrom'].astype(str)
+        tissuetable['chrom'] = tissuetable['chrom'].astype(str)
+        chromlist = list(set(calltablesseries['chrom'].values))
+        #try:
+        #    chromlist = [str(c) for c in chromlist]
+        #except:
+        #    print(chromlist)
         tissuetable = tissuetable[tissuetable['chrom'].isin(chromlist)]
         refmethods = list(np.copy(config.methods_tissue))
         print(refmethods)
@@ -138,10 +152,23 @@ def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_me
             plt.title(m)
         truthpos = list(tissuetable[tissuetable[['{}'.format(m) for m in refmethods]].sum(axis=1) >= 3].index)  # 3/5 callers on tissue
         print(len(truthpos))
-        truthpos = [t for t in truthpos if t in list(calltablesseries.index)] # take intersection
-        print(len(truthpos))
-        calltablesseries.loc[truthpos, 'truth'] = True
+        print(calltablesseries.shape[0])
+        calltablesseries.reindex[truthpos, 'truth'] = True
+        print(calltablesseries.shape[0])
+        print(calltablesseries['truth'].sum())
+        #if calltablesseries.index.duplicated().sum() > 0:
+        #    truthpos = [t for t in truthpos if t in list(calltablesseries.index)] # take intersection
+        #print(len(truthpos))
+        #calltablesseries = calltablesseries.reindex(truthpos)
+        #calltablesseries.loc[truthpos, 'truth'] = True
+        #truthposout = [t for t in truthpos if t not in list(calltablesseries.index)] # take missed
+        #for tp in truthposout:
+        #    calltablesseries.loc[tp, 'truth'] = True
     print(calltablesseries['truth'].value_counts())
+    if '{:.2f}_{}'.format(max(calltablestf), refmethods[0]) in list(calltablesseries.columns):
+        print(calltablesseries[calltablesseries['truth'] == True][['{:.2f}_{}'.format(max(calltablestf), m) for m in config.methods]].sum(axis=0))
+    else:
+        calltablesseries[(calltablesseries['truth'] == True) & (calltablesseries['sampletf'] == max(calltablestf))][refmethods].sum(axis=0)
     return calltablesseries
 
 
@@ -164,6 +191,7 @@ def compare_groundtruth(calltabledict):
                 res[gttype + '_' + str(j) + '_' + str(i)] = aux
             c += 1
     return res
+
 
 def compare_groundtruth_venn(calltabledict):
     res = {}

@@ -12,7 +12,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                        allpatients=True, logscale=False,  save=False, diltype='mixtures'):
             xlab = 'tumor burden' if fixedvar == 'coverage' else 'coverage'
             print(xlab)
-            res = {'x' : [], 'y': [], 'label': []}
+            res = {'x': [], 'y': [], 'label': []}
             color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
             lc = 'logscale' if logscale else 'linearscale'
             if allpatients:
@@ -31,23 +31,6 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                     if muttype == 'indel' and method == 'abemus':
                         pass
                     else:
-                        # if fixedvar == 'coverage':
-                            # if method == 'vardict' and plasmasample == 'CRC-1014_180816-CW-T':
-                            #     # tmp fix due to Vardict fail
-                            #     locindex1 = restablesample[(restablesample['caller'] == 'vardict') & (restablesample['tumor burden'] ==  9.090)].index[0]
-                            #     restablesample.at[locindex1, metric.upper()+' score'] = np.nan
-                            #     locindex2 = restablesample[(restablesample['caller'] == 'vardict') & (restablesample['tumor burden'] ==  6.059)].index[0]
-                            #     restablesample.at[locindex2, metric.upper()+' score'] = np.nan
-                            # if method == 'cfsnv' and plasmasample == 'CRC-1014_180816-CW-T' and muttype == 'snv':
-                            #     locindex2 = restablesample[(restablesample['caller'] == 'cfsnv') & (restablesample['tumor burden'] ==  6.059)].index[0]
-                            #     restablesample.at[locindex2, metric.upper()+' score'] = np.nan
-                            # if method == 'cfsnv' and plasmasample == 'CRC-123_310715-CW-T' and muttype == 'snv':
-                            #     locindex2 = restablesample[(restablesample['caller'] == 'cfsnv') & ((restablesample[xlab]==6.) | (restablesample[xlab]==15.) | (restablesample[xlab]==1.5) | (restablesample[xlab]==20.))].index
-                            #    for li in locindex2:
-                            #        restablesample.at[li, metric.upper()+' score'] = np.nan
-                        # if fixedvar == 'ctdna':
-                            # if plasmasample == 'CRC-123_310715-CW-T':
-                            #     restablesample = restablesample[restablesample['coverage'] != 250]
                         plt.plot(restablesample[restablesample['caller'] == method][xlab], restablesample[restablesample['caller'] == method][metric.upper()+' score'],
                                  c=color_dict[method], marker=config.markers[mi], markersize=15, lw=2, label = method + '*' + 'patient '+plasmasample.split('_')[0].split('-')[1])
                         plt.grid()
@@ -88,7 +71,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                 ax.legend(hand, labl, bbox_to_anchor=(1, 1), loc="upper left")
                 plt.xlabel(xlab)
                 plt.ylabel(metric.upper()+' score')
-                plt.title(metric.upper() + " score for {} calling in chr{} with ref {}".format(muttype.upper(), chrom, refname))
+                plt.title(metric.upper() + " score for {} calling in chr{} with ref {}".format(muttype.upper(), chrom, refname), pad=50)
                 if logscale:
                     plt.semilogy()
                 dilfolder = config.spikeinfolder if ground_truth_method == 'spikein' else config.mixturefolder
