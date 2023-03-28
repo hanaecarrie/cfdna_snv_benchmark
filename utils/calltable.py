@@ -194,7 +194,6 @@ def get_calltable(calldir, methods, save=False, filter='PASS', bcbiovaf=1, gatkc
                 else:
                     callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
                 #print(callmethod.head(10))
-
         elif method == 'smurf':
             calltablemethod_path = os.path.join(calldir, 'calls', method, 'snv-parse.txt')
             if not os.path.exists(calltablemethod_path):

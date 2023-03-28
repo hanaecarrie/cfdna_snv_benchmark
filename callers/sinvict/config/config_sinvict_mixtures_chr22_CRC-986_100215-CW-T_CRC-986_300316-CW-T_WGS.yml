@@ -1,0 +1,13 @@
+############# Config file ############
+
+dilutionseriesfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr22/mixtures_chr22_CRC-986_100215-CW-T_CRC-986_300316-CW-T"
+buffycoatbam: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_CRC-986-CW-N/CRC-986-CW-N_chr22.bam"
+chr: 22
+extdata: /rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata/
+outdir: /rfs-storageservice/GIS/Projects/LOCCG/carriehc/sinvict_outdir/mixtures_chr22_CRC-986_100215-CW-T_CRC-986_300316-CW-T/
+abra: 'False'
+mode: 'wholegenome'
+finaloutdir: /rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfdna_callers/mixtures_chr22_CRC-986_100215-CW-T_CRC-986_300316-CW-T/
+mindepth: 5
+condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
+repopath: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers"

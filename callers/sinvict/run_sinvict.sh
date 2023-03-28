@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd /home/ubuntu/sinvict
-
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -29,12 +27,19 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
+source $condapath
+conda activate default
+
+cd ${repopath}/sinvict
+
+
 echo $config_file
 echo $dilutionseriesfolder
 echo $buffycoatbam
 echo $chr
 echo $extdata
 echo $outdir
+echo $mode
 
 ####### generate info file #######
 if [ ! -d $outdir ] ; then mkdir $outdir ; fi
@@ -46,7 +51,7 @@ exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out'
 
 # Start logging the RAM usage and CPU usage
-bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
+bash ${repopath}/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
 ###### prepare bedfile ######
 # Download reference genome (here all with hg19)
@@ -54,10 +59,10 @@ bash /home/ubuntu/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid
 # Create dictionary
 # Create bed file chr
 # Split bed file chr by chunks of 5,000 lines
-if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+if [ ! -f $extdata/${mode}_bed/${mode}_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/${mode}_bed/${mode}_hg19_chr${chr}.bed $extdata/${mode}_bed/${mode}_hg19_chr${chr}_ ; fi
 
 ###### run SINVICT per chunk in parallel ######
-export nchunk=$(ls $extdata/exome_bed/exome_hg19_chr${chr}_*.bed | wc -l)
+export nchunk=$(ls $extdata/${mode}_bed/${mode}_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
 echo "dilfolder ${dilutionseriesfolder}"
 
@@ -72,9 +77,9 @@ if [ $abra = 'True' ] ; then
 	if [ ! -d $outdirplasma ] ; then mkdir $outdirplasma ; fi
 	
 	for n in $(seq -f '%02g' 0 $(($nchunk - 1))) ; do 
-		echo 'run sinvict on chunk ${n}'
+		echo "run sinvict on chunk ${n}"
 		export npid=$((${n#0} + 1))
-	        bash /home/ubuntu/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma &  pids[${npid}]=$!
+	        bash ${repopath}/sinvict/run_sinvict_i.sh -c $config_file -i $n -p $plasma &  pids[${npid}]=$!
 	done
 	
 	# wait for all pids
@@ -84,7 +89,7 @@ if [ $abra = 'True' ] ; then
 	
 	### SINVICT ###
 	if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
-	/home/ubuntu/sinvict/sinvict -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results      
+	${repopath}/sinvict/sinvict --min-depth $mindepth -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results      
 
 	done
 fi
@@ -98,7 +103,7 @@ if [ $abra = 'False' ] ; then  # wait for all pids
 		echo "abra $abra"       
 		export cpid=$(($cpid + 1))
 		echo job $cpid
-		bash /home/ubuntu/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma &  pids[${cpid}]=$!
+		bash ${repopath}/sinvict/run_sinvict_sample.sh -c $config_file -p $plasma &  pids[${cpid}]=$!
 	done
         
 	for pid in ${pids[*]}; do
@@ -117,7 +122,7 @@ if [ $abra = 'False' ] ; then  # wait for all pids
 		if [ ! -d $outdirplasma/results ] ; then mkdir $outdirplasma/results ; fi
 		#export cpid=$(($cpid + 1))
 		#echo job $cpid
-		if [ ! -f $outdirplasma/results/calls_level6.sinvict ] ; then /home/ubuntu/sinvict/sinvict -minDepth 5 -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results ; fi #&  pids[${cpid}]=$!
+		if [ ! -f $outdirplasma/results/calls_level6.sinvict ] ; then ${repopath}/sinvict/sinvict --min-depth $mindepth -t ${outdirplasma}/bam-readcount -o ${outdirplasma}/results ; fi #&  pids[${cpid}]=$!
 	done
 
 	# wait for all pids

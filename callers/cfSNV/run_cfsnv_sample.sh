@@ -53,6 +53,15 @@ if [ ! -d $outdir ]; then mkdir $outdir ; fi
 
 echo $tmpdir
 
+###### prepare bedfile ######
+# Download reference genome (here all with hg19)
+# Index it
+# Create dictionary
+# Create bed file chr
+# Split bed file chr by chunks of 5,000 lines
+if [ ! -f $extdata/exome_bed/exome_hg19_chr${chr}_00.bed ] ; then split -l 5000 --numeric-suffixes --additional-suffix='.bed' $extdata/exome_bed/exome_hg19_chr${chr}.bed $extdata/exome_bed/exome_hg19_chr${chr}_ ; fi
+
+
 echo "dilfolder ${dilutionseriesfolder}"
 
 export normal=$buffycoatbam
@@ -79,6 +88,7 @@ export plasmaid=$(basename $plasma .bam)
 echo $plasmaid
 Rscript run_getbamalign.R --config_file $config_file --plasmaid $plasmaid
 
+if [ ! -f $outdirplasma/results/${plasmaid}.results_00.txt ] ; then rm $outdirplasma/parameter.txt ; fi
 if [ ! -f $outdirplasma/parameter.txt ] ; then Rscript run_parameter.R --config_file $config_file --plasmaid $plasmaid ;
 tail -n 13 $outdirplasma/log.out > $outdirplasma/parameter.txt ;
 fi
@@ -91,12 +101,12 @@ for targetbed in $extdata/exome_bed/exome_hg19_chr${chr}_*.bed ; do
 done
 
 ####### copy results to common folder ########
-echo $finaloutdir
-if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
-echo "plasma ${plasma}" ;
-if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
-if [ ! -d $finaloutdir/$(basename $plasma .bam)/cfsnv ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/cfsnv ; fi
-scp $outdirplasma/results/* $finaloutdir/$(basename $plasma .bam)/cfsnv/
+#echo $finaloutdir
+#if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
+#echo "plasma ${plasma}" ;
+#if [ ! -d $finaloutdir/$(basename $plasma .bam) ] ; then mkdir $finaloutdir/$(basename $plasma .bam) ; fi
+#if [ ! -d $finaloutdir/$(basename $plasma .bam)/cfsnv ] ; then mkdir $finaloutdir/$(basename $plasma .bam)/cfsnv ; fi
+#scp $outdirplasma/results/* $finaloutdir/$(basename $plasma .bam)/cfsnv/
 
 endcfsnv=$(date +%s)
 timecfsnv=$(($endcfsnv-$startcfsnv))

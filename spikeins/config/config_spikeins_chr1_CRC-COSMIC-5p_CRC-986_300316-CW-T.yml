@@ -21,8 +21,8 @@ mutsbed:
   snv: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr1_SNV_vaf1.bed'
   indel: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr1_INDEL_vaf1.bed'
 
-dilutionfactor:
-  pseudohealthy: 150
+#dilutionfactor:
+  #pseudohealthy: 150
 
 defaultbash: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/spikeins/run_sampleid.sh"
 

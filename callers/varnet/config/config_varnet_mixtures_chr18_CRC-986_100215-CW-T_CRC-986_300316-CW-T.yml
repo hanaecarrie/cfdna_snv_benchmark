@@ -1,0 +1,20 @@
+############# Config file ############
+
+normalbam: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr18/initialsamples_chr18_CRC-986-CW-N/CRC-986-CW-N_chr18.bam"
+dilutionseriesfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr18/mixtures_chr18_CRC-986_100215-CW-T_CRC-986_300316-CW-T"
+includeallelefrequency: True
+processesfilter: 8
+processespredict: 2
+outdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/varnet_outdir/mixtures_chr18_CRC-986_100215-CW-T_CRC-986_300316-CW-T/"
+extdata: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata/"
+mode: "exome"
+chr: 18
+condapath: "/scratch/users/astar/gis/simngl/apps/bcbio_v129/anaconda/etc/profile.d/conda.sh"
+repopath: "/rfs-storageservice/GIS/Projects/LOCCG/apps/varnet_hanae/"
+tooldir: "/scratch/users/astar/gis/simngl/apps/VarNet/v1"
+py: "/scratch/users/astar/gis/simngl/apps/bcbio_v129/anaconda/envs/varnet/bin/python"
+picard: "/rfs-storageservice/GIS/Projects/LOCCG/apps/bcbio/v129/anaconda/envs/java/share/picard-2.27.4-0/picard.jar"
+java: "/rfs-storageservice/GIS/Projects/LOCCG/apps/bcbio/v129/anaconda/bin/java"
+samtools: "/rfs-storageservice/GIS/Projects/LOCCG/apps/bcbio/v129/anaconda/bin/samtools"
+
+

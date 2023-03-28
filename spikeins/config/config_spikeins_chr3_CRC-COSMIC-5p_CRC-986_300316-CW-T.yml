@@ -9,7 +9,7 @@ samplename:
   pseudohealthy: "CRC-986_300316-CW-T"
   buffycoat: "CRC-986-CW-N"
 
-vafs: "0"
+vafs: "0.200 0.150 0.100 0.050 0.025 0.010 0"
 
 chr: 3
 
@@ -21,8 +21,8 @@ mutsbed:
   snv: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr3_SNV_vaf1.bed'
   indel: '/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/cosmic_mutations_atleast5patients/CRC_chr3_INDEL_vaf1.bed'
 
-dilutionfactor:
-  pseudohealthy: 150
+#dilutionfactor:
+  #pseudohealthy: 150
 
 defaultbash: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/spikeins/run_sampleid.sh"
 

@@ -142,7 +142,7 @@ fi
 
 # sort
 echo "sort mixture..."
-if [ ! -f $outputdir/${dilutionname}.bam ] ; then $samtools sort -o $outputdir/${dilutionname}.bam -@ 4 $outputdir/${dilutionname}.unsorted.bam ; fi
+if [ ! -f $outputdir/${dilutionname}.bam ] ; then $samtools sort -o $outputdir/${dilutionname}.bam -@ 4 -m 2G $outputdir/${dilutionname}.unsorted.bam ; fi
 # index
 echo "index mixture..."
 if [ ! -f $outputdir/${dilutionname}.bam.bai ] ; then $samtools index -@ 4 $outputdir/${dilutionname}.bam ; fi

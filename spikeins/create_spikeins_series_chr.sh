@@ -53,9 +53,11 @@ if [ ! -d $outputdir ] ; then mkdir $outputdir ; fi
 
 cp $config_file $outputdir/
 
-echo $dilutionfactor_pseudohealthy # 150x
-export sample_pseudohealthy_chr_downsample=$pseudohealthydir/${samplename_pseudohealthy}_chr${chr}_${dilutionfactor_pseudohealthy}x.bam
-echo $sample_pseudohealthy_chr_downsample
+#echo $dilutionfactor_pseudohealthy # 150x
+#export sample_pseudohealthy_chr_downsample=$pseudohealthydir/${samplename_pseudohealthy}_chr${chr}_${dilutionfactor_pseudohealthy}x.bam
+#echo $sample_pseudohealthy_chr_downsample
+
+export sample_pseudohealthy_chr_downsample=$sample_pseudohealthy_chr
 
 if [ ! -f $sample_pseudohealthy_chr_downsample ] ; then
 # Select chr only
