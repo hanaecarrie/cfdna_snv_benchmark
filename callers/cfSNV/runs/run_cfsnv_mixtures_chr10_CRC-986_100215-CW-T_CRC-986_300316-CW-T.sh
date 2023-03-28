@@ -4,13 +4,15 @@
 #SBATCH -J 10_986_cfsnv
 #SBATCH -t 3-00:00:00
 #SBATCH -N 1
-#SBATCH --mem 64000
+#SBATCH --mem 128000
 #SBATCH --output=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.10_986_cfsnv.o
 #SBATCH --error=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfsnv_outdir/logs/z.10_986_cfsnv.e
 
 export chr=10
 
 cd /home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers/cfSNV
+
+bash run_cfsnv_buffycoat.sh -c config/config_cfsnv_mixtures_chr${chr}_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
 
 export npid=0
 for plasma in /rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr${chr}/mixtures_chr${chr}_CRC-986_100215-CW-T_CRC-986_300316-CW-T/*/*[Tx].bam ; do 

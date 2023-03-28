@@ -95,7 +95,7 @@ echo $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf
 if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 
 ###### run ABEMUS per chunk in parallel ######
-export nchunk=$(ls $extdata/exome_bed/exome_hg19_chr${chr}_*.bed | wc -l)
+export nchunk=$(ls $extdata/${mode}_bed/${mode}_hg19_chr${chr}_*.bed | wc -l)
 echo $nchunk
 for n in $(seq -f "%02g" 0 $(($nchunk - 1))) ; do 
 	echo "run abemus on chunk ${n}" ; 

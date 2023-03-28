@@ -30,6 +30,12 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
+source $condapath
+conda activate default
+
+cd ${repopath}/sinvict
+
+
 echo $config_file
 echo $dilutionseriesfolder
 echo $buffycoatbam
@@ -37,6 +43,7 @@ echo $chr
 echo $extdata
 echo $outdir
 echo $abra
+echo $mode
 
 echo $i
 
@@ -61,32 +68,32 @@ if [ ! -d $outdirplasma/abra ] ; then mkdir $outdirplasma/abra ; fi
 if [ ! -d $outdirplasma/tmp ] ; then mkdir $outdirplasma/tmp ; fi
 startabra=$(date +%s)
 if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam ] ;
-	then java -Xmx16G -jar /home/ubuntu/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar \
+	then java -Xmx16G -jar /home/users/astar/gis/carriehc/bin/abra2/target/abra2-2.24-jar-with-dependencies.jar \
 	--in $buffycoatbam,$plasma \
 	--out ${outdirplasma}/abra/$(basename $buffycoatbam .bam)_${i}.abra.bam,${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam \
-	--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets ${extdata}/exome_bed/exome_hg19_chr${chr}_${i}.bed  --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra_${i}.log
+	--ref ${extdata}/GRCh37/GRCh37.fa --threads 8 --targets ${extdata}/${mode}_bed/${mode}_hg19_chr${chr}_${i}.bed  --tmpdir ${outdirplasma}/tmp/ > ${outdirplasma}/abra/abra_${i}.log
 fi
 endabra=$(date +%s)
 timeabra=$(($endabra-$startabra))
 hmsabra=$(printf '%02dh:%02dm:%02ds\n' $((timeabra/3600)) $((timeabra%3600/60)) $((timeabra%60)))
 echo "Elapsed Time ABRA on ${plasma} for chunk ${i} of chr${chr}: ${hmsabra}"
 echo "Elapsed Time ABRA on ${plasma} for chunk ${i} of chr${chr}: ${hmsabra}" >> $outdirplasma/log/logtime_${i}.out
-if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam.bai ] ; then /usr/bin/samtools index ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam ; fi
+if [ ! -f ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam.bai ] ; then samtools index ${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam ; fi
 
 fi
 
 ### BAM-READCOUNT ###
 startreadcount=$(date +%s)
 if [ $abra = 'True' ] ; 
-then export bamfile=${outdirplasma}/abra/$(basename $plasma .bam).abra.bam ;
+then export bamfile=${outdirplasma}/abra/$(basename $plasma .bam)_${i}.abra.bam ;
 else export bamfile=$plasma
 fi
 if [ ! -d $outdirplasma/bam-readcount ] ; then mkdir $outdirplasma/bam-readcount ; fi
-if [ ! -f ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv ] ; then /home/ubuntu/bin/bam-readcount/build/bin/bam-readcount \
+if [ ! -f ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv ] ; then bam-readcount \
 	-f ${extdata}/GRCh37/GRCh37.fa \
 	$bamfile \
 	-w 1 \
-	-l ${extdata}/exome_bed/exome_hg19_chr${chr}_${i}.bed  >  ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv
+	-l ${extdata}/${mode}_bed/${mode}_hg19_chr${chr}_${i}.bed  >  ${outdirplasma}/bam-readcount/$(basename $plasma .bam)_${i}.tsv
 fi
 endreadcount=$(date +%s)
 timereadcount=$(($endreadcount-$startreadcount))

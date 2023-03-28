@@ -12,6 +12,9 @@ export chr=3
 
 cd /home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers/cfSNV
 
+
+bash run_cfsnv_buffycoat.sh -c config/config_cfsnv_mixtures_chr${chr}_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+
 export npid=0
 for plasma in /rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr${chr}/mixtures_chr${chr}_CRC-986_100215-CW-T_CRC-986_300316-CW-T/*/*[Tx].bam ; do 
 	export npid=$((npid+1)) ;

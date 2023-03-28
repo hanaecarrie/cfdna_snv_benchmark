@@ -50,7 +50,7 @@ print(config$dir$python)
 print(config$dir$java)
 
 print('Parameter recommend')
-targetbedfull <- file.path(targetbeddir, paste0('exome_hg19_chr', config$chr, '.bed'))
+targetbedfull <- file.path(targetbeddir, paste0('exome_hg19_merge_chr', config$chr, '.bed'))
 parameter_recommend(plasma.unmerged, normal, plasma.merged.extendedFrags, plasma.merge.notCombined, targetbedfull, reference, SNPdatabase, config$dir$samtools, plasmaid, roughly_estimated_tf=TRUE, python.dir=config$dir$python)
 # read parameter recommended 
 MIN_HOLD_SUPPORT_COUNT = as.integer(unlist(strsplit(unlist(strsplit(grep('at 1% VAF: ',readLines(file.path(outputdir, 'log.out'), warn=FALSE), value = TRUE), 'MIN_HOLD_SUPPORT_COUNT = '))[2], ","))[1])

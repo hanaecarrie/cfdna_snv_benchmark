@@ -73,6 +73,13 @@ export normalfastqoutdir=$(dirname $normal)
 echo $normalfastqoutdir
 if [ ! -f $(dirname $normal)/$(basename $normal .bam)_R1.fastq.gz ] ; then python ${repopath}/cfSNV/generate_fastqs_yaml.py -i $normal -t $(dirname $normal)/tmp -o $normalfastqoutdir -c $config_file ; fi
 
+# get bam for plasma and normal as well as notcombined and extendedfrags bams for plasma
+# run parameter recommend function
+export normalid=$(basename $normal .bam)
+echo $normalid
+Rscript run_getbamalign_buffycoat.R --config_file $config_file
+
+
 export npid=0
 for plasma in ${dilutionseriesfolder}/*/*[Tx].bam ; do
         echo "plasma ${plasma}" ;
