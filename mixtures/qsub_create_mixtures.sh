@@ -4,7 +4,7 @@
 #SBATCH -J chrall_986_mixtures_wes
 #SBATCH -t 24:00:00
 #SBATCH -N 1
-#SBATCH --mem 24000
+#SBATCH --mem 48000
 #SBATCH --output=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/logs/z.chrall_986_mixture_wes.o
 #SBATCH --error=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data_wes/logs/z.chrall_986_mixtures_wes.e
 
