@@ -227,7 +227,7 @@ figures/
 
 
 # ignore poolhealthy, spikeins, prepreocessing, notebooks
-poolhealthy/
+pooledhealthy/
 spikeins/
 preprocessing/
 notebooks/
