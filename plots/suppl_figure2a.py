@@ -20,7 +20,7 @@ set_display_params(config)
 print(config.methods)
 
 # Chomosome
-mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T']
+mixtureids = ['CRC-1014_180816-CW-T_CRC-1014_090516-CW-T', 'CRC-123_310715-CW-T_CRC-123_121115-CW-T',  'CRC-986_100215-CW-T_CRC-986_300316-CW-T']
 reload = False
 save = False
 filterparam = 'all'
@@ -38,9 +38,9 @@ seriesorder = [(70, 0), (70, 80), (50, 100), (30, 120), (20, 130), (10, 140), (5
 xaxis = 'tumor burden'
 
 # for mixtureid in mixtureids:
-# mixtureid = 'CRC-123_310715-CW-T_CRC-123_121115-CW-T'
-mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
-# mixtureid = 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T'
+#mixtureid = 'CRC-123_310715-CW-T_CRC-123_121115-CW-T'
+#mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
+mixtureid = 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T'
 
 print('############# {} ############'.format(mixtureid))
 if mixtureid == 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T':
@@ -75,7 +75,7 @@ refsample = 'undiluted'
 if muttype == 'snv':
     gtm = 5
 else:  # elif muttype == 'indel':
-    gtm = 3
+    gtm = 4
 print(max(aux['tf']))
 #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T' and muttype == 'snv':
 #    gtm = 3
@@ -86,13 +86,13 @@ print(max(aux['tf']))
 #else:
 #    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
 #                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
-if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-                                                matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
-    print(calltablesseries['truth'].value_counts())
-else:
-    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-                                           matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
+#if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+                           matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
+print(calltablesseries['truth'].value_counts())
+#else:
+#    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+#                                           matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
 if not os.path.exists(os.path.join(*config.outputpath, 'supplfigure2a')):
     os.mkdir(os.path.join(*config.outputpath, 'supplfigure2a'))
 figure_curve_allchr(config, calltablesseries, dilutionseries, mixtureid, xy='pr', ground_truth_method=gtm,
