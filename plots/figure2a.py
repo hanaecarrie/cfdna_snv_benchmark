@@ -45,35 +45,34 @@ if __name__ == "__main__":
 
     chrom = 'all'
 
+    color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
+
     for fixedvar in fixedvars:
         if fixedvar == 'coverage':
             xaxis = 'tumor burden'
         elif fixedvar == 'ctdna':
             xaxis = 'coverage'
         for mt in muttypes:
+            #mt = 'snv'
             print('####### ' + mt + ' #######')
             if mt == 'snv':
                 gtm = 5
                 refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
             else:  # elif mt == 'indel':
-                gtm = 3
+                gtm = 4
                 refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
             print(refname)
             # for metric in metrics:
             #metric = 'auprc'
             #metric = 'recall'
-            metric = 'maxrecallatleast0_05precision'
+            metric = 'maxrecallatleast0_03precision'
             # load results tables
             restables = {'snv': [], 'indel': []}
             for mixtureid in mixtureids:
-                #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T' and mt == 'snv':
-                #    gtm = 3
-                #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
-                #else:
                 if mt == 'snv':
                     gtm = 5
                 else:
-                    gtm = 3
+                    gtm = 4
                 refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
 
                 plasmasample = '_'.join(mixtureid.split('_')[:2])
@@ -90,6 +89,31 @@ if __name__ == "__main__":
                                       ground_truth_method='mixture', fixedvar=fixedvar, refname=refname,
                                       allpatients=True, logscale=False, save=False)
             resx = np.array([rx.values for rx in res1['x']])
+            #tfdict = {'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T': [40.3, 3.2],
+            #          'CRC-123_310715-CW-T_CRC-123_121115-CW-T': [62.1, 2.2],
+            #          'CRC-986_100215-CW-T_CRC-986_300316-CW-T': [32.6, 0]}
+            #for mi, mixtureid in enumerate(mixtureids):
+            #    print(mixtureid)
+            #    if fixedvar == 'coverage':
+            #        seriesorder = [(70, 0), (70, 80), (50, 100), (30, 120), (20, 130), (10, 140), (5, 145)]
+            #        seriesorder = seriesorder[1:]
+            #        #elif fixedvar == 'ctdna':
+            #        #    seriesorder = [(70, 0), (70, 80), (70, 180)]
+            #        print(seriesorder)
+            #        esttflist = []
+            #        for s in seriesorder:
+            #            sh, sl = s
+            #            esttf = round((tfdict[mixtureid][0]*sh + tfdict[mixtureid][1]*sl)/(sl+sh), 2)
+            #            print(esttf)
+            #            esttflist.append(esttf)
+            #        if mt == 'snv':
+            #            esttflist =[esttflist] * len(config.methods)
+            #            print(esttflist)
+            #            resx[mi*len(config.methods):(mi+1)*len(config.methods), :] = esttflist
+            #        else:
+            #            esttflist =[esttflist] * (len(config.methods)-1)
+            #            print(esttflist)
+            #            resx[mi*(len(config.methods)-1):(mi+1)*(len(config.methods)-1), :] = esttflist
             print(resx)
             resx.mean(axis=0)
             resy = np.array([ry.values for ry in res1['y']])
@@ -106,13 +130,15 @@ if __name__ == "__main__":
                 resstd = np.std([resy[mi], resy[mi+len(lm)], resy[mi+2*len(lm)]], axis=0)
                 res[m] = [resmean, resstd, resx.mean(axis=0)]
 
-            color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
 
             plt.figure(figsize=(15, 10))
             plt.grid(linewidth=1)
             plt.grid()
             for m in lm:
-                plt.errorbar(res[m][2], res[m][0], xerr = resx.std(axis=0), yerr=res[m][1], marker='s', c=color_dict[m],
+                plt.errorbar(res[m][2], res[m][0],
+                             xerr=resx.std(axis=0)/np.sqrt(int(resx.shape[0]/(len(config.methods)))),
+                             yerr=res[m][1]/int(resx.shape[0]/(len(config.methods))),
+                             marker='s', c=color_dict[m],
                              label=m,  markersize=15, lw=2, fmt='-s')
             ax = plt.gca()
             if fixedvar == 'coverage':
@@ -137,15 +163,25 @@ if __name__ == "__main__":
             plt.ylabel(metric.upper()+' score')
             plt.title(metric.upper() + " score for {} calling in chr{} with ref {}".format(mt.upper(), chrom, refname),
                       pad=50)
-            if mt == 'snv' and metric == 'auprc':
+            if metric == 'auprc':
                 plt.ylim([0, .5])
-            else:
+                #plt.ylim([0, .1])
+                #plt.xlim([6, 2.])
+            if mt == 'indel' and metric == 'auprc':
+                if fixedvar == 'coverage':
+                    plt.ylim([0, .3])
+                else:
+                    plt.ylim([0, .3])
+            if metric != 'auprc':
                 plt.ylim([0, 1.])
+                #plt.ylim([0, .5])
+                #plt.xlim([6, 2.])
             if not os.path.exists(os.path.join(*config.outputpath, 'figure2a')):
                 os.mkdir(os.path.join(*config.outputpath, 'figure2a'))
             plt.savefig(os.path.join(*config.outputpath, 'figure2a',
                                      'perf_'+metric+'_3patients_150x_'+fixedvar+'_'+mt+'_'+refname+'.svg'), bbox_inches='tight')
             plt.show()
+
     """
 
     # ground truth analysis
@@ -193,15 +229,14 @@ if __name__ == "__main__":
         if muttype == 'snv':
             gtm = 5
         else:  # elif muttype == 'indel':
-            gtm = 3
+            gtm = 4
         print(max(aux['tf']))
-        if mixtureid != 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-            calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-                                                    matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
-        else:
-            calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-                                                    matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
-
+        #if mixtureid != 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+        #    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+        #                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
+        #else:
+        calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+                                                matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
 
         import matplotlib.transforms as transforms
 
@@ -250,6 +285,6 @@ if __name__ == "__main__":
         plt.ylim([1, 5e5])
         ax = plt.gca()
         ax.set_xticklabels(labels=gtanalysis.columns,rotation=90)
-        #plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_SNV.svg'), bbox_inches='tight')
-        
+        plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_SNV.svg'), bbox_inches='tight')
+        plt.show()
         """
