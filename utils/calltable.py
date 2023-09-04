@@ -117,27 +117,15 @@ def get_calltable(calldir, methods, save=False, filter='PASS', bcbiovaf=1, gatkc
                     callmethod['formatvalue'] = callmethod['formatvalue'].str.split(':')
                     callmethod['totcov'] = [int(callmethod['formatvalue'].iloc[a][DPpos[a]]) if callmethod['formatvalue'].iloc[a][DPpos[a]] != '.' else 0 for a in range(callmethod.shape[0])]
                     if method == 'freebayes':
-                        #AOpos = [int(a.index('AO')) for a in callmethod['format'].str.split(':').values]
-                        #callmethod['altcov'] = [callmethod['formatvalue'].iloc[a][AOpos[a]] if callmethod['formatvalue'].iloc[a][AOpos[a]] != '.' else 0 for a in range(callmethod.shape[0])]
                         callmethod['altcov'] = callmethod['formatvalue'].str[-3]
-                        #print(callmethod[callmethod['altcov'].str.contains(',')])
                         if not callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)].empty:
                             callmethod.drop(callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)].index, inplace=True)
-                            #print(callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)][['chrom', 'pos', 'ref', 'alt', 'totcov', 'altcov']])
-                            #print([i if i != '.' else '0' for i in callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)]['altcov'].apply(lambda x: x.split(',')[0]).values])
-                            #callmethod.loc[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0), 'altcov'] = [i if i != '.' else '0' for i in callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)]['altcov'].apply(lambda x: x.split(',')[0]).values]
-                            #callmethod.loc[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0), 'alt'] = callmethod[(callmethod['altcov'].str.count(',').subtract(callmethod['alt'].str.count(',')) != 0)]['alt'].apply(lambda x: x.split(',')[0]).values
                         callmethod.loc[((callmethod['altcov'] == '.') | (callmethod['altcov'].isna())), 'altcov'] = '0'
-                        #print(callmethod[callmethod['pos'] == '0'])
-                        #print(callmethod['altcov'][callmethod['altcov'].isna()])
                         callmethod['alt'] = callmethod['alt'].str.split(',')
                         callmethod['altcov'] = callmethod['altcov'].str.split(',')
                         callmethod = callmethod.explode(['alt', 'altcov'])  # requires pandas ≥ 1.3.0
-                        #print(callmethod['altcov'][callmethod['altcov'].isna()])
                         callmethod['altcov'] = callmethod['altcov'].astype(int)
-                        #print(callmethod['altcov'].dtype)
                         callmethod.drop(['format', 'formatvalue'], axis=1, inplace=True)
-                        #print(callmethod[callmethod['pos'] == '0'])
                     elif method == 'mutect2' or method == 'vardict':
                         #print(callmethod)
                         ADpos = [int(a.index('AD')) for a in callmethod['format'].str.split(':').values]
