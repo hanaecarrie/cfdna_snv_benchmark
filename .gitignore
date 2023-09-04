@@ -224,3 +224,12 @@ callers/cfSNV/test
 
 # ignore figures
 figures/
+
+
+# ignore poolhealthy, spikeins, prepreocessing, notebooks
+poolhealthy/
+spikeins/
+preprocessing/
+notebooks/
+
+
