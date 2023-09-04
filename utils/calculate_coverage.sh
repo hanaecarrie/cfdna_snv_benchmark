@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # def path and environment
-source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
+#source /mnt/projects/carriehc/cfDNA/anaconda3/etc/profile.d/conda.sh
+source /apps/anaconda3-distribution/2022.10/etc/profile.d/conda.sh
 conda activate default
 
 export bamfile=$1
