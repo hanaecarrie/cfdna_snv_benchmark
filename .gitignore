@@ -220,3 +220,7 @@ callers/cfSNV/README.md
 callers/cfSNV/inst/
 callers/cfSNV/man/
 callers/cfSNV/src/
+callers/cfSNV/test
+
+# ignore figures
+figures/
