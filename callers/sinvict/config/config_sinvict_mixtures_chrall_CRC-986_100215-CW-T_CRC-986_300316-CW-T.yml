@@ -10,3 +10,4 @@ finaloutdir: /rfs-storageservice/GIS/Projects/LOCCG/carriehc/cfdna_callers/mixtu
 mindepth: 50
 condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
 repopath: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/callers"
+mode: "exome"
