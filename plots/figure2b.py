@@ -47,6 +47,8 @@ if __name__ == "__main__":
 
     chrom = 'all'
 
+    """
+
     ####### 150x WGS exome calling #######
 
     for fixedvar in fixedvars:
@@ -59,13 +61,13 @@ if __name__ == "__main__":
             gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 3
+            gtm = 4
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
-        #metric = 'auprc'
+        metric = 'auprc'
         #metric = 'recall'
-        metric = 'maxrecallatleast0_025precision'
+        #metric = 'maxrecallatleast0_03precision'
         # load results tables
         restables = {'snv': [], 'indel': []}
         mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
@@ -99,12 +101,16 @@ if __name__ == "__main__":
         else:
             plt.grid(linewidth=1)
         if metric == 'auprc':
-            plt.ylim([0, .5])
+            #plt.ylim([0, .5])
+            plt.ylim([0, .10])
+            plt.xlim([5, 1])
+            if mt == 'indel':
+                plt.ylim([0, .4])
         else:
             plt.ylim([0, 1.])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_150x_exomecalling_'+fixedvar+'_'+mt+'_'+str(gtm)+'callers.svg'), bbox_inches='tight')
+        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_150x_exomecalling_'+fixedvar+'_'+mt+'_'+str(gtm)+'callers_zoom.svg'), bbox_inches='tight')
         plt.show()
 
     ###### Ultra deep test: 2,000x WES exome calling #########
@@ -117,20 +123,14 @@ if __name__ == "__main__":
         if mt == 'snv':
             gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
-            #if mixtureid == 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-            #    gtm = 3
-            #    refname = 'intissuesamplebyatleast'+str(gtm)+'callers'
-            #else:
-            #    gtm = 3
-            #    refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         else:  # elif mt == 'indel':
-            gtm = 3
+            gtm = 4
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
         print(refname)
         # for metric in metrics:
-        #metric = 'auprc'
+        metric = 'auprc'
         #metric = 'recall'
-        metric = 'maxrecallatleast0_01precision'
+        #metric = 'maxrecallatleast0_03precision'
         # load results tables
         restables = {'snv': [], 'indel': []}
         # for mixtureid in mixtureids:
@@ -159,12 +159,68 @@ if __name__ == "__main__":
         else:
             plt.grid(linewidth=1)
         if metric == 'auprc':
+            #plt.ylim([0, .25])
+            plt.ylim([0, .05])
+            plt.xlim([5, 1])
+        else:
+            plt.ylim([0, 1.])
+        if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
+            os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
+        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_2000x_exomecalling_'+fixedvar+'_'+mt+'_zoom.svg'), bbox_inches='tight')
+        plt.show()
+    """
+
+    ####### 150x WGS whole genome calling #######
+    for fixedvar in fixedvars:
+        if fixedvar == 'coverage':
+            xaxis = 'tumor burden'
+        elif fixedvar == 'ctdna':
+            xaxis = 'coverage'
+        mt = 'indel'
+        if mt == 'snv':
+            gtm = 5
+            refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+        else:
+            gtm = 4
+            refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
+        print(refname)
+        #for metric in metrics:
+        metric = 'auprc'
+        #metric = 'recall'
+        #metric = 'maxrecallatleast0_03precision'
+        # load results tables
+        restables = {'snv': [], 'indel': []}
+        # for mixtureid in mixtureids:
+        plasmasample = '_'.join(mixtureid.split('_')[:2])
+        print(mixtureid, plasmasample)
+        xa = xaxis if xaxis != 'tumor burden' else 'tb'
+        print(xa)
+        restable = pd.read_csv(os.path.join(*config.mixturefolderwholegenome, 'mixtures_allchr', 'results', mixtureid+'_'+mt+'_'+metric+'_'+refname+'_fixed'+fixedvar+'_'+ xa +'.csv'), index_col=0,  memory_map=True)
+        restable['plasma sample'] = plasmasample
+        restables[mt].append(restable)
+        restables[mt] = pd.concat(restables[mt])
+        res1 = plot_metricsseries(config, restables, mixtureids, 'all', metric=metric, muttype=mt,
+                                  ground_truth_method='mixture', fixedvar=fixedvar, refname=refname, allpatients=True, logscale=False, save=False)
+        if fixedvar == 'coverage':
+            plt.xlim([22, 0])
+            ax = plt.gca()
+            # Major ticks every 20, minor ticks every 5
+            major_ticks = np.arange(20, -1, -5)
+            minor_ticks = np.arange(22, -1, -1.)
+            ax.set_xticks(major_ticks)
+            ax.set_xticks(minor_ticks, minor=True)
+            # Or if you want different settings for the grids:
+            ax.grid(which='minor', alpha=0.2)
+            ax.grid(which='major', alpha=1.)
+        else:
+            plt.grid(linewidth=1)
+        if metric == 'auprc':
             plt.ylim([0, .25])
         else:
             plt.ylim([0, 1.])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure2b')):
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_2000x_exomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
+        plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_150x_wholegenomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
         plt.show()
 
 
@@ -217,9 +273,10 @@ if __name__ == "__main__":
     plt.legend([a, b,  c], ['both', '2000x only', '150x only'], bbox_to_anchor=(1,1), loc="upper left")
     plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'gt_vaf_150x_vs_2000x.svg'), bbox_inches='tight')
     plt.show()
+    
     """
 
-    """
+
     ############ 150x WGS whole genome calling #############
 
     for fixedvar in fixedvars:
@@ -263,6 +320,6 @@ if __name__ == "__main__":
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
         #plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_chr22calling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
         plt.show()
-    """
+
 
 

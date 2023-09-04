@@ -9,14 +9,15 @@ from utils.viz import function_to_split
 
 def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='snv', ground_truth_method='mixture',
                        fixedvar='coverage', refname='inundilutedsamplebyatleast5callers',
-                       allpatients=True, logscale=False,  save=False, diltype='mixtures'):
+                       allpatients=True, logscale=False,  save=False, diltype='mixture'):
             xlab = 'tumor burden' if fixedvar == 'coverage' else 'coverage'
             print(xlab)
             res = {'x': [], 'y': [], 'label': []}
             color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
             lc = 'logscale' if logscale else 'linearscale'
             if allpatients:
-                plt.figure(figsize=(15, 10))
+                #plt.figure(figsize=(15, 10))
+                plt.figure(figsize=(8, 8))
                 plt.grid(linewidth=1)
             for mi, mixtureid in enumerate(mixtureids):
                 if mixtureid == '':
@@ -61,7 +62,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                     if save:
                         if not os.path.exists(os.path.join(*dilfolder, 'figures')):
                             os.mkdir(os.path.join(*dilfolder, 'figures'))
-                        plt.savefig(os.path.join(*dilfolder, 'figures', mixtureid + '_' + metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + lc + '_' + config.context), bbox_inches='tight')
+                        plt.savefig(os.path.join(*dilfolder, 'figures', mixtureid + '_' + metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
             if allpatients:
                 if fixedvar == 'coverage':
                     plt.gca().invert_xaxis()
@@ -78,7 +79,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                 if save:
                     if not os.path.exists(os.path.join(*dilfolder, 'figures')):
                         os.mkdir(os.path.join(*dilfolder, 'figures'))
-                    plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_'  + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
+                    plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
             # plt.show()
             return res
 

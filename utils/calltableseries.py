@@ -196,6 +196,8 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         caux_df = pd.DataFrame()
         caux_df['tf'] = pd.concat([c[['tf']] for c in caux_list], axis=1).median(axis=1)
         caux_df['cov'] = pd.concat([c[['cov']] for c in caux_list], axis=1).median(axis=1)
+        if not os.path.exists(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_tf_cov.csv')):
+            caux_df.to_csv(os.path.join(*confdilfolder, diltype+'s_allchr', dilutionid + '_tf_cov.csv'))
         #print('new tb for columns names')
         if diltype == 'mixture':
             newtf_dict = dict(zip(list(caux_df['tf'].index), ['{:.2f}'.format(c) for c in caux_df['tf'].values]))

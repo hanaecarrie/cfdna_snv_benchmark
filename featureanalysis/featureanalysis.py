@@ -126,8 +126,41 @@ def parse_caller_feature(calldir, method, save=False):
             callmethod = pd.DataFrame(columns=finalcolumns)
         callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
         callmethod.set_index('chrom_pos_ref_alt', inplace=True)
-        #callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']]
+        #callmethod = callmethod[['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score']] # need to rename
         callmethod.rename(columns={'totcov': method+'_totcov', 'altcov': method+'_altcov', 'vaf': method+'_vaf'}, inplace=True)
+        callmethod_snv = callmethod[callmethod['type'] == 'SNV']
+        callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
+        callmethod_snp = callmethod[callmethod['type'] == 'SNP']
+    elif method == 'smurf':
+        calltablemethod_path = os.path.join(calldir, 'calls', method, 'snv-parse.txt')
+        if not os.path.exists(calltablemethod_path):
+            print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+            callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', method+'_totcov', method+'_altcov', method+'_vaf', method, method+'_score'])
+        else:
+            callmethod = pd.read_csv(calltablemethod_path, sep='\t')
+            callmethod['T_refDepth'] = callmethod['T_refDepth'].astype(int) + callmethod['T_altDepth'].astype(int)
+            callmethod.rename(columns={'Chr': 'chrom', 'START_POS_REF': 'pos', 'REF': 'ref', 'ALT': 'alt',
+                                       'T_refDepth': method+'_totcov', 'T_altDepth':  method+'_altcov', 'Alt_Allele_Freq':  method+'_vaf',
+                                       'predict': method, 'TRUE.': method+'_score'}, inplace=True)
+            callmethod[method] = callmethod[method].astype(bool)
+            callmethod['type'] = 'SNV'
+            callmethod['chrom_pos_ref_alt'] = callmethod['chrom'].astype('str').str.cat(callmethod['pos'].astype('str'), sep="_").str.cat(callmethod['ref'].astype('str'), sep='_').str.cat(callmethod['alt'].astype('str'), sep='_')
+            callmethod.set_index('chrom_pos_ref_alt', inplace=True)
+        calltablemethod_path = os.path.join(calldir, 'calls', method, 'indel-parse.txt')
+        if not os.path.exists(calltablemethod_path):
+            print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
+        else:
+            callmethodindel = pd.read_csv(calltablemethod_path, sep='\t')
+            callmethodindel['T_refDepth'] = callmethodindel['T_refDepth'].astype(int) + callmethodindel['T_altDepth'].astype(int)
+            callmethodindel.rename(columns={'Chr': 'chrom', 'START_POS_REF': 'pos', 'REF': 'ref', 'ALT': 'alt',
+                                       'T_refDepth': method+'_totcov', 'T_altDepth': method+'_altcov', 'Alt_Allele_Freq': method+'_vaf',
+                                       'predict': method,'TRUE.': method+'_score'}, inplace=True)
+            callmethodindel[method] = callmethodindel[method].astype(bool)
+            callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() > 0, 'type'] = 'INS'
+            callmethodindel.loc[callmethodindel['alt'].str.len() - callmethodindel['ref'].str.len() < 0, 'type'] = 'DEL'
+            callmethodindel['chrom_pos_ref_alt'] = callmethodindel['chrom'].astype('str').str.cat(callmethodindel['pos'].astype('str'), sep="_").str.cat(callmethodindel['ref'].astype('str'), sep='_').str.cat(callmethodindel['alt'].astype('str'), sep='_')
+            callmethodindel.set_index('chrom_pos_ref_alt', inplace=True)
+            callmethod = pd.concat([callmethod, callmethodindel])
         callmethod_snv = callmethod[callmethod['type'] == 'SNV']
         callmethod_indel = callmethod[(callmethod['type'] == 'INS') | (callmethod['type'] == 'DEL')]
         callmethod_snp = callmethod[callmethod['type'] == 'SNP']
@@ -181,7 +214,9 @@ def parse_caller_feature(calldir, method, save=False):
         calltablemethod_path = os.path.join(calldir, 'calls', method, 'pmtab_F3_optimalR_'+os.path.basename(calldir)+'.csv')
         if not os.path.exists(calltablemethod_path):
             print('calls for caller {} do not exist. path {} not found.'.format(method, calltablemethod_path))
-            callmethod = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            callmethod_snv = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            callmethod_indel = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
+            callmethod_snp = pd.DataFrame(columns=['chrom', 'pos', 'ref', 'alt', 'type', 'totcov', 'altcov', 'vaf', method, method+'_score'])
         else:
             callmethod = pd.read_csv(calltablemethod_path, index_col=0)
             callmethod = callmethod.rename(columns={'chr': 'chrom', 'dbsnp': 'type', 'cov_case': 'abemus_totcov', 'cov.alt': 'abemus_altcov', 'af_case': 'abemus_vaf', 'filter.pbem_coverage': 'abemus_score'})

@@ -220,3 +220,16 @@ callers/cfSNV/README.md
 callers/cfSNV/inst/
 callers/cfSNV/man/
 callers/cfSNV/src/
+callers/cfSNV/test
+
+# ignore figures
+figures/
+
+
+# ignore poolhealthy, spikeins, prepreocessing, notebooks
+poolhealthy/
+spikeins/
+preprocessing/
+notebooks/
+
+
