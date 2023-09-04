@@ -163,28 +163,28 @@ if  [ ! -f $buffycoat_chr_coverage ] ; then export buffycoat_cov=$($samtools dep
 
 echo "estimate tumor burden by calculation..."
 #if [ ! -f $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
-echo $tffile
-while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
-if [[ "$A" == *${samplename_tumor}* ]] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ;  fi ; done < $tffile
-echo $median_tumor_burden
-cov_t=$(echo "$median_tumor_burden * $tumor_cov * $dilutionfraction_tumor" | bc)
-echo $cov_t
-cov_tot=$(echo "$healthy_cov * $dilutionfraction_healthy + $tumor_cov * $dilutionfraction_tumor" | bc)
-echo $cov_tot
-mixed_sample_tf=$(echo "$cov_t / $cov_tot" | bc -l)
-echo $mixed_sample_tf
-echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
+#echo $tffile
+#while read line ; do export A="$(cut -d',' -f1 <<<"$line")" ;
+#if [[ "$A" == *${samplename_tumor}* ]] ; then echo $A ; export median_tumor_burden="$(cut -d ',' -f3 <<<"$line")" ;  fi ; done < $tffile
+#echo $median_tumor_burden
+#cov_t=$(echo "$median_tumor_burden * $tumor_cov * $dilutionfraction_tumor" | bc)
+#echo $cov_t
+#cov_tot=$(echo "$healthy_cov * $dilutionfraction_healthy + $tumor_cov * $dilutionfraction_tumor" | bc)
+#echo $cov_tot
+#mixed_sample_tf=$(echo "$cov_t / $cov_tot" | bc -l)
+#echo $mixed_sample_tf
+#echo $mixed_sample_tf > $outputdir/estimated_tf_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
 #fi
 
 echo "calculate coverage..."
 if [ ! -f $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt ] ; then
-if [ $befile == 'wgs' ] ; then
+if [ $bedfile == 'wgs' ] ; then
 	export cov=$($samtools depth -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt 
 else
 	export cov=$($samtools depth -b $bedfile -a $outputdir/${dilutionname}.bam | awk '{sum+=$3} END {print sum/NR}')
 echo $cov > $outputdir/coverage_chr${chr}_${samplename_tumor}_${dilutionfactor_tumor}x_${samplename_healthy}_${dilutionfactor_healthy}x.txt
-
+fi
 fi
 
 echo "estimate tumor burden by ichorCNA..."

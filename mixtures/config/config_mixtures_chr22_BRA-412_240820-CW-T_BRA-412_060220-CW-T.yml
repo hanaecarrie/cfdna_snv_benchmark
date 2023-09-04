@@ -1,0 +1,29 @@
+##### Config file #####
+
+sample:
+  healthy: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/bams/BRA0412_060220-P-T-ready.bam"
+  tumor: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/bams/BRA0412_240820-P-T-ready.bam"
+  buffycoat: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/bams/buffycoat/BRA-0412_060220_PBMC-N-ready.bam"
+
+samplename:
+  healthy: "BRA-412_060220-CW-T"
+  tumor: "BRA-412_240820-CW-T"
+  buffycoat: "BRA-412-CW-N"
+
+dilutionfactors: "100-0 70-30 50-50 30-70 20-80 10-90 100-50 100-100"
+
+chr: 22
+
+healthydir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_BRA-412_060220-CW-T"
+tumordir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_BRA-412_240820-CW-T"
+buffycoatdir: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/initialsamples/initialsamples_chr22/initialsamples_chr22_BRA-412-CW-N"
+outputfolder: "/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data/mixtures/mixtures_chr22"
+
+tffile: "/home/users/astar/gis/carriehc/cfdna_snv_benchmark/data/extdata/ctDNA_burden_estimation_deepwgs_plasma_BRA_samples.csv"
+ichorcna_extdata: "/home/users/astar/gis/carriehc/.conda/envs/ichorCNA/lib/R/library/ichorCNA/extdata/"
+samtools: "/home/users/astar/gis/carriehc/.conda/envs/default/bin/samtools"
+condapath: "/apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh"
+bedfile: "wgs"
+machine: 'Pluto'
+repopath: "/home/users/astar/gis/carriehc/"
+

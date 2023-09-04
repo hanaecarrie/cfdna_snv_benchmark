@@ -14,8 +14,10 @@ echo $outputdir
 echo $ichorcna_extdata  # /mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/lib/R/library/ichorCNA/extdata/
 
 # def path and environment
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate default
+source /apps/anaconda3-individual-edition/2020.11/etc/profile.d/conda.sh
+#source $condapath
+#source ~/anaconda3/etc/profile.d/conda.sh
+conda activate ichorCNA
 
 export outputdir=$outputdir/ichorcna/
 
@@ -25,7 +27,8 @@ if [ ! -f $outputdir ] ; then mkdir $outputdir ; fi
 echo "Create WIG file $outputdir/${saveid}.wig"
 # Create WIG Files
 #/mnt/projects/carriehc/cfDNA/utils/hmmcopy_utils/bin/readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
-/home/ubuntu/anaconda3/envs/default/bin/readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
+# /home/ubuntu/anaconda3/envs/default/bin/readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
+readCounter --window 50000 --quality 20 --chromosome "$chr" $bamfile > $outputdir/${saveid}.wig
 echo "Done WIG file"
 #fi
 
@@ -34,7 +37,9 @@ echo "Done WIG file"
 echo "ichorCNA processing $outputdir/${saveid}.wig"
 #if [ ! -f "$outputdir/${saveid}.cna.seg" ] ; then
 #/mnt/projects/carriehc/cfDNA/anaconda3/envs/ichorcna/bin/Rscript /mnt/projects/carriehc/cfDNA/cfdna_snv/cfdna_snv_benchmark/utils/runIchorCNA.R \
-/home/ubuntu/anaconda3/envs/default/bin/Rscript /home/ubuntu/cfdna_snv_benchmark/utils/runIchorCNA.R \
+#/home/ubuntu/anaconda3/envs/default/bin/Rscript /home/ubuntu/cfdna_snv_benchmark/utils/runIchorCNA.R \
+#/scratch/users/astar/gis/simngl/apps/bcbio/v129/anaconda/bin/Rscript
+/scratch/users/astar/gis/simngl/apps/bcbio/v129/anaconda/bin/Rscript /home/users/astar/gis/carriehc/.conda/envs/ichorCNA/lib/R/library/ichorCNA/scripts/runIchorCNA.R \
 --id $saveid \
 --WIG $outputdir/${saveid}.wig --ploidy "c(2,3)" --normal "c(0.5,0.6,0.7,0.8,0.9)" --maxCN 5 \
 --gcWig $ichorcna_extdata/gc_hg19_50kb.wig \
