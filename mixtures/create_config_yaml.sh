@@ -1,10 +1,31 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file for the chr1 of a mixture series to generate the configuration files
+# of the following autosomal chromosomes from 2 to 22.
+# It needs to be in the cfdna_snv_benchmark/mixtures/ subfolder directly
+# and requires the configuration file of chr1 as input parameter.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 param1"
+    echo "* param1: initial configuration file for chr1 used as template"
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/mixtures/"
+    echo "$ bash $0 config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+fi
+
+# Parse input to get initial configuration file
+export templateconfigfile=$1
+echo 'initial config file' $1
+
+# Move to the cfdna_snv_benchmark/mixtures/config subfolder
 cd config
 
-for i in {3..22}
+# Generate corresponding configuration file for each chromosomes from 2 to 22
+for i in {2..22}
 do
-        export oldconfigfile="config_mixtures_chr1_BRA-412_240820-CW-T_BRA-412_060220-CW-T.yml"
+        export oldconfigfile=$templateconfigfile
         export configfile=$(echo "${oldconfigfile/chr1/"chr${i}"}")
         echo $configfile
         cp $oldconfigfile $configfile
@@ -18,59 +39,3 @@ do
         export replace="chr: ${i}"
         sed -i "s/$search/$replace/" $configfile
 done
-
-
-"""
-for i in {4..21}
-do
-	export oldconfigfile="config_mixtures_chr3_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
-	export configfile=$(echo "${oldconfigfile/chr3/"chr${i}"}")    
-	echo $configfile
-	cp $oldconfigfile $configfile
-	export search="chr3"
-	export replace="chr${i}"
-	sed -i "s/$search/$replace/" $configfile
-	export search="_chr3_"
-        export replace="_chr${i}_"
-        sed -i "s/$search/$replace/" $configfile
-	export search="chr: 3"
-        export replace="chr: ${i}"
-        sed -i "s/$search/$replace/" $configfile
-done
-
-
-for i in {4..21}
-do
-        export oldconfigfile="config_mixtures_chr3_CRC-1014_180816-CW-T_CRC-1014_090516-CW-T.yml"
-        export configfile=$(echo "${oldconfigfile/chr3/"chr${i}"}")
-        echo $configfile
-        cp $oldconfigfile $configfile
-        export search="chr3"
-        export replace="chr${i}"
-        sed -i "s/$search/$replace/" $configfile
-	export search="_chr3_"
-        export replace="_chr${i}_"
-        sed -i "s/$search/$replace/" $configfile
-        export search="chr: 3"
-        export replace="chr: ${i}"
-        sed -i "s/$search/$replace/" $configfile
-done
-
-
-for i in {4..21}
-do
-        export oldconfigfile="config_mixtures_chr3_CRC-123_310715-CW-T_CRC-123_121115-CW-T.yml"
-        export configfile=$(echo "${oldconfigfile/chr3/"chr${i}"}")
-        echo $configfile
-        cp $oldconfigfile $configfile
-        export search="chr3"
-        export replace="chr${i}"
-        sed -i "s/$search/$replace/" $configfile
-	export search="_chr3_"
-        export replace="_chr${i}_"
-        sed -i "s/$search/$replace/" $configfile
-        export search="chr: 3"
-        export replace="chr: ${i}"
-        sed -i "s/$search/$replace/" $configfile
-done
-"""
