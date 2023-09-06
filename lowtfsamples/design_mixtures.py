@@ -1,4 +1,5 @@
-import numpy as np
+# design_mixtures.py
+
 import pandas as pd
 
 tfestimates_dict = {

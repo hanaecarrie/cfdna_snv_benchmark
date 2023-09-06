@@ -191,7 +191,7 @@ if __name__ == "__main__":
         #plt.xticks([0, 0.01, 0.03, 0.05], [0, 0.01, 0.03, 0.05])
         if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
             os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
+        #plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
         #plt.savefig(os.path.join(*config.outputpath, 'lowtbsamples', 'check', 'pairedplot_vaf_trusted_'+patient+'_logscale.svg'), bbox_inches='tight')
         plt.show()
 
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         ax.legend(hand, labl, bbox_to_anchor=(1, 1), loc="upper left")
         plt.xlabel('VAF in ultra low TF sample')
         plt.ylabel('VAF in high TF sample')
-        if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
-            os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
-        plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_samescale.svg'), bbox_inches='tight')
+        #if not os.path.exists(os.path.join(*config.outputpath, 'figure1c')):
+        #    os.mkdir(os.path.join(*config.outputpath, 'figure1c'))
+        #plt.savefig(os.path.join(*config.outputpath, 'figure1c', 'pairedplot_vaf_trusted_'+patient+'_samescale.svg'), bbox_inches='tight')
         plt.show()

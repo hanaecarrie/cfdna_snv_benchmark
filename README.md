@@ -36,8 +36,37 @@ ls ${datadir}
 └── PoNbuffycoat_ultradeep
 ```
  
+### 1. Design benchmark dataset
 
-### 1. Create benchmark dataset
+From a cohort of longitudinal cfDNA samples, with lpWGS and deep targeted sequencing done for most timepoints.
+
+#### 1. Identify suitable candidates for deep WGS 
+
+XXX get timelines XXX
+
+get pileup
+```
+export filename="${repodir}/initialsamples/filelist_for_pileup.txt"
+export lines=$(cat $filename)
+for $line in $lines
+do
+    IFS='\t'
+    read -a strarr <<< $line 
+    export bamfile=${strarr[0]}
+    export bedfile=${strarr[1]}
+    export outputfile=${strarr[2]}
+    export refgenome=${strarr[3]}
+    export condapath=${strarr[4]}
+    echo $(basename $bamfile) $(basename $bedfile) $(basename $outputfile) $(basename $refgenome)
+    bash ${repodir}/initialsamples/pileup.sh $bamfile $bedfile $refgenome $condpath
+done
+```
+
+#### 2. Check deep WGS samples match criteria
+
+
+
+### 2. Create benchmark dataset
 
 
 For deep Whole Genome Sequencing (WGS) mixture series, 
