@@ -5,7 +5,24 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from utils.table import load_files
+
+
+def load_files(filenames):
+
+    for filename in filenames:
+        yield pd.read_csv(filename, names=['sample_id', 'tumor_burden'])
+    """Yields XXX
+
+    Parameters
+    ----------
+    filenames : list
+        list of str.
+
+    Yields
+    ------
+    pandas DataFrame instance
+        a dataframe containing sample ID = patient ID + date, ichorCNA tumor fraction, patient ID and date.
+    """
 
 
 def get_tf(config, batch='all'):
