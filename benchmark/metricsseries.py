@@ -2,8 +2,8 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from utils.metrics import *
-from utils.calltable import *
+from benchmark.metrics import *
+from benchmark.calltable import *
 from utils.viz import function_to_split
 
 

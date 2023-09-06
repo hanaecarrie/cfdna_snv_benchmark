@@ -2,8 +2,8 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from utils.metrics import *
-from utils.calltable import *
+from benchmark.metrics import *
+from benchmark.calltable import *
 
 
 def generate_groundtruth(config, calltablesseries, calltablestf, ground_truth_method=5, muttype='snv', matchedtissuepath=None, methods=None):
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     set_display_params(config)
     print(config.methods)
 
-    from utils.calltableseries import get_calltableseries
+    from benchmark.calltableseries import get_calltableseries
 
     chrom = '22'
     reload = False

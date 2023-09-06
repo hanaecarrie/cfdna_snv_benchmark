@@ -1,11 +1,10 @@
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import seaborn as sns
 import warnings
-from sklearn.metrics import precision_recall_curve, auc, roc_curve, f1_score, precision_score, recall_score, average_precision_score, roc_auc_score
+from sklearn.metrics import precision_recall_curve, roc_curve, f1_score, precision_score, recall_score, average_precision_score, roc_auc_score
 
 warnings.filterwarnings("ignore")
 
@@ -768,8 +767,8 @@ if __name__ == "__main__":
     set_display_params(config)
     print(config.methods)
 
-    from utils.calltableseries import get_calltableseries
-    from utils.groundtruth import generate_groundtruth
+    from benchmark.calltableseries import get_calltableseries
+    from benchmark.groundtruth import generate_groundtruth
 
     chrom = '22'
     reload = False

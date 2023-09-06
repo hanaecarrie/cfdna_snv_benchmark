@@ -1,7 +1,7 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from utils.calltable import *
+from benchmark.calltable import *
 
 
 def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='PASS', reload=False, save=False, diltype='mixture', concat='tf', bcbiovaf=1, gatkcorr=True):
