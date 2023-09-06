@@ -13,13 +13,32 @@ export PYTHONPATH=$PYTHONPATH:"/Users/hanae/Repositories/cfdna_snv_benchmark/"
 ```
 ## Usage
 
-### 1. Create benchmark dataset
+#### 0. Create tree
 
 Define the directory where the code repository is installed and the location of the dataset.
 ```
 export repodir=/home/users/astar/gis/carriehc/cfdna_snv_benchmark
 export datadir=/rfs-storageservice/GIS/Projects/LOCCG/carriehc
 ```
+Create necessary folders and subfolders at the '$datadir' location below:
+```
+mkdir ${datadir}/initialsamples ${datadir}/logs ${datadir}/mixtures \
+ ${datadir}/mixtures_ultradeep ${datadir}/mixtures_wholegenome \
+ ${datadir}/PoNbuffycoat ${datadir}/mixtures_ultradeep
+
+ls ${datadir}
+├── initialsamples
+├── logs
+├── mixtures
+├── mixtures_ultradeep
+├── mixtures_wholegenome
+├── PoNbuffycoat
+└── PoNbuffycoat_ultradeep
+```
+ 
+
+### 1. Create benchmark dataset
+
 
 For deep Whole Genome Sequencing (WGS) mixture series, 
 the samples are splitted by chromosomes due to storage space and memory limitations. \
@@ -34,7 +53,8 @@ cd ${repodir}/mixtures
 cp config/config_template.yml config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
 vi config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
 ```
-In the WGS case, write config file for chr1 and run the following to create the following config files for chr2-22: 
+In the WGS case, write config file for chr1. You need to specify chr1 in the config file name.
+Then, run the following to create the following config files for chr2-22: 
 ```
 cd ${repodir}/mixtures
 bash create_config_yaml.sh config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
@@ -44,10 +64,11 @@ bash create_config_yaml.sh config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-9
 
 Example for a WGS series splitted by chromosome. Here for chr1.
 ```
+mkdir -p ${datadir}/data/logs
 sbatch -p normal -J chr1_986_mixtures -t 24:00:00 --mem 48000 \
  --output=${datadir}/data/logs/chr1_986_mixture_wgs.o \
  --error=${datadir}/data/logs/chr1_986_mixtures_wgs.e \
- ${repodir}/cfdna_snv_benchmark/mixtures/create_mixtures_series_chr.sh \
+ ${repodir}/mixtures/create_mixtures_series_chr.sh \
   -c ${repodir}/mixtures/config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
 ```
 
