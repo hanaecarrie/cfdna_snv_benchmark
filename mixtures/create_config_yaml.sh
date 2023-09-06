@@ -9,10 +9,10 @@
 
 if [ $# == 0 ]; then
     echo "Usage: $0 param1"
-    echo "* param1: initial configuration file for chr1 used as template"
+    echo "* param1: initial configuration file name for chr1 used as template. chr1 needs to be present in file name."
     echo "Example:"
     echo "$ cd cfdna_snv_benchmark/mixtures/"
-    echo "$ bash $0 config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+    echo "$ bash $0 config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
 fi
 
 # Parse input to get initial configuration file

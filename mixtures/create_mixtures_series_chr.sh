@@ -79,9 +79,9 @@ echo "path to coverage file of the low TF cfDNA sample restricted to the studied
 echo "path to coverage file of the buffycoat sample restricted to the studied chromosome: " $buffycoat_chr_coverage
 # create necessary folders if needed
 if [ ! -d $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ] ; then mkdir -p $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy} ; fi
-if [ ! -d $tumordir ] ; then mkdir $tumordir ; fi
-if [ ! -d $healthydir ] ; then mkdir $healthydir ; fi
-if [ ! -d $buffycoatdir ] ; then mkdir $buffycoatdir ; fi
+if [ ! -d $tumordir ] ; then mkdir -p $tumordir ; fi
+if [ ! -d $healthydir ] ; then mkdir -p $healthydir ; fi
+if [ ! -d $buffycoatdir ] ; then mkdir -p $buffycoatdir ; fi
 # copy configuration file to output directory for reference
 cp $config_file $outputfolder/mixtures_chr${chr}_${samplename_tumor}_${samplename_healthy}/ 
 
