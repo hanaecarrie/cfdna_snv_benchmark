@@ -1,3 +1,5 @@
+# viz.py
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -6,6 +8,14 @@ warnings.filterwarnings("ignore")
 
 
 def set_display_params(config):
+    """Adapts display parameters depending on usage context: slides with white or dark background, or paper.
+
+    Parameters
+    ----------
+    config : object
+        configuration class instance containing context and line/grid/font/palette styles information
+    """
+
     print(config.context)
     if config.context == 'darktalk':
         sns.set(style=config.context_darktalk.style, context=config.context_darktalk.context,
@@ -34,7 +44,26 @@ def set_display_params(config):
 
 
 def function_to_split(hand, labl, dividor):
-    Hand_L = []
+    """Split color and marker labels in legend when items are labeled as label1_colorspecific * labelA_markerspecific.
+
+    Parameters
+    ----------
+    hand : handles outputed by matplotlib.axes.get_legend_handles_labels()
+        hand, labl = matplotlib.axes.get_legend_handles_labels()
+    labl : labels outputed by matplotlib.axes.get_legend_handles_labels()
+        hand, labl = matplotlib.axes.get_legend_handles_labels().
+    dividor : str
+        separator between color-specific labels and marker-specific labels.
+
+    Returns
+    -------
+    updated handl
+        new legend handles, unique color specific handles followed by unique marker-specific handles
+    updated labl
+        new label handles, unique color specific labels followed by unique marker-specific labels
+    """
+
+    Hand_L = [] #
     Hand_M = []
     Labl_L = []
     Labl_M = []
@@ -55,10 +84,6 @@ def function_to_split(hand, labl, dividor):
         LICO = plt.Line2D((0, 1), (0, 0), color=co, marker='', linestyle=ls,linewidth=lw)
         # Marker
         MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='', fillstyle=mkf)
-        #if mkf == 'full':
-        #    MARK = plt.Line2D((0, 1), (0, 0), color='k', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='')
-        #else:
-        #    MARK = plt.Line2D((0, 1), (0, 0), markeredgecolor='k', markerfacecolor='white', marker=mk, markeredgewidth=mew, markersize=ms, linestyle='', fillstyle=mkf)
         if LABS[0] not in Labl_L:
             Hand_L.append(LICO)
             Labl_L.append(LABS[0])
