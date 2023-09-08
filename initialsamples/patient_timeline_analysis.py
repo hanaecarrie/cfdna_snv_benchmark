@@ -1,17 +1,16 @@
-# low_tumor_fraction_samples_identify.py
+# patient_timeline_analysis.py
 
 import os
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def load_files(filenames):
-
-    for filename in filenames:
-        yield pd.read_csv(filename, names=['sample_id', 'tumor_burden'])
-    """Yields XXX
+    """Loads csv file indicated as input and yields dataframe with sample id and matched ichorCNA tumor fraction.
 
     Parameters
     ----------
@@ -23,6 +22,9 @@ def load_files(filenames):
     pandas DataFrame instance
         a dataframe containing sample ID = patient ID + date, ichorCNA tumor fraction, patient ID and date.
     """
+
+    for filename in filenames:
+        yield pd.read_csv(filename, names=['sample_id', 'tumor_burden'])
 
 
 def get_tf(config, batch='all'):
@@ -290,9 +292,9 @@ def plot_patient_timeline(config, patient, treatment=True, mutations=False, high
                 plt.ylim([-0.01, 0.8])
     options = ''
     if treatment:
-        options.append('_treatment')
+        options += '_treatment'
     if mutations:
-        options.append('_mutations')
+        options += '_mutations'
     if save and savepath is None:
         plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + options + '.png'), bbox_inches='tight')
         plt.savefig(os.path.join(os.getcwd(), *config.outputpath, 'timeline_patient', 'timeline_patient_' + str(patient) + options + '.svg'), bbox_inches='tight')
@@ -302,7 +304,7 @@ def plot_patient_timeline(config, patient, treatment=True, mutations=False, high
     plt.show()
 
 
-def get_mutations_stats(config, patient):
+def get_mutations_stats(config, patient, mutation_folder=None, prefix='CCG_226_', suffix='_reGeno.VEP.readable_tiers'):
     """Gets the ichorCNA tumor fractions of one or all batches of longitudinal cfDNA samples.
 
     Parameters
@@ -310,7 +312,13 @@ def get_mutations_stats(config, patient):
     config : object
         configuration class instance containing paths and batch names
     patient : str or int
-        patient number
+        patient number ID
+    mutation_folder : str or None
+        folder containing excel files of mutation calls. If None, uses location indicated in config. (default is None).
+    prefix : str, optional
+        prefix in mutation file excel nomenclature. (default is 'CCG_226')
+    suffix : str, optional
+        suffix in mutation file excel nomenclature without 'xls' extension. (default is '_reGeno.VEP.readable_tiers').
 
     Returns
     -------
@@ -320,7 +328,9 @@ def get_mutations_stats(config, patient):
         of mutations (annotated as Trusted or not).
     """
 
-    mutation_df = pd.read_excel(os.path.join(os.getcwd(), *config.mutationfolder, 'CCG_226_' + str(patient)  + '_reGeno.VEP.readable_tiers.xls'))
+    if mutation_folder is None:
+        mutation_folder = os.path.join(os.getcwd(), *config.mutationfolder)
+    mutation_df = pd.read_excel(os.path.join(mutation_folder, prefix + str(patient) + suffix + '.xls'))
     col = ['#CHROM', 'POS', 'REF', 'ALT', 'GENE', 'TIERS']
     targeted_lowtf = []
     # Patient treatment + tumor fraction infos
@@ -392,23 +402,50 @@ def get_mutations_stats(config, patient):
 
 
 if __name__ == "__main__":
+    import argparse
     from utils.config import Config
     from utils.viz import set_display_params
-
     # set working directory
     if not os.getcwd().endswith('cfdna_snv_benchmark'):
         os.chdir('../')
     print('Current working directory: {}'.format(os.getcwd()))
+
+    # # set config
+    # config = Config("config/", "config_viz.yaml")
+    # # example patient 986
+    # patient = 986
+    # # set display params
+    # set_display_params(config)
+    # # test functions
+    # tf_df = get_tf(config, batch='all')
+    # print(tf_df)
+    # plot_patient_timeline(config, patient)
+    # plot_patient_timeline(config, patient, treatment=True, mutations=True)
+    # lowtftimepoints_pd = get_mutations_stats(config, patient)
+    # print(lowtftimepoints_pd.dropna())
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config_path', default='config_viz.yaml', required=False)
+    parser.add_argument('--patient', default=986, required=False)
+    # parser.add_argument('--mutation_folder', default='None')
+    # parser.add_argument('--prefix', default='CCG_226_')
+    # parser.add_argument('--suffix', default='_reGeno.VEP.readable_tiers')
+    args = parser.parse_args()
+    print(args)
+
     # set config
-    config = Config("config/", "config_viz.yaml")
-    # example patient 986
-    patient = 986
+    config = Config("config/", args.config_path)
+    patient = args.patient
     # set display params
     set_display_params(config)
-    # test functions
     tf_df = get_tf(config, batch='all')
     print(tf_df)
     plot_patient_timeline(config, patient)
     plot_patient_timeline(config, patient, treatment=True, mutations=True)
-    lowtftimepoints_pd = get_mutations_stats(config, patient)
-    print(lowtftimepoints_pd.dropna())
+    mutations_stats_df = get_mutations_stats(config, patient)
+    print(mutations_stats_df.dropna())
+
+
+
+
+
