@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file indicating a mixture series to apply SiNVICT caller on these files.
+# The output calls will be copied into a specified output directory file with a tree consistent with other callers.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 -c [config_file]"
+    echo "* config_file: string. full path to the configuration .yaml file."
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/callers/sinvict"
+    echo "$ bash $0 -c config_sinvict_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+    exit 1
+fi
+
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
@@ -51,7 +66,7 @@ exec 1>$outdir/log.out 2>&1
 # Everything below will go to the file 'log.out'
 
 # Start logging the RAM usage and CPU usage
-bash ${repopath}/ABEMUS/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
+bash ${repopath}/log_mem_cpu.sh $outdir/log_mem_cpu.out  & export logpid=$!
 
 ###### prepare bedfile ######
 # Download reference genome (here all with hg19)

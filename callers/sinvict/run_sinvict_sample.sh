@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file indicating a mixture series and a specific plasma bam file of this series
+# to apply SiNVICT caller on this sample.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 -c [config_file] -p [plasma]"
+    echo "* config_file: string. full path to the configuration .yaml file."
+    echo "* plasma: string. full path to the plasma bam file of the mixture series."
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/callers/sinvict"
+    echo "$ bash $0 -c config_sinvict_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml -p XXX"
+    exit 1
+fi
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
