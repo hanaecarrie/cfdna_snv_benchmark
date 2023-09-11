@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file indicating a mixture series to apply VarNet caller on these files.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 -c [config_file]"
+    echo "* config_file: string. full path to the configuration .yaml file."
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/callers/varnet"
+    echo "$ bash $0 -c config_varnet_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+    exit 1
+fi
+
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
