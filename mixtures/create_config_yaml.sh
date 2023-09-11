@@ -13,6 +13,7 @@ if [ $# == 0 ]; then
     echo "Example:"
     echo "$ cd cfdna_snv_benchmark/mixtures/"
     echo "$ bash $0 config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+    exit 1
 fi
 
 # Parse input to get initial configuration file

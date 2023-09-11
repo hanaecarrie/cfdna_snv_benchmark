@@ -14,6 +14,7 @@ if [ $# == 0 ]; then
     echo "$ cd cfdna_snv_benchmark/mixtures/"
     echo "$ bash $0 -c config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
     echo "Remark 1: In practice, for step 1 and 3, 24Gb RAM and > 8 CPUs recommended. Takes several hours to complete."
+    exit 1
 fi
 
 # function to parse config file

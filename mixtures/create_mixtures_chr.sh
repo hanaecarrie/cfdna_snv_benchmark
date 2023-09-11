@@ -17,6 +17,7 @@ if [ $# == 0 ]; then
     echo "$ bash $0 -c config/config_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml -d '70-80'"
     echo "Remark 1: In practice, on 100x WGS, 24Gb RAM and > 8 CPUs recommended. Takes several hours to complete."
     echo "Remark 2: The obtained mixture would be about 70+80=150x cov."
+    exit 1
 fi
 
 # function to parse config file
