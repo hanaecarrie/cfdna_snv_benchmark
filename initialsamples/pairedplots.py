@@ -59,12 +59,16 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
         mutationfile.set_index('chrom_pos', inplace=True)
         mutationfile = mutationfile.loc[~mutationfile.index.duplicated()]
         for c in list(mutationfile.columns[13:-1]):
-            if (sum([p.split('-')[1].split('_')[1] in c for p in patientsample_dict[patient]]) == 0) and (c != 'CCG_226_986.110215.P'):
+            if (sum([p.split('-')[1].split('_')[1] in c for p in patientsample_dict[int(patient)]]) == 0) and (c != 'CCG_226_986.110215.P'):
                 mutationfile.drop(c, axis=1, inplace=True)
         ctokeep = [c for c in mutationfile.columns if c.startswith('CCG') or c.startswith(str(patient))]
         mutationfile[mutationfile['TIERS'] == 'Trusted'][['REF', 'ALT', 'GENE', *ctokeep]]
         print(seqtype)
-        lowtfsample_vaf_df = pd.read_csv(os.path.join(*config.pileupfolder, 'targeted', patientsample_dict[patient][2] + '_' + seqtype + '_vaf.txt'), index_col=0)
+        pileuplowtf = os.path.join(*config.pileupfolder, 'targeted', patientsample_dict[int(patient)][2] + '_' + seqtype + '_vaf.txt')
+        if os.path.exists(pileuplowtf):
+            lowtfsample_vaf_df = pd.read_csv(pileuplowtf, index_col=0)
+        else:
+            raise ValueError('pileup file {} does not exists. Run pileup.sh first.'.format(pileuplowtf))
         lowtfsample_vaf_df['chrom_pos'] = lowtfsample_vaf_df['chrom'].astype('str').str.cat(lowtfsample_vaf_df['pos'].astype('str'), sep="_")
         lowtfsample_vaf_df.set_index('chrom_pos', inplace=True)
         lowtfsample_vaf_df = lowtfsample_vaf_df.loc[~lowtfsample_vaf_df.index.duplicated()]
@@ -92,7 +96,11 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
         lowtfsample_vaf_df['supporting vaf'] = lowtfsample_vaf_df['supporting altcov']/lowtfsample_vaf_df['totcov']
         for pi in range(nbhightfsamples):
             print(pi)
-            hightfsample_vaf_df = pd.read_csv(os.path.join(*config.pileupfolder, 'targeted', patientsample_dict[patient][pi] + '_' + seqtype + '_vaf.txt'), index_col=0)
+            pileuphightf = os.path.join(*config.pileupfolder, 'targeted', patientsample_dict[int(patient)][pi] + '_' + seqtype + '_vaf.txt')
+            if os.path.exists(pileuphightf):
+                hightfsample_vaf_df = pd.read_csv(pileuphightf, index_col=0)
+            else:
+                raise ValueError('pileup file {} does not exists. Run pileup.sh first.'.format(pileuphightf))
             hightfsample_vaf_df['chrom_pos'] = hightfsample_vaf_df['chrom'].astype('str').str.cat(hightfsample_vaf_df['pos'].astype('str'), sep="_")
             hightfsample_vaf_df.set_index('chrom_pos', inplace=True)
             hightfsample_vaf_df = hightfsample_vaf_df.loc[~hightfsample_vaf_df.index.duplicated()]
@@ -121,14 +129,14 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
 
             paired_vaf = pd.concat([lowtfsample_vaf_df[lowtfsample_vaf_df['annotation'] == 'Trusted'][['supporting vaf']],
                                     hightfsample_vaf_df[hightfsample_vaf_df['annotation'] == 'Trusted'][['supporting vaf']]], axis=1)
-            paired_vaf.columns = [patientsample_dict[patient][2].split('-')[1], patientsample_dict[patient][pi].split('-')[1]]
-            maxx = paired_vaf[patientsample_dict[patient][2].split('-')[1]].max() if paired_vaf[patientsample_dict[patient][2].split('-')[1]].max() > maxx else maxx
+            paired_vaf.columns = [patientsample_dict[int(patient)][2].split('-')[1], patientsample_dict[int(patient)][pi].split('-')[1]]
+            maxx = paired_vaf[patientsample_dict[int(patient)][2].split('-')[1]].max() if paired_vaf[patientsample_dict[int(patient)][2].split('-')[1]].max() > maxx else maxx
             print(maxx)
             paired_vaf['gene'] = mutationfile.loc[paired_vaf.index, 'GENE']
             if patient == '986' and seqtype == 'targeted':
                 paired_vaf.iat[0, 0] = -0.00015  # (intead of 0 for APC, for visualisation)
             print(paired_vaf)
-            print(patientsample_dict[patient][pi].split('-')[1])
+            print(patientsample_dict[int(patient)][pi].split('-')[1])
             for gi, g in enumerate(list(paired_vaf['gene'])):
                 if g in config.genelist:
                     print(g, config.genelist.index(g))
@@ -136,8 +144,8 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
                     c = c[config.genelist.index(g)]
                 else:
                     c = config.seqtype.colors[gi % len(config.seqtype.colors)]
-                plt.plot(paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][2].split('-')[1]].values[0],
-                         paired_vaf[paired_vaf['gene'] == g][patientsample_dict[patient][pi].split('-')[1]].values[0], lw=5, markeredgewidth=1,
+                plt.plot(paired_vaf[paired_vaf['gene'] == g][patientsample_dict[int(patient)][2].split('-')[1]].values[0],
+                         paired_vaf[paired_vaf['gene'] == g][patientsample_dict[int(patient)][pi].split('-')[1]].values[0], lw=5, markeredgewidth=1,
                          c=c, markersize=20, marker=config.seqtype.markers[si], fillstyle=config.seqtype.fillstyles[0], markeredgecolor='k', label=g + '*' + seqtype + ' sample')
     plt.ylim([-.02, 0.60])
     plt.axvline(x=0.000, ls='--', c='k')

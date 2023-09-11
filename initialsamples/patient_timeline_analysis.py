@@ -284,7 +284,7 @@ def plot_patient_timeline(config, patient, treatment=True, mutations=False, high
                     ax.get_xticklabels()[labels.index(htfsample)].set_color('orange')
                     ax2.get_xticklabels()[labels.index(htfsample)].set_color('orange')
             else:
-                raise ValueError('XXX')
+                raise ValueError("highlight should be 'discovery' or 'validation' but here is {}".format(highlight))
             if treatment:
                 ax.legend(loc='upper left')
             else:
