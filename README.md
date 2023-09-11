@@ -14,7 +14,7 @@ export PYTHONPATH=$PYTHONPATH:"/Users/hanae/Repositories/cfdna_snv_benchmark/"
 
 ## Overview [figure 1]
 
-
+![image](figures/figure1/Figures_1.png)
 
 ## Usage
 
@@ -215,6 +215,8 @@ aws s3 ls s3://cfdna-benchmark-dataset.store.genome.sg/mixtures/mixtures_chr1/mi
 
 ### 2. Run callers
 
+#### 2.1 Install callers
+
 This benchmark study considers 9 different callers in the following versions:
 - 5 callers included in the bcbio pipeline v.1.2.9
   - Freebayes: v.1.3.5 
@@ -228,14 +230,31 @@ This benchmark study considers 9 different callers in the following versions:
 - SiNVICT: master branch commit id 8e87e8d25c19d287dd68c7daa7375095dc099fa5 (2020)
 Those callers need to be installed before hand.
 Please refer to the guidelines provided by each software.
-You can also find some help in the installation notes.
+You can also find some help in the installation notes located in '${repodir}/callers/installation_notes.md'.
 
+#### 2.2 Prepare configuration file for each caller and each mixture series
 
+For each caller named ${caller}, first adapt the template '${repodir}/callers/${caller}/config/config_template.yaml' to create your own.\
+Here, the configuration file example is 'config_${caller}_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml' for a WGS mixture series. \
+```sh
+cd ${repodir}/callers/${caller}
+cp config/config_template.yml config/config_${caller}_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+vi config/config_${caller}_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+```
+In the WGS case, write config file for chr1. You need to specify chr1 in the config file name.
+Then, run the following to create the following config files for chr2-22:
+```sh
+cd ${repodir}/callers/${caller}
+bash create_config_yaml.sh config/config_${caller}_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+```
+Then, follow the following steps.
 
+#### 2.3 DNA-specific callers using bcbio pipeline
 
-#### DNA-specific callers using bcbio pipeline
+* **Freebayes, Mutect2, Strelka2, Vardict, Varscan (via the bcbio-nextgen pipeline)**
 
-Prepare bcbio input file
+*Install and Prepare bcbio input file* (see 2.1 and 2.2)
+
 ```
 $ bash $repodir/bcbio/run_prepare_bcbio.sh
 ```
@@ -243,30 +262,32 @@ Run bcbio pipeline in Aquila
 ```
 $ bash $repodir/bcbio/run_bcbio.sh
 ```
-Copy bcbio results to repository
-XXX
-Save results
-XXX
 
-### Runs cfDNA-specific callers 
+* **SMuRF**
+  
+*Install and Prepare SMuRF input file* (see 2.1 and 2.2)
+
+*Run SMuRF*
+
+* **VarNet**
+
+*Install and Prepare VarNet input file* (see 2.1 and 2.2)
+
+*Run VarNet* 
+```sh
+sbatch -p normal -J prepare_dbSNP -t 24:00:00 --mem 48000 \
+ --output=${datadir}/data/logs/prepare_dbSNP.o \
+ --error=${datadir}/data/logs/prepare_dbSNP.e \
+  ${repodir}/callers/ABEMUS/prepare_dbSNP.sh $extdata $repopath
+```
+
+
+### 2.3 Runs cfDNA-specific callers 
 
 * **ABEMUS**
 
-*Prepare configuration file*
+*Install and Prepare ABEMUS input file* (see 2.1 and 2.2)
 
-Adapt the template '${repodir}/callers/ABEMUS/config/config_template.yaml' to create your own.\
-Here, the configuration file example is 'config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml' for a WGS mixture series. \
-```sh
-cd ${repodir}/callers/ABEMUS
-cp config/config_template.yml config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
-vi config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
-```
-In the WGS case, write config file for chr1. You need to specify chr1 in the config file name.
-Then, run the following to create the following config files for chr2-22:
-```sh
-cd ${repodir}/callers/ABEMUS
-bash create_config_yaml.sh config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
-```
 *Prepare dbSNP database*
 
 ```sh
@@ -286,7 +307,6 @@ sbatch -p normal -J prepare_PoN -t 24:00:00 --mem 48000 \
   ${repodir}/callers/ABEMUS/prepare_PoN.sh $buffycoatbam $patientid $datadir $extdatadir $condapath $mode
 ```
 
-
 *Run ABEMUS*
 
 ```sh
@@ -302,6 +322,10 @@ run_abemus.sh -c ${repodir}/callers/ABEMUS/config/config_abemus_mixtures_chr${ch
 ```
 
 * **SiNVICT**
+
+*Install and Prepare SiNVICT input file* (see 2.1 and 2.2)
+
+*Run SiNVICT*
 ```
 $ screen -S sinvict
 
@@ -311,9 +335,10 @@ $ bash ~/sinvict/run_sinvict.sh -c ~/sinvict/config/config_mixtures_chr22_CRC-10
 
 ### 3. Analyse results 
 
+XXX calltables.py
+XXX generate_groundtruth.py
 
 #### 1. At intermediate depth (150x) [figure 3]
-
 
 To reproduce Figure 3 of manuscript, run:
 ```sh
