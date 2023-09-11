@@ -1,10 +1,10 @@
+# concat_results.py
+
 import os
 import pandas as pd
-import sys
 
-if __name__ == "__main__":
-    dilutionseriesfolder = sys.argv[1]
-    outdir = sys.argv[2]
+
+def concat_results(dilutionseriesfolder, outdir):
     print(dilutionseriesfolder)
     print(outdir)
     if not os.path.exists(os.path.join(outdir, 'results')):
@@ -29,4 +29,19 @@ if __name__ == "__main__":
             res_df = pd.concat(df_list)
             print(res_df.head())
             res_df.to_csv(os.path.join(outdir, 'results',  dil, 'pmtab_F3_optimalR_'+dil+'.csv'))
+
+
+if __name__ == "__main__":
+
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dilutionseriesfolder')
+    parser.add_argument('--outdir')
+    args = parser.parse_args()
+    print(args)
+
+    dilutionseriesfolder = args.dilutionseriesfolder
+    outdir = args.outdir
+    res = concat_results(dilutionseriesfolder, outdir)
+
 

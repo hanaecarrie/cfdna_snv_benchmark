@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file indicating a mixture series to apply ABEMUS caller on these files.
+# The output calls will be copied into a specified output directory file with a tree consistent with other callers.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 -c [config_file]"
+    echo "* config_file: string. full path to the configuration .yaml file."
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/callers/ABEMUS"
+    echo "$ bash $0 -c config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml"
+    exit 1
+fi
 
 # function to parse config file
 function parse_yaml {
@@ -92,7 +105,7 @@ if [ ! -f $extdata/${mode}_bed/${mode}_hg19_chr${chr}_00.bed ] ; then split -l 5
 if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ] ; then bcftools filter -r ${chr} $extdata/dbsnp_vcf/dbSNP.vcf.gz -o $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 # 3. Edit vcf to keep only SNPs with one Alt base
 echo $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf
-if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python edit_vcf.py $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
+if [ ! -f $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}_edited.vcf ] ; then python ${repopath}/ABEMUS/edit_vcf.py --vcfpath $extdata/dbsnp_vcf/dbSNP_hg19_chr${chr}.vcf ; fi
 
 ###### run ABEMUS per chunk in parallel ######
 export nchunk=$(ls $extdata/${mode}_bed/${mode}_hg19_chr${chr}_*.bed | wc -l)
@@ -110,10 +123,10 @@ done
 
 if [ ! -d ${outdir}/results ] ; then mkdir ${outdir}/results ; fi
 
-###### concat results #####
-python ${repopath}/ABEMUS/concat_results.py $dilutionseriesfolder $outdir
+# concat results
+python ${repopath}/ABEMUS/concat_results.py --dilutionseriesfolder $dilutionseriesfolder --outdir $outdir
 
-####### copy results to common folder ########
+# copy results to common folder
 echo $finaloutdir
 if [ ! -d $finaloutdir ] ; then mkdir $finaloutdir ; fi
 

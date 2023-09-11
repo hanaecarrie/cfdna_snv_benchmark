@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Date: 2023
+# Author: Hanae Carrie
+# This script takes as input a configuration file indicating a mixture series to apply ABEMUS caller on these files.
+# The output calls will be copied into a specified output directory file with a tree consistent with other callers.
+
+if [ $# == 0 ]; then
+    echo "Usage: $0 -c [config_file] -i [chunck]"
+    echo "* config_file: string. full path to the configuration .yaml file."
+    echo "* chunck: int. chunck number. portion id of the bed file to apply calling on all input files."
+    echo "Example:"
+    echo "$ cd cfdna_snv_benchmark/callers/ABEMUS"
+    echo "$ bash $0 -c config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml -i 0"
+    exit 1
+fi
+
 # function to parse config file
 function parse_yaml {
    local prefix=$2
