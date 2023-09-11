@@ -23,11 +23,12 @@ export PYTHONPATH=$PYTHONPATH:"/Users/hanae/Repositories/cfdna_snv_benchmark/"
 Define the directory where the code repository is installed and the location of the dataset.
 ```sh
 export repodir=/home/users/astar/gis/carriehc/cfdna_snv_benchmark
-export datadir=/rfs-storageservice/GIS/Projects/LOCCG/carriehc
+export datadir=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data
+export extdatadir=/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata
 ```
 Create necessary folders and subfolders at the '$datadir' location below:
 ```sh
-mkdir ${datadir}/initialsamples ${datadir}/logs ${datadir}/mixtures \
+mkdir ${datadir} ${datadir}/initialsamples ${datadir}/logs ${datadir}/mixtures \
  ${datadir}/mixtures_ultradeep ${datadir}/mixtures_wholegenome \
  ${datadir}/PoNbuffycoat ${datadir}/mixtures_ultradeep
 
@@ -41,6 +42,18 @@ ls ${datadir}
 ├── mixtures_wholegenome
 ├── PoNbuffycoat
 └── PoNbuffycoat_ultradeep
+```
+```sh
+mkdir ${extdatadir} ${extdatadir}/dbsnp_vcf ${datadir}/exome_bed ${extdatadir}/GRCh37 \
+${datadir}/wholegenome_bed 
+
+ls ${extdatadir}
+```
+```
+├── dbsnp_vcf
+├── exome_bed
+├── GRCh37
+└── wholegenome_bed
 ```
  
 ### 1. Design benchmark dataset [figure 2, table 1]
@@ -200,8 +213,25 @@ aws s3 ls s3://cfdna-benchmark-dataset.store.genome.sg/mixtures/mixtures_chr1/mi
 
 ```
 
-
 ### 2. Run callers
+
+This benchmark study considers 9 different callers in the following versions:
+- 5 callers included in the bcbio pipeline v.1.2.9
+  - Freebayes: v.1.3.5 
+  - Mutect2: v2.2
+  - Strelka2: 2.9.10
+  - Vardict: 1.8.2
+  - Varscan: 2.4.4
+- SMuRF: v2.0.12
+- Varnet: v1.1.0
+- ABEMUS: v.1.0.3
+- SiNVICT: master branch commit id 8e87e8d25c19d287dd68c7daa7375095dc099fa5 (2020)
+Those callers need to be installed before hand.
+Please refer to the guidelines provided by each software.
+You can also find some help in the installation notes.
+
+
+
 
 #### DNA-specific callers using bcbio pipeline
 
@@ -220,25 +250,62 @@ XXX
 
 ### Runs cfDNA-specific callers 
 
-Transfer to Ronin machine
-XXX
-Run ABEMUS
-```
-$ screen -S abemus
+* **ABEMUS**
 
-$ bash ~/ABEMUS/run_abemus.sh -c ~/ABEMUS/config/config_mixtures_chr22_CRC-1014_180816-CW-T.yaml
+*Prepare configuration file*
+
+Adapt the template '${repodir}/callers/ABEMUS/config/config_template.yaml' to create your own.\
+Here, the configuration file example is 'config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml' for a WGS mixture series. \
+```sh
+cd ${repodir}/callers/ABEMUS
+cp config/config_template.yml config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+vi config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
 ```
-Run SiNVICT
+In the WGS case, write config file for chr1. You need to specify chr1 in the config file name.
+Then, run the following to create the following config files for chr2-22:
+```sh
+cd ${repodir}/callers/ABEMUS
+bash create_config_yaml.sh config/config_abemus_mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T.yml
+```
+*Prepare dbSNP database*
+
+```sh
+sbatch -p normal -J prepare_dbSNP -t 24:00:00 --mem 48000 \
+ --output=${datadir}/data/logs/prepare_dbSNP.o \
+ --error=${datadir}/data/logs/prepare_dbSNP.e \
+  ${repodir}/callers/ABEMUS/prepare_dbSNP.sh $extdata $repopath
+```
+
+*Prepare Panel of Normal buffycoats*
+
+```sh
+#TODO iterate over buffycoat bams and patient ids, declare condapath and mode
+sbatch -p normal -J prepare_PoN -t 24:00:00 --mem 48000 \
+ --output=${datadir}/data/logs/prepare_PoN.o \
+ --error=${datadir}/data/logs/prepare_PoN.e \
+  ${repodir}/callers/ABEMUS/prepare_PoN.sh $buffycoatbam $patientid $datadir $extdatadir $condapath $mode
+```
+
+
+*Run ABEMUS*
+
+```sh
+export chr='1'
+sbatch -p normal -J abemus_${chr}_${mixtureid} -t 1-00:00:00 -N 1 --mem 64000 \
+--output=${datadir}/logs/abemus_${mixtureid}_${chr}_${mode}.o \
+--error=${datadir}/logs/abemus_${mixtureid}_${chr}_${mode}.o \
+run_abemus.sh -c ${repodir}/callers/ABEMUS/config/config_abemus_mixtures_chr${chr}_${mixtureid}.yml ;
+
+## WES calling on WGS data chrom 1: -p normal -t 1-00:00:00 -N 1 --mem 64000 
+## WGS calling on WGS data chrom 1: -p largemem -t 3-00:00:00 -N 1 --mem 1000000 
+## WES calling on WES data chrom all: -p largememlong  -t 14-00:00:00 --mem 1000000
+```
+
+* **SiNVICT**
 ```
 $ screen -S sinvict
 
 $ bash ~/sinvict/run_sinvict.sh -c ~/sinvict/config/config_mixtures_chr22_CRC-1014_180816-CW-T.yaml
-```
-Run cfSNV
-```
-$ screen -S cfsnv
-
-$ bash ~/cfSNV/run_cfsnv.sh -c ~/cfSNV/config/config_mixtures_chr22_CRC-1014_180816-CW-T.yaml
 ```
 
 
