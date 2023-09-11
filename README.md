@@ -82,7 +82,7 @@ do
     export refgenome=${strarr[3]}
     export condapath=${strarr[4]}
     echo $(basename $bamfile) $(basename $bedfile) $(basename $outputfile) $(basename $refgenome)
-    bash ${repodir}/initialsamples/pileup.sh $bamfile $bedfile $refgenome $condpath
+    bash ${repodir}/initialsamples/pileup.sh $bamfile $bedfile $outputfile $refgenome $condpath
 done
 ```
 
@@ -102,14 +102,23 @@ do
     export refgenome=${strarr[3]}
     export condapath=${strarr[4]}
     echo $(basename $bamfile) $(basename $bedfile) $(basename $outputfile) $(basename $refgenome)
-    bash ${repodir}/initialsamples/pileup.sh $bamfile $bedfile $refgenome $condpath
+    bash ${repodir}/initialsamples/pileup.sh $bamfile $bedfile $outputfile $refgenome $condpath
 done
 ```
 
 Get paired plot.
 
 ```sh
-
+mutationfolder=data/variant_calls/226\ PANEL\ VARIANTS\ CLASSIFICSATION\ EXCEL
+listpatients=()
+for f in ${mutationfolder}/*; do
+    if [[ $(basename $f) == CCG* ]]; then
+        patient=$(echo $(basename $f) | awk -F'_' '{print $3}')
+        echo $patient
+        listpatients+=("$patient")
+        python $repodir/initialsamples/paireplots.py --patient $patient
+    fi
+done
 ```
 
 To reproduce Figure 2 of manuscript, run:
