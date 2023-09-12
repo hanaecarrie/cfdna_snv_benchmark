@@ -1,0 +1,8 @@
+############# Config file ############
+
+datadir: '/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data'  # data or data_wes
+regexpattern: 'mix*/*/*x' # all
+extdatadir: '/rfs-storageservice/GIS/Projects/LOCCG/carriehc/extdata'
+bcbiodir: '/rfs-storageservice/GIS/Projects/LOCCG/carriehc/runs'
+mode: 'exome'
+bcbionextgenpath: /scratch/users/astar/gis/simngl/apps/bcbio/v129/anaconda/bin/bcbio_nextgen.py

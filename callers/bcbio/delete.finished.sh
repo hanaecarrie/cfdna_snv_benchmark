@@ -1,9 +1,10 @@
 #!/bin/bash
 
+
 # Date: 2023
 # Author: Hanae Carrie
-# This script takes as input a configuration file indicating which mixtures are prepared in order to apply
-# the 5 callers included in the bcbio-nextgen pipeline in tumor-normal mode without realignment.
+# This script takes as input a configuration file indicating the path where bcbio output is stored to delete the large
+# bcbio_work subdirectories of completed jobs.
 
 if [ $# == 0 ]; then
     echo "Usage: $0 -c [config_file]"
@@ -41,12 +42,16 @@ done
 # parse config file
 eval $(parse_yaml $config_file)
 
-echo $regexpattern
+echo $bcbiodir
 
 cd $bcbiodir
 
-for m in ${regexpattern} ; do
-  cd ${m}/bcbio_work
-  sbatch run_*.sh
-  cd ../..
+for a in mix* ; do
+	echo $a/bcbio_final/2015-07-31_${a}/${a}-ensemble-annotated.vcf.gz ;
+	if [ -f $a/bcbio_final/2015-07-31_${a}/${a}-ensemble-annotated.vcf.gz ] ; then
+		echo rm -rf $a/bcbio_work ;
+		rm -rf $a/bcbio_work ; 
+	else
+		echo "RUNNING" ; 
+	fi ;
 done
