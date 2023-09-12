@@ -255,19 +255,30 @@ Then, follow the following steps.
 
 *Install and Prepare bcbio input file* (see 2.1 and 2.2)
 
+*Prepare and run bcbio-nextgen*
+
+```sh
+bash ${repodir}/callers/bcbio/prepare_bcbio.sh -c ${repodir}/callers/bcbio/config/config_bcbio_template.yml ;
+bash ${repodir}/callers/bcbio/run_bcbio.sh -c ${repodir}/callers/bcbio/config/config_bcbio_template.yml ;
 ```
-$ bash $repodir/bcbio/run_prepare_bcbio.sh
-```
-Run bcbio pipeline in Aquila
-```
-$ bash $repodir/bcbio/run_bcbio.sh
+
+*Monitor status and space usage*
+
+```sh
+python ${repodir}/callers/bcbio/monitor.run.status.py -d ${bcbiodir}
+bash ${repodir}/callers/bcbio/delete.finished.sh -c ${repodir}/callers/bcbio/config/config_bcbio_template.yml ;
 ```
 
 * **SMuRF**
   
 *Install and Prepare SMuRF input file* (see 2.1 and 2.2)
 
-*Run SMuRF*
+*Prepare and run SMuRF*
+
+```sh
+bash ${repodir}/callers/bcbio/prepare_smurf.sh -c ${repodir}/callers/bcbio/config/config_smurf_template.yml ;
+bash ${repodir}/callers/bcbio/run_smurf.sh -c ${repodir}/callers/bcbio/config/config_smurf_template.yml ;
+```
 
 * **VarNet**
 
@@ -275,10 +286,15 @@ $ bash $repodir/bcbio/run_bcbio.sh
 
 *Run VarNet* 
 ```sh
-sbatch -p normal -J prepare_dbSNP -t 24:00:00 --mem 48000 \
- --output=${datadir}/data/logs/prepare_dbSNP.o \
- --error=${datadir}/data/logs/prepare_dbSNP.e \
-  ${repodir}/callers/ABEMUS/prepare_dbSNP.sh $extdata $repopath
+export chr='1'
+sbatch -p normal -J varnet_${chr}_${mixtureid} -t 3-00:00:00 -N 1 --mem 128000 \
+--output=${datadir}/logs/varnet_${mixtureid}_${chr}_${mode}.o \
+--error=${datadir}/logs/varnet_${mixtureid}_${chr}_${mode}.o \
+${repodir}/callers/varnet/run_varnet.sh -c ${repodir}/callers/varnet/config/config_varnet_mixtures_chr${chr}_${mixtureid}.yml ;
+
+## WES calling on WGS data chrom 1: -p normal -t 3-00:00:00 -N 1 --mem 128000 
+## WGS calling on WGS data chrom 1: -p long -t 10-00:00:00 -N 1 --mem 128000
+## WES calling on WES data chrom all: -p long  -t 10-00:00:00 --mem 128000
 ```
 
 
@@ -314,7 +330,7 @@ export chr='1'
 sbatch -p normal -J abemus_${chr}_${mixtureid} -t 1-00:00:00 -N 1 --mem 64000 \
 --output=${datadir}/logs/abemus_${mixtureid}_${chr}_${mode}.o \
 --error=${datadir}/logs/abemus_${mixtureid}_${chr}_${mode}.o \
-run_abemus.sh -c ${repodir}/callers/ABEMUS/config/config_abemus_mixtures_chr${chr}_${mixtureid}.yml ;
+${repodir}/callers/ABEMUS/run_abemus.sh -c ${repodir}/callers/ABEMUS/config/config_abemus_mixtures_chr${chr}_${mixtureid}.yml ;
 
 ## WES calling on WGS data chrom 1: -p normal -t 1-00:00:00 -N 1 --mem 64000 
 ## WGS calling on WGS data chrom 1: -p largemem -t 3-00:00:00 -N 1 --mem 1000000 
@@ -326,12 +342,32 @@ run_abemus.sh -c ${repodir}/callers/ABEMUS/config/config_abemus_mixtures_chr${ch
 *Install and Prepare SiNVICT input file* (see 2.1 and 2.2)
 
 *Run SiNVICT*
-```
-$ screen -S sinvict
 
-$ bash ~/sinvict/run_sinvict.sh -c ~/sinvict/config/config_mixtures_chr22_CRC-1014_180816-CW-T.yaml
+```sh
+export chr='1'
+sbatch -p normal -J sinvict_${chr}_${mixtureid} -t 3-00:00:00 -N 1 --mem 64000 \
+--output=${datadir}/logs/sinvict_${mixtureid}_${chr}_${mode}.o \
+--error=${datadir}/logs/sinvict_${mixtureid}_${chr}_${mode}.o \
+${repodir}/callers/sinvict/run_sinvict.sh -c ${repodir}/callers/sinvict/config/config_sinvict_mixtures_chr${chr}_${mixtureid}.yml ;
+
+## WES calling on WGS data chrom 1: -p normal -t 3-00:00:00 -N 1 --mem 64000 
+## WGS calling on WGS data chrom 1: -p largemem -t 3-00:00:00 -N 1 --mem 500000 
+## WES calling on WES data chrom all: -p long  -t 7-00:00:00 --mem 64000
 ```
 
+
+#### 3. Alternatively, download paper calls on dataset from s3 bucket using the aws cli API.
+
+Each mixture sample folder contains a 'calls' folder with the output of each caller in separate subfolders.
+The output of the 5 callers run using bcbio-nextgen are grouped in a single 'bcbio' subfolder.
+```sh
+aws s3 ls s3://cfdna-benchmark-dataset.store.genome.sg/mixtures/mixtures_chr1/mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T/mixture_chr1_CRC-986_100215-CW-T_70x_CRC-986_300316-CW-T_80x/calls/ --profile [profilenickname]  
+  PRE abemus/
+  PRE bcbio/
+  PRE sinvict/
+  PRE smurf/
+  PRE varnet/
+```
 
 ### 3. Analyse results 
 

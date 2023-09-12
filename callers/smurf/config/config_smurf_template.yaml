@@ -1,0 +1,9 @@
+############# Config file ############
+
+datadir: '/rfs-storageservice/GIS/Projects/LOCCG/carriehc/data'  # data or data_wes
+regexpattern: 'mix*/*/*x' # all
+bcbiodir: '/rfs-storageservice/GIS/Projects/LOCCG/carriehc/runs'
+rscript: /scratch/users/astar/gis/simngl/apps/bcbio/v129/anaconda/bin/Rscript
+smurfdir: /home/users/astar/gis/simngl/skandlab/scripts/SMuRF
+h2olib: /home/users/astar/gis/simngl/apps/rlib/h2o/v3.36.0.4
+smurflib: /scratch/users/astar/gis/simngl/apps/rlibs/smurf/v2.0.12
