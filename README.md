@@ -6,17 +6,19 @@ This repository contains the code and documentation for benchmarking SNV callers
 
 ## Table of Contents
 
-1. [Requirements](#requirements)
-2. [Installation](#installation)
-3. [Overview](#overview)
-4. [Usage](#usage)
+ [Requirements](#requirements)
+
+ [Installation](#installation)
+
+ [Overview](#overview)
+
+ [Usage](#usage)
   - [0. Environment Setup & Directory Structure](#0-environment-setup--directory-structure)
   - [1. Design Benchmark Dataset](#1-design-benchmark-dataset)
   - [2. Create Benchmark Dataset](#2-create-benchmark-dataset)
   - [3. Run Variant Callers](#3-run-variant-callers)
-  - [4. Analyze Results](#4-analyze-results)
-  - [5. Feature Analysis](#5-feature-analysis)
-5. [Figures](#figures)
+
+[Figures](#figures)
 
 ---
 
@@ -24,11 +26,8 @@ This repository contains the code and documentation for benchmarking SNV callers
 
 **Dependencies:**
 
-- **Python 3.x** and necessary libraries (see `requirements.txt` once finalized)
 - External tools and variant callers as detailed in Section [3. Run Variant Callers](#3-run-variant-callers)
-- Additional software as specified in each caller’s installation notes (see `callers/installation_notes.md`)
-
-> **Note:** A detailed list of software requirements and versions will be provided soon.
+- Additional software as specified in each caller’s installation notes (see `callers/[callername]/installation_notes.md`)
 
 ---
 
@@ -48,24 +47,13 @@ This repository contains the code and documentation for benchmarking SNV callers
    ```sh
    export PYTHONPATH=$PYTHONPATH:"/path/to/cfdna_snv_benchmark/"
    ```
-
-3. **Install Python Dependencies:**
-
-   If a `requirements.txt` file is provided:
-
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-   Otherwise, please refer to the individual module documentation.
-
 ---
 
 ## Overview
 
 Figure 1 below illustrates the overall workflow of the benchmark study.
 
-![Overview of Workflow](figures/figure1/Figures_1.png)
+![Overview of Workflow](figures/figure1/Figure_1.png)
 
 ---
 
@@ -179,13 +167,6 @@ for f in ${mutationfolder}/*; do
 done
 ```
 
-To reproduce **Figure 2**:
-
-```sh
-cd $repodir/plots
-python figure2.py
-```
-
 #### 1.3. Design Mixtures Series
 
 Generate the mixture design:
@@ -250,21 +231,7 @@ sbatch -p normal -J chr1_986_mixtures -t 24:00:00 --mem=48000 \
 
 ### 3. Run Variant Callers
 
-#### 3.1. Install Callers
-
-The benchmark includes nine callers:
-
-- **bcbio Pipeline v1.2.9:**
-  - Freebayes (v1.3.5)
-  - Mutect2 (v2.2)
-  - Strelka2 (2.9.10)
-  - Vardict (1.8.2)
-  - Varscan (2.4.4)
-- **Standalone Callers:**
-  - SMuRF (v2.0.12)
-  - VarNet (v1.1.0)
-  - ABEMUS (v1.0.3)
-  - SiNVICT (commit id 8e87e8d25c19d287dd68c7daa7375095dc099fa5)
+#### 3.1 Install Variant Callers
 
 Please install each caller as per the provided guidelines. See `callers/installation_notes.md` for more details.
 
@@ -337,7 +304,6 @@ sbatch -p normal -J varnet_${chr}_${mixtureid} -t 3-00:00:00 -N 1 --mem=128000 \
 2. Prepare the Panel of Normals (PoN):
 
    ```sh
-   # TODO: Iterate over buffycoat BAM files and patient IDs; set condapath and mode appropriately.
    sbatch -p normal -J prepare_PoN -t 24:00:00 --mem=48000 \
      --output=${datadir}/data/logs/prepare_PoN.o \
      --error=${datadir}/data/logs/prepare_PoN.e \
@@ -371,57 +337,21 @@ Caller outputs are stored in subfolders. To list the outputs for a given mixture
 ```sh
 aws s3 ls s3://cfdna-benchmark-dataset.store.genome.sg/mixtures/mixtures_chr1/mixtures_chr1_CRC-986_100215-CW-T_CRC-986_300316-CW-T/mixture_chr1_CRC-986_100215-CW-T_70x_CRC-986_300316-CW-T_80x/calls/ --profile [your-profile]
 ```
-
----
-
-### 4. Analyze Results
-
-Scripts are provided to analyze the outputs from the variant callers.
-
-- **Generate Call Tables:**
-  ```sh
-  python calltables.py
-  ```
-- **Generate Ground Truth:**
-  ```sh
-  python generate_groundtruth.py
-  ```
-
-#### 4.1. Intermediate Depth (150x) Analysis [Figure 3]
-
-To reproduce Figure 3:
-
-```sh
-cd $repodir/plots
-python figure3.py
-```
-
-#### 4.2. High Depth (2000x) Analysis [Figure 4]
-
-To reproduce Figure 4:
-
-```sh
-cd $repodir/plots
-python figure4.py
-```
-
----
-
-### 5. Feature Analysis [Figure 5]
-
-To reproduce Figure 5:
-
-```sh
-cd $repodir/plots
-python figure5.py
-```
-
 ---
 
 ## Figures
 
-- **Figure 1:** Overview of the benchmark workflow.
-- **Figure 2:** Design of the benchmark dataset.
-- **Figure 3:** Performance at intermediate sequencing depth (150x).
-- **Figure 4:** Performance at high sequencing depth (2000x).
-- **Figure 5:** Feature analysis.
+- **Figure 1:** Overview of the benchmark workflow (see above)
+- **Figure 2:** Design of the benchmark dataset.  
+  *See Jupyter Notebook:* `plots/Figure2-annonym.ipynb`
+- **Figure 3:** Performance at intermediate sequencing depth (150x).  
+  *See Jupyter Notebook:* `plots/Figure3-4.ipynb`
+- **Figure 4:** Performance at high sequencing depth (2000x).  
+  *See Jupyter Notebook:* `plots/Figure3-4.ipynb`
+- **Figure 5:** Feature analysis.  
+  *To reproduce, run:*
+
+  ```sh
+  cd $repodir/plots
+  python figure5.py
+  ```
