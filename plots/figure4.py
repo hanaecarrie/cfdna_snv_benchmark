@@ -2,10 +2,7 @@
 
 if __name__ == "__main__":
     import os
-    import numpy as np
-    import pandas as pd
     import matplotlib.pyplot as plt
-    import seaborn as sns
     import warnings
     from sklearn.metrics import precision_recall_curve, f1_score, average_precision_score
     warnings.filterwarnings('ignore')
@@ -17,12 +14,12 @@ if __name__ == "__main__":
 
     from utils.config import Config
     from utils.viz import *
-    from utils.table import *
-    from utils.metrics import *
-    from utils.calltable import *
-    from utils.calltableseries import *
-    from utils.groundtruth import *
-    from utils.metricsseries import *
+    from benchmark.table import *
+    from benchmark.metrics import *
+    from benchmark.calltable import *
+    from benchmark.calltableseries import *
+    from benchmark.groundtruth import *
+    from benchmark.metricsseries import *
 
     # Config and Display paramaters
 
@@ -176,7 +173,7 @@ if __name__ == "__main__":
             xaxis = 'tumor burden'
         elif fixedvar == 'ctdna':
             xaxis = 'coverage'
-        mt = 'indel'
+        mt = 'snv'
         if mt == 'snv':
             gtm = 5
             refname = 'inundilutedsamplebyatleast'+str(gtm)+'callers'
