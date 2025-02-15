@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import seaborn as sns
 import warnings
+import os
 from sklearn.metrics import precision_recall_curve, roc_curve, f1_score, precision_score, recall_score, average_precision_score, roc_auc_score
 
 warnings.filterwarnings("ignore")
@@ -22,7 +23,7 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
         kwargs["drawstyle"] = "steps-post"
         ax.plot(recall, precision, **kwargs)
     elif plot == 'partial':
-        listtoremove = [] # index to remove
+        listtoremove = []  # index to remove
         invprecision = precision[::-1]
         for i in range(len(invprecision)-1):
             if (invprecision[i] == 1) and (invprecision[i+1] == 1):
@@ -36,8 +37,11 @@ def plot_pr_curve(precision, recall, estimator_name=None, f1_score=None, figax=N
         else:
             kwargs["drawstyle"] = "steps-post"
             ax.plot(recall, precision, **kwargs)
+    elif plot == 'average':
+        kwargs["drawstyle"] = "steps-post"
+        sns.lineplot(x=recall, y=precision, ax=ax, **kwargs)
     else:
-        raise ValueError('plot argument should be either all or partial but here is {}'.format(plot))
+        raise ValueError('plot argument should be either all, partial or average but here is {}'.format(plot))
     xlabel = "Recall"
     ylabel = "Precision"
     ax.set(xlabel=xlabel, ylabel=ylabel)
@@ -185,6 +189,7 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
                     refname = 'in'+refsample + 'samplebythesamecaller'
                 print(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + ext))
                 plt.savefig(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + ext), bbox_inches='tight')
+                plt.savefig(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + ext + '.svg'), bbox_inches='tight')
     elif splitby == 'dilution':
         prall = {}
         for d in list(dilutionseries.index):
@@ -310,6 +315,7 @@ def figure_curve_allchr(config, df_table, dilutionseries, mixtureid, xy='pr', gr
                     refname = 'in'+refsample + 'samplebythesamecaller'
                 print(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + '_splitby' + splitby + ext))
                 plt.savefig(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + '_splitby' + splitby + ext), bbox_inches='tight')
+                plt.savefig(os.path.join(savepath, mixtureid + '_' + muttype + '_' + xy.upper() + 'curve_' + refname + '_' + method + '_' + config.context + '_splitby' + splitby + ext + '.svg'), bbox_inches='tight')
     if xy == 'pr':
         return prall
 

@@ -32,7 +32,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
             break
         if not allpatients:  # one patient per plot
             plt.figure(figsize=(15, 10))
-            plt.grid(linewidth=1)
+            #plt.grid(linewidth=1)
         plasmasample = '_'.join(mixtureid.split('_')[:2])
         print(plasmasample)
         restablesample = restables[muttype][restables[muttype]['plasma sample'] == plasmasample]
@@ -49,6 +49,8 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
         if not allpatients:
             if fixedvar == 'coverage':
                 plt.gca().invert_xaxis()
+                plt.xlim([27,0])
+                #plt.ylim([0,.55])
             ax = plt.gca()
             hand, labl = ax.get_legend_handles_labels()
             hand, labl = function_to_split(hand, labl, '*')
@@ -62,6 +64,7 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
                 if not os.path.exists(os.path.join(*dilfolder, 'figures')):
                     os.mkdir(os.path.join(*dilfolder, 'figures'))
                 plt.savefig(os.path.join(*dilfolder, 'figures', mixtureid + '_' + metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
+                plt.savefig(os.path.join(*dilfolder, 'figures', mixtureid + '_' + metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context + '.svg'), bbox_inches='tight')
     if allpatients:
         if fixedvar == 'coverage':
             plt.gca().invert_xaxis()
@@ -79,7 +82,8 @@ def plot_metricsseries(config, restables, mixtureids, chrom, metric, muttype='sn
             if not os.path.exists(os.path.join(*dilfolder, 'figures')):
                 print('ok')
                 os.mkdir(os.path.join(*dilfolder, 'figures'))
-            plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context + '.png'), bbox_inches='tight')
+            plt.savefig(os.path.join(*dilfolder, 'figures', metric + '_' + muttype + '_chr' + chrom + '_' + refname + '_' + fixedvar + '_' + lc + '_' + config.context + '.svg'), bbox_inches='tight')
     # plt.show()
     return res
 

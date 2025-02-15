@@ -1,6 +1,6 @@
+import os
 import warnings
 warnings.filterwarnings('ignore')
-
 from benchmark.calltable import *
 
 
@@ -13,17 +13,16 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
         confdilfolder = config.mixturefolderwholegenome
     elif diltype == 'SEQC2':
         confdilfolder = config.mixturefolderSEQC2
-    else: # spikein
+    elif diltype == 'spikein':
         confdilfolder = config.spikeinfolder
+    else:
+        raise ValueError("Not supported confdilfolder {}.Should be 'mixture', 'mixture_wes', 'mixture_wgs', 'SEQC2', 'spikein'".format(diltype))
     print(diltype, confdilfolder)
-    if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes' or diltype == 'SEQC2':
+    if chrom in [str(c) for c in range(1, 23)] or diltype == 'mixture_wes' or diltype == 'SEQC2':  # not 'all'
         if diltype.startswith('mixture_'):
             diltype = 'mixture'
         # Save table if do not exist and load tables
-        #if concat == 'vaf':
         calltables = {'sampleid': [], 'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'samplename' : [], 'snv': [], 'indel': [], 'snp': []}
-        #else:
-        #    calltables = {'tf': [], 'vaf': [], 'cov': [], 'ichorcna': [], 'samplename' : [], 'snv': [], 'indel': [], 'snp': []}
         dilutionfolder = os.path.join(*confdilfolder, diltype+'s_chr' + chrom, diltype+'s_chr' + chrom +'_' + dilutionid)
         print(dilutionfolder)
         for dilutionpath in [l for l in os.listdir(dilutionfolder) if l.endswith('x') or l.endswith('T') or l.startswith('Sample')]:
@@ -31,7 +30,6 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
             print(reload, 'reload')
             if reload or not os.path.exists(os.path.join(dilutionfolder, dilutionpath, 'calls', dilutionpath+'_snv_calls_'+filterparam+'.csv')):
                 calltable_snv, calltable_indel, calltable_snp = get_calltable(os.path.join(dilutionfolder, dilutionpath), config.methods, save=save, filter=filterparam, bcbiovaf=bcbiovaf, gatkcorr=gatkcorr)
-            # if concat == 'vaf':
             calltables['sampleid'].append(dilutionpath)
             if diltype == 'mixture':
                 calltables['vaf'].append(np.nan)
@@ -110,9 +108,6 @@ def get_calltableseries(config, dilutionid, chrom, muttype='snv', filterparam='P
                                 cols.append('{:.2f}_{}_vaf'.format(calltables[varname][ci], m))
                         if concat == 'vaf':
                             cols.append('sampleid')
-                        #print(csnv.head())
-                        #print(list(csnv.columns))
-                        #print(cols)
                         csnv.columns = cols
                     # ensure no duplicated index
                     print(calltables[mt][0].loc[calltables[mt][0].index[calltables[mt][0].index.duplicated(keep=False)]].shape[0])
