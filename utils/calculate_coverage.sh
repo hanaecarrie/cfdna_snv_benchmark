@@ -27,5 +27,7 @@ conda activate default
 
 export cov=$(samtools depth -a $bamfile | awk '{sum+=$3} END {print sum/NR}')
 echo $cov
-if ! -f $outputfile ; then echo $cov >> $(dirname $bamfile)/coverage_$(basename $bamfile).txt ; fi
+if [ ! -f $(dirname $bamfile)/coverage_$(basename $bamfile).txt ] ; then
+  echo $cov >> $(dirname $bamfile)/coverage_$(basename $bamfile).txt ; 
+fi
 

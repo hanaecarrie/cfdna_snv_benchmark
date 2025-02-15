@@ -20,7 +20,7 @@ fi
 export templateconfigfile=$1
 echo 'initial config file' $1
 
-# Move to the cfdna_snv_benchmark/mixtures/config subfolder
+# Move to the cfdna_snv_benchmark/mixtures/ABEMUS/config subfolder
 cd config
 
 # Generate corresponding configuration file for each chromosomes from 2 to 22

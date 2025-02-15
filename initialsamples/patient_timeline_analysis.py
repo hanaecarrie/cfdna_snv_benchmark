@@ -57,9 +57,23 @@ def get_tf(config, batch='all'):
         tf_df = pd.concat(load_files(tffiles))
     else:
         raise ValueError("unknown batch {}. batch should be either 'batch1', 'batch2', 'deepwgs or 'all'".format(batch))
-    tf_df['patient'] = [int(tf_df['sample_id'].iloc[i].split('-')[1].split('_')[0])
-                        if tf_df['sample_id'].iloc[i].startswith('sortpanel')
-                        else int(tf_df['sample_id'].iloc[i].split('_')[0]) for i in range(tf_df.shape[0])]
+    #for i in range(tf_df.shape[0]):
+    #    print(tf_df['sample_id'].iloc[i])
+    #    print(tf_df['sample_id'].iloc[i].startswith('B'))
+    tmp = []
+    for i in range(tf_df.shape[0]):
+        #print(tf_df['sample_id'].iloc[i])
+        if tf_df['sample_id'].iloc[i].startswith('sortpanel'):
+            tmp.append(int(tf_df['sample_id'].iloc[i].split('-')[1].split('_')[0]))
+        elif tf_df['sample_id'].iloc[i].startswith('B'):
+            #print('yes')
+            #print(tf_df['sample_id'].iloc[i].split('_')[0][4:])
+            tmp.append(int(tf_df['sample_id'].iloc[i].split('_')[0][3:]))
+        else:
+            tmp.append(int(tf_df['sample_id'].iloc[i].split('_')[0]))
+    #print('done')
+    tf_df['patient'] = tmp
+    #print( tf_df['patient'])
     tf_df['date'] = pd.to_datetime(tf_df['sample_id'].str.split('_').str[1], format='%d%m%y')
     return tf_df
 
@@ -85,7 +99,10 @@ def get_patient_tf_treatment(config, patient):
     tf_df = get_tf(config, batch='all')
     tf_df['patient'] = [int(tf_df['sample_id'].iloc[i].split('-')[1].split('_')[0])
                         if tf_df['sample_id'].iloc[i].startswith('sortpanel')
-                        else int(tf_df['sample_id'].iloc[i].split('_')[0]) for i in range(tf_df.shape[0])]
+                        else int(tf_df['sample_id'].iloc[i].split('_')[0])
+                        if not tf_df['sample_id'].iloc[i].startswith('B')
+                        else int(tf_df['sample_id'].iloc[i].split('_')[0][4:])
+                        for i in range(tf_df.shape[0])]
     tf_df['date'] = pd.to_datetime(tf_df['sample_id'].str.split('_').str[1], format='%d%m%y')
     tf_patient = tf_df[tf_df['patient'] == patient].sort_values('date')
     tf_patient['date'] = tf_patient['date'].astype(str)
@@ -224,6 +241,7 @@ def plot_patient_timeline(config, patient, treatment=True, mutations=False, high
                                             .add_prefix('new_')
                                             .reset_index()
                                             .rename({'level_6': 'date'}, axis=1))
+            print(mutations_targeted_acrosstime)
             mutations_targeted_acrosstime['date'] = mutations_targeted_acrosstime['date'].str.split('.').str[1]
             mutations_targeted_acrosstime['date'] = pd.to_datetime(mutations_targeted_acrosstime['date'], format='%d%m%y').astype(str)
             foo2 = lambda x: pd.Series(float(x.split(' / ')[0]) / float(x.split(' / ')[1].split(' = ')[0]))
@@ -270,19 +288,37 @@ def plot_patient_timeline(config, patient, treatment=True, mutations=False, high
                                               format='%d%m%y').astype(str).values)
             print(listdeepwgs)
             # timepoints with low tumor burden lpWGS samples in blue (ichorCNA tumor fraction estimate)
+            # Assume ax and ax2 are your matplotlib axes, and "labels" is the original list of dates.
+            # First, remove the current x-axis labels and replace them with anonymous ones.
+
+            # Get current tick positions (this assumes the number of ticks matches the number of labels)
+            ticks = ax.get_xticks()
+            # Create new anonymous labels. You can customize this format as needed.
+            anon_labels = [f'Anonymous Date {i+1}' for i in range(len(ticks))]
+
+            # Set the new labels on both axes
+            ax.set_xticklabels(anon_labels)
+            ax2.set_xticklabels(anon_labels)
+
+            # Now, if you want to highlight some of these ticks as in your original code:
             if highlight == 'discovery':
                 for dltbt in date_lowtftimepoints:
-                    ax.get_xticklabels()[labels.index(dltbt)].set_color('blue')
-                    ax2.get_xticklabels()[labels.index(dltbt)].set_color('blue')
+                    idx = labels.index(dltbt)
+                    ax.get_xticklabels()[idx].set_color('blue')
+                    ax2.get_xticklabels()[idx].set_color('blue')
                 for ldw in listdeepwgs:
-                    ax.get_xticklabels()[labels.index(ldw)].set_color('orange')
-                    ax2.get_xticklabels()[labels.index(ldw)].set_color('orange')
+                    idx = labels.index(ldw)
+                    ax.get_xticklabels()[idx].set_color('orange')
+                    ax2.get_xticklabels()[idx].set_color('orange')
             elif highlight == 'validation':
-                ax.get_xticklabels()[labels.index(config.lowtfsamples[patient])].set_color('blue')
-                ax2.get_xticklabels()[labels.index(config.lowtfsamples[patient])].set_color('blue')
+                idx = labels.index(config.lowtfsamples[patient])
+                ax.get_xticklabels()[idx].set_color('blue')
+                ax2.get_xticklabels()[idx].set_color('blue')
                 for htfsample in config.hightfsamples[patient]:
-                    ax.get_xticklabels()[labels.index(htfsample)].set_color('orange')
-                    ax2.get_xticklabels()[labels.index(htfsample)].set_color('orange')
+                    idx = labels.index(htfsample)
+                    ax.get_xticklabels()[idx].set_color('orange')
+                    ax2.get_xticklabels()[idx].set_color('orange')
+
             else:
                 raise ValueError("highlight should be 'discovery' or 'validation' but here is {}".format(highlight))
             if treatment:

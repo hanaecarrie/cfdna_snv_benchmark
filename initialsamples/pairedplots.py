@@ -19,7 +19,10 @@ from utils.viz import function_to_split
 def get_patientsample_dict(config):
     patientsample_dict = {}
     for patient in config.patients:
-        dates = [config.hightfsamples[patient][0], config.hightfsamples[patient][1], config.lowtfsamples[patient]]
+        if patient != 412:
+            dates = [config.hightfsamples[patient][0], config.hightfsamples[patient][1], config.lowtfsamples[patient]]
+        else:
+            dates = [config.hightfsamples[patient], config.hightfsamples[patient], config.lowtfsamples[patient]]
         patientsample_dict[patient] = ['NCC_CRC-'+str(patient)+'_'+d.split('-')[2]+d.split('-')[1]+d.split('-')[0][2:]+'-CW-T' for d in dates]
     return patientsample_dict
 
@@ -54,11 +57,14 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
     plt.grid()
     maxx = 0
     for si, seqtype in enumerate(['deepWGS', 'targeted']):
+        print(os.path.join(*config.mutationfolder, [f for f in os.listdir(os.path.join(*config.mutationfolder)) if f.startswith('CCG_226_'+str(patient))][0]))
         mutationfile = pd.read_excel(os.path.join(*config.mutationfolder, [f for f in os.listdir(os.path.join(*config.mutationfolder)) if f.startswith('CCG_226_'+str(patient))][0]))
         mutationfile['chrom_pos'] = mutationfile['#CHROM'].astype('str').str.cat(mutationfile['POS'].astype('str'), sep="_")
         mutationfile.set_index('chrom_pos', inplace=True)
         mutationfile = mutationfile.loc[~mutationfile.index.duplicated()]
         for c in list(mutationfile.columns[13:-1]):
+            print(c)
+            print(patientsample_dict)
             if (sum([p.split('-')[1].split('_')[1] in c for p in patientsample_dict[int(patient)]]) == 0) and (c != 'CCG_226_986.110215.P'):
                 mutationfile.drop(c, axis=1, inplace=True)
         ctokeep = [c for c in mutationfile.columns if c.startswith('CCG') or c.startswith(str(patient))]
@@ -74,6 +80,7 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
         lowtfsample_vaf_df = lowtfsample_vaf_df.loc[~lowtfsample_vaf_df.index.duplicated()]
         lowtfsample_vaf_df['annotation'] = 'No annotation'
         if seqtype == 'deepWGS':
+            print(seqtype)
             mutationfile.reset_index(inplace=True)
             for i in range(mutationfile.shape[0]):
                 if mutationfile['chrom_pos'].iloc[i] in targetbedhg38list:
@@ -92,7 +99,8 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
         lowtfsample_vaf_df['alt'] = mutationfile.loc[lowtfsample_vaf_df.index, 'ALT']
         lowtfsample_vaf_df['pileup'].fillna('', inplace=True)
         lowtfsample_vaf_df['pileup'] = lowtfsample_vaf_df['pileup'].astype(str)
-        lowtfsample_vaf_df['supporting altcov'] = lowtfsample_vaf_df[['pileup', 'alt', 'ref']].apply(lambda x: x[0].count(x[1]) if (len(x[1]) == 1) and (len(x[2]) == 1) else x[0].count('+'+str(len(x[1][1:]))+x[1][1:]) if len(x[1]) > 1 else x[0].count('-'+str(len(x[2][1:]))+x[2][1:]), axis=1)
+        lowtfsample_vaf_df['supporting altcov'] = lowtfsample_vaf_df['altcov']
+        # lowtfsample_vaf_df['supporting altcov'] = lowtfsample_vaf_df[['pileup', 'alt', 'ref']].apply(lambda x: x[0].count(x[1]) if (len(x[1]) == 1) and (len(x[2]) == 1) else x[0].count('+'+str(len(x[1][1:]))+x[1][1:]) if len(x[1]) > 1 else x[0].count('-'+str(len(x[2][1:]))+x[2][1:]), axis=1)
         lowtfsample_vaf_df['supporting vaf'] = lowtfsample_vaf_df['supporting altcov']/lowtfsample_vaf_df['totcov']
         for pi in range(nbhightfsamples):
             print(pi)
@@ -101,10 +109,12 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
                 hightfsample_vaf_df = pd.read_csv(pileuphightf, index_col=0)
             else:
                 raise ValueError('pileup file {} does not exists. Run pileup.sh first.'.format(pileuphightf))
+            print(hightfsample_vaf_df)
             hightfsample_vaf_df['chrom_pos'] = hightfsample_vaf_df['chrom'].astype('str').str.cat(hightfsample_vaf_df['pos'].astype('str'), sep="_")
             hightfsample_vaf_df.set_index('chrom_pos', inplace=True)
             hightfsample_vaf_df = hightfsample_vaf_df.loc[~hightfsample_vaf_df.index.duplicated()]
             hightfsample_vaf_df['annotation'] = 'No annotation'
+            print(hightfsample_vaf_df)
             if seqtype == 'deepWGS':
                 mutationfile.reset_index(inplace=True)
                 for i in range(mutationfile.shape[0]):
@@ -116,6 +126,7 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
                 mutationfile['chrom_pos'] = mutationfile['chrom_pos'].apply(lambda x: x.split('_')[0][:3] + '_' + x.split('_')[1]) ###
                 mutationfile.set_index('chrom_pos', inplace=True)
                 mutationfile = mutationfile.loc[~mutationfile.index.duplicated()]
+                print(mutationfile)
             mutationfile = mutationfile.loc[~mutationfile.index.duplicated()]
             hightfsample_vaf_df.loc[list(set(mutationfile.index) & set(hightfsample_vaf_df.index)), 'annotation'] = mutationfile['TIERS']
             hightfsample_vaf_df = hightfsample_vaf_df[hightfsample_vaf_df['annotation'] == 'Trusted'] #  != 'No annotation'
@@ -124,9 +135,10 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
             hightfsample_vaf_df['alt'] = mutationfile.loc[hightfsample_vaf_df.index, 'ALT']
             hightfsample_vaf_df['pileup'].fillna('', inplace=True)
             hightfsample_vaf_df['pileup'] = hightfsample_vaf_df['pileup'].astype(str)
-            hightfsample_vaf_df['supporting altcov'] = hightfsample_vaf_df[['pileup', 'alt', 'ref']].apply(lambda x: x[0].count(x[1]) if (len(x[1]) == 1) and (len(x[2]) == 1) else x[0].count('+'+str(len(x[1][1:]))+x[1][1:]) if len(x[1]) > 1 else x[0].count('-'+str(len(x[2][1:]))+x[2][1:]), axis=1)
+            hightfsample_vaf_df['supporting altcov'] = hightfsample_vaf_df['altcov']
+            #hightfsample_vaf_df['supporting altcov'] = hightfsample_vaf_df[['pileup', 'alt', 'ref']].apply(lambda x: x[0].count(x[1]) if (len(x[1]) == 1) and (len(x[2]) == 1) else x[0].count('+'+str(len(x[1][1:]))+x[1][1:]) if len(x[1]) > 1 else x[0].count('-'+str(len(x[2][1:]))+x[2][1:]), axis=1)
             hightfsample_vaf_df['supporting vaf'] = hightfsample_vaf_df['supporting altcov']/hightfsample_vaf_df['totcov']
-
+            print(hightfsample_vaf_df.T)
             paired_vaf = pd.concat([lowtfsample_vaf_df[lowtfsample_vaf_df['annotation'] == 'Trusted'][['supporting vaf']],
                                     hightfsample_vaf_df[hightfsample_vaf_df['annotation'] == 'Trusted'][['supporting vaf']]], axis=1)
             paired_vaf.columns = [patientsample_dict[int(patient)][2].split('-')[1], patientsample_dict[int(patient)][pi].split('-')[1]]
@@ -135,6 +147,7 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
             paired_vaf['gene'] = mutationfile.loc[paired_vaf.index, 'GENE']
             if patient == '986' and seqtype == 'targeted':
                 paired_vaf.iat[0, 0] = -0.00015  # (intead of 0 for APC, for visualisation)
+            print(seqtype)
             print(paired_vaf)
             print(patientsample_dict[int(patient)][pi].split('-')[1])
             for gi, g in enumerate(list(paired_vaf['gene'])):
@@ -147,7 +160,7 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
                 plt.plot(paired_vaf[paired_vaf['gene'] == g][patientsample_dict[int(patient)][2].split('-')[1]].values[0],
                          paired_vaf[paired_vaf['gene'] == g][patientsample_dict[int(patient)][pi].split('-')[1]].values[0], lw=5, markeredgewidth=1,
                          c=c, markersize=20, marker=config.seqtype.markers[si], fillstyle=config.seqtype.fillstyles[0], markeredgecolor='k', label=g + '*' + seqtype + ' sample')
-    plt.ylim([-.02, 0.60])
+    plt.ylim([-.02, 0.75]) #0.60
     plt.axvline(x=0.000, ls='--', c='k')
     plt.title('Paired VAF plot for patient ' + str(patient))
     ax = plt.gca()
@@ -158,18 +171,19 @@ def paireplot(config, patient, targetbedhg19, targetbedhg38, sc='samescale', nbh
     plt.ylabel('VAF in high TF sample')
     if sc == 'logscale':
         plt.xscale('symlog')
-        plt.xlim([-0.002, min(0.05,round(maxx+0.01, 2))])
-        if patient == '986':
-            plt.xticks([i/200 for i in range(0, 2*int(100*(round(maxx+0.01, 2)+0.01)))], [i/200 for i in range(0, 2*int(100*(round(maxx+0.01, 2)+0.01)))])
-        else:
-            plt.xticks([i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))], [i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))])
+        plt.xlim([-0.002, 0.05])  # min(0.05,round(maxx+0.01, 2))
+        #if patient == '986':
+        #    plt.xticks([i/200 for i in range(0, 2*int(100*(round(maxx+0.01, 2)+0.01)))], [i/200 for i in range(0, 2*int(100*(round(maxx+0.01, 2)+0.01)))])
+        #else:
+        #    plt.xticks([i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))], [i/100 for i in range(0, int(100*(round(maxx+0.01, 2)+0.01)))])
+        plt.xticks([i/100 for i in range(0, 6)], [i/100 for i in range(0, 6)])
         if save:
             if savepath is not None:
                 plt.savefig(os.path.join(savepath, 'pairedplot_vaf_trusted_'+str(patient)+'_logscale.svg'), bbox_inches='tight')
             else:
                 plt.savefig(os.path.join(*config.outputpath, 'figure2', 'pairedplot_vaf_trusted_'+str(patient)+'_logscale.svg'), bbox_inches='tight')
     elif sc == 'samescale':
-        plt.xlim([-.02, 0.6])
+        plt.xlim([-.02, 0.75]) #0.6
         if save:
             if savepath is not None:
                 plt.savefig(os.path.join(savepath, 'pairedplot_vaf_trusted_'+str(patient)+'_samescale.svg'), bbox_inches='tight')

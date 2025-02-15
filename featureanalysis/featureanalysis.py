@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from utils.calltable import read_vcf
+from benchmark.calltable import read_vcf
 
 
 def parse_caller_feature(calldir, method, save=False):
