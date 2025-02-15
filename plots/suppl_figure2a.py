@@ -8,11 +8,7 @@ if not os.getcwd().endswith('cfdna_snv_benchmark'):
     os.chdir('../')
 print('Current working directory: {}'.format(os.getcwd()))
 
-from utils.config import Config
-from utils.viz import *
-from utils.metricsseries import *
-from utils.calltableseries import *
-from utils.groundtruth import *
+from benchmark.groundtruth import *
 
 # Config and Display paramaters
 config = Config("config/", "config_viz.yaml")

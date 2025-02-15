@@ -1,21 +1,18 @@
 
 if __name__ == "__main__":
 
-    import numpy as np
-    import pandas as pd
     import matplotlib.pyplot as plt
-    import seaborn as sns
     import warnings
     from sklearn.metrics import precision_recall_curve, f1_score, average_precision_score
     warnings.filterwarnings('ignore')
     from utils.config import Config
     from utils.viz import *
-    from utils.table import *
-    from utils.metrics import *
-    from utils.calltable import *
-    from utils.calltableseries import *
-    from utils.groundtruth import *
-    from utils.metricsseries import *
+    from benchmark.table import *
+    from benchmark.metrics import *
+    from benchmark.calltable import *
+    from benchmark.calltableseries import *
+    from benchmark.groundtruth import *
+    from benchmark.metricsseries import *
 
     # set working directory
     if not os.getcwd().endswith('cfdna_snv_benchmark'):

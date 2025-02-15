@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
     color_dict = {config.methods[i]: config.colors[i] for i in range(len(config.methods))}
 
+    """
     for fixedvar in fixedvars:
         if fixedvar == 'coverage':
             xaxis = 'tumor burden'
@@ -175,12 +176,16 @@ if __name__ == "__main__":
                 #plt.xlim([6, 2.])
             if not os.path.exists(os.path.join(*config.outputpath, 'figure2a')):
                 os.mkdir(os.path.join(*config.outputpath, 'figure2a'))
-            plt.savefig(os.path.join(*config.outputpath, 'figure2a',
-                                     'perf_'+metric+'_3patients_150x_'+fixedvar+'_'+mt+'_'+refname+'.svg'), bbox_inches='tight')
+            #plt.savefig(os.path.join(*config.outputpath, 'figure2a',
+            #                         'perf_'+metric+'_3patients_150x_'+fixedvar+'_'+mt+'_'+refname+'.svg'), bbox_inches='tight')
             plt.show()
-
     """
 
+
+    reload = False
+    save = False
+
+    """
     # ground truth analysis
     fixedvar = 'coverage'
     #for fixedvar in fixedvars:
@@ -190,98 +195,149 @@ if __name__ == "__main__":
     elif fixedvar == 'ctdna':
         seriesorder = [(70, 0), (70, 80), (70, 180)]
         xaxis = 'coverage'
-    for mixtureid in mixtureids:
-        # mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
-        print('############# {} ############'.format(mixtureid))
-        if mixtureid == 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T':
-            chroms = [str(c) for c in range(1,23) if c != 2 and c!=6 and c !=17 and c!=19 and c!=20 and c!=21]
-            #chroms = [str(c) for c in range(1,9) if c != 2 and c!=6]
-        elif mixtureid ==  'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-            chroms = [str(c) for c in range(1,23) if c !=1 and c!= 2 and c !=8 and c!=20 and c!=21 and c!=22]
+    #for mixtureid in mixtureids:
+    mixtureid = 'CRC-986_100215-CW-T_CRC-986_300316-CW-T'
+    mixtureid = 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T'
+    mixtureid = 'CRC-123_310715-CW-T_CRC-123_121115-CW-T'
+    #mixtureid = 'BRA-412_240820-CW-T_BRA-412_060220-CW-T'
+    print('############# {} ############'.format(mixtureid))
+    if mixtureid == 'CRC-1014_180816-CW-T_CRC-1014_090516-CW-T':
+        chroms = [str(c) for c in range(1,23) if c != 2 and c!=6 and c !=17 and c!=19 and c!=20 and c!=21]
+        #chroms = [str(c) for c in range(1,9) if c != 2 and c!=6]
+    elif mixtureid ==  'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+        chroms = [str(c) for c in range(1,23) if c !=1 and c!= 2 and c !=8 and c!=20 and c!=21 and c!=22]
+    else:
+        chroms = [str(c) for c in range(1,23) if c !=6 and c!=19 and c!=20]  # c !=1 and c!= 2 and
+            
+    
+    calltables = {'sampleid':[], 'tf':[], 'cov':[], 'snv':[], 'indel':[], 'snp':[]}
+    aux_all = []
+    calltable_snv, aux = get_calltableseries(config, mixtureid, chroms, muttype='snv', filterparam=filterparam, reload=reload, save=save)
+    calltable_indel, aux = get_calltableseries(config, mixtureid, chroms, muttype='indel', filterparam=filterparam, reload=reload, save=save)
+    calltable_snp, aux = get_calltableseries(config, mixtureid, chroms, muttype='snp', filterparam=filterparam, reload=reload, save=save)
+    print(calltable_snv.shape, calltable_indel.shape, calltable_snp.shape)
+    print(aux)
+    plasmasample = '_'.join(mixtureid.split('_')[:2])
+    print(plasmasample)
+    healthysample = '_'.join(mixtureid.split('_')[2:])
+    print(healthysample)
+    calltables['snv'].append(calltable_snv)
+    calltables['indel'].append(calltable_indel)
+    calltables['snp'].append(calltable_snp)
+    calltables['sampleid'] = mixtureid
+    calltables['tf'] = np.unique([cn.split('_')[0] for cn in list(calltable_snv.columns)])[:-5].astype(float)
+    calltables['snv'] = pd.concat(calltables['snv'])
+    calltables['indel'] = pd.concat(calltables['indel'])
+    calltables['snp'] = pd.concat(calltables['snp'])
+    dilutionseries = aux.T[['mixture_' + '_'.join(mixtureid.split('_')[:2]) + '_' + str(s[0]) + 'x_' + '_'.join(mixtureid.split('_')[2:4]) + '_' + str(s[1]) + 'x' for s in seriesorder]].T
+     #for muttype in muttypes:
+    muttype = 'indel' #INDEL
+    refsample = 'undiluted'
+    if muttype == 'snv':
+        gtm = 5
+    else:  # elif muttype == 'indel':
+        gtm = 4
+    print(max(aux['tf']))
+    #if mixtureid != 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
+    #    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+    #                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
+    #else:
+    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
+                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
+
+    """
+
+    """
+    mixtureid = 'BRA-412_240820-CW-T_BRA-412_060220-CW-T'
+    calltablesseries = pd.read_csv(os.path.join('data', 'mixtures', 'mixtures_allchr', 'BRA-412_240820-CW-T_BRA-412_060220-CW-T_snv_calls_all.csv'), index_col=0)
+    aux = pd.read_csv(os.path.join('data', 'mixtures', 'mixtures_allchr', 'BRA-412_240820-CW-T_BRA-412_060220-CW-T_tf_cov.csv'),index_col=0)
+    gtm = 5
+    muttype = 'indel'
+    refsample = 'undiluted'
+    fixedvar = 'coverage'
+    #fixedvar = 'ctdna'
+    if fixedvar == 'coverage':
+        seriesorder = [(100, 0), (70, 30), (50, 50), (30, 70), (20, 80), (10, 90)]
+        xaxis = 'tumor burden'
+    elif fixedvar == 'ctdna':
+        seriesorder = [(100, 0), (100, 50), (100, 100)]
+        xaxis = 'coverage'
+    dilutionseries = aux.T[['mixture_' + '_'.join(mixtureid.split('_')[:2]) + '_' + str(s[0]) + 'x_' + '_'.join(mixtureid.split('_')[2:4]) + '_' + str(s[1]) + 'x' for s in seriesorder]].T
+    calltablesseries = generate_groundtruth(config, calltablesseries, aux['tf'], ground_truth_method=gtm, muttype=muttype,
+                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
+    """
+
+    mixtureid = 'BRA-412_240820-CW-T_BRA-412_060220-CW-T'
+    calltablesseries = pd.read_csv(os.path.join('data', 'mixtures', 'mixtures_allchr', 'BRA-412_240820-CW-T_BRA-412_060220-CW-T_indel_calls_all.csv'), index_col=0)
+    aux = pd.read_csv(os.path.join('data', 'mixtures', 'mixtures_allchr', 'BRA-412_240820-CW-T_BRA-412_060220-CW-T_tf_cov.csv'),index_col=0)
+    gtm = 4
+    muttype = 'indel'
+    refsample = 'undiluted'
+    fixedvar = 'coverage'
+    #fixedvar = 'ctdna'
+    if fixedvar == 'coverage':
+        seriesorder = [(100, 0), (70, 30), (50, 50), (30, 70), (20, 80), (10, 90)]
+        xaxis = 'tumor burden'
+    elif fixedvar == 'ctdna':
+        seriesorder = [(100, 0), (100, 50), (100, 100)]
+        xaxis = 'coverage'
+    dilutionseries = aux.T[['mixture_' + '_'.join(mixtureid.split('_')[:2]) + '_' + str(s[0]) + 'x_' + '_'.join(mixtureid.split('_')[2:4]) + '_' + str(s[1]) + 'x' for s in seriesorder]].T
+    calltablesseries = generate_groundtruth(config, calltablesseries, aux['tf'], ground_truth_method=gtm, muttype=muttype,
+                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
+
+
+    import matplotlib.transforms as transforms
+
+    patient = mixtureid.split('-')[1].split('_')[0]
+    print(patient)
+    gtanalysis = calltablesseries[calltablesseries['truth'] == True][['{:.2f}_{}'.format(aux['tf'].max(), m) for m in config.methods]]
+    initialanalysis = calltablesseries[calltablesseries['truth'] == False][['{:.2f}_{}'.format(aux['tf'].max(), m) for m in config.methods]]
+    ngt = gtanalysis.shape[0]
+    print(ngt)
+    gtanalysis = pd.DataFrame(gtanalysis.sum()).T
+    gtanalysis.columns = [l.split('_')[1] for l in list(gtanalysis.columns)]
+    gtanalysis.index = ['calls in GT']
+    initialanalysis = pd.DataFrame(initialanalysis.sum()).T
+    initialanalysis.columns = [l.split('_')[1] for l in list(initialanalysis.columns)]
+    initialanalysis.index = ['calls not in GT']
+
+    fig, ax = plt.subplots(figsize=(10,5))
+    plt.bar(gtanalysis.columns, gtanalysis.values.flatten(), bottom=1, color=[config.colors[config.methods.index(m)] for m in gtanalysis.columns], width=1)
+    plt.axhline(y=ngt, c='blue', lw='3')
+    trans = transforms.blended_transform_factory(
+        ax.get_yticklabels()[0].get_transform(), ax.transData)
+    ax.text(0, ngt, "{:.0f}".format(ngt), color="blue", transform=trans, ha="right", va="center")
+    for col in initialanalysis.columns:
+        print(col, initialanalysis[col].values[0], gtanalysis[col].values[0])
+        plt.bar(col, initialanalysis[col].values[0], bottom=gtanalysis[col].values[0], label=col, color='grey', alpha=0.5, width=1)
+
+    for pi, p in enumerate(ax.patches):
+        print(pi, p)
+        if pi < (len(ax.patches)/2):
+            width, height = p.get_width(), p.get_height()
+            x, y = p.get_xy()
+            ax.text(x+width/2,
+                    20,
+                    '{:.0f}'.format(height),
+                    horizontalalignment='center')
         else:
-            chroms = [str(c) for c in range(1,23) if c !=6 and c!=19 and c!=20]  # c !=1 and c!= 2 and
-        calltables = {'sampleid':[], 'tf':[], 'cov':[], 'snv':[], 'indel':[], 'snp':[]}
-        aux_all = []
-        calltable_snv, aux = get_calltableseries(config, mixtureid, chroms, muttype='snv', filterparam=filterparam, reload=reload, save=save)
-        calltable_indel, aux = get_calltableseries(config, mixtureid, chroms, muttype='indel', filterparam=filterparam, reload=reload, save=save)
-        calltable_snp, aux = get_calltableseries(config, mixtureid, chroms, muttype='snp', filterparam=filterparam, reload=reload, save=save)
-        print(calltable_snv.shape, calltable_indel.shape, calltable_snp.shape)
-        print(aux)
-        plasmasample = '_'.join(mixtureid.split('_')[:2])
-        print(plasmasample)
-        healthysample = '_'.join(mixtureid.split('_')[2:])
-        print(healthysample)
-        calltables['snv'].append(calltable_snv)
-        calltables['indel'].append(calltable_indel)
-        calltables['snp'].append(calltable_snp)
-        calltables['sampleid'] = mixtureid
-        calltables['tf'] = np.unique([cn.split('_')[0] for cn in list(calltable_snv.columns)])[:-5].astype(float)
-        calltables['snv'] = pd.concat(calltables['snv'])
-        calltables['indel'] = pd.concat(calltables['indel'])
-        calltables['snp'] = pd.concat(calltables['snp'])
-        dilutionseries = aux.T[['mixture_' + '_'.join(mixtureid.split('_')[:2]) + '_' + str(s[0]) + 'x_' + '_'.join(mixtureid.split('_')[2:4]) + '_' + str(s[1]) + 'x' for s in seriesorder]].T
-        #for muttype in muttypes:
-        muttype = 'snv'
-        refsample = 'undiluted'
-        if muttype == 'snv':
-            gtm = 5
-        else:  # elif muttype == 'indel':
-            gtm = 4
-        print(max(aux['tf']))
-        #if mixtureid != 'CRC-986_100215-CW-T_CRC-986_300316-CW-T':
-        #    calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-        #                                            matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'abemus', 'sinvict'])
-        #else:
-        calltablesseries = generate_groundtruth(config, calltables[muttype], aux['tf'], ground_truth_method=gtm, muttype=muttype,
-                                                matchedtissuepath=None, methods=['freebayes', 'mutect2', 'strelka2', 'vardict', 'varscan', 'varnet', 'abemus', 'sinvict'])
-
-        import matplotlib.transforms as transforms
-
-        patient = mixtureid.split('-')[1].split('_')[0]
-        print(patient)
-        gtanalysis = calltablesseries[calltablesseries['truth'] == True][['{:.2f}_{}'.format(aux['tf'].max(), m) for m in config.methods]]
-        initialanalysis = calltablesseries[calltablesseries['truth'] == False][['{:.2f}_{}'.format(aux['tf'].max(), m) for m in config.methods]]
-        ngt = gtanalysis.shape[0]
-        print(ngt)
-        gtanalysis = pd.DataFrame(gtanalysis.sum()).T
-        gtanalysis.columns = [l.split('_')[1] for l in list(gtanalysis.columns)]
-        gtanalysis.index = ['calls in GT']
-        initialanalysis = pd.DataFrame(initialanalysis.sum()).T
-        initialanalysis.columns = [l.split('_')[1] for l in list(initialanalysis.columns)]
-        initialanalysis.index = ['calls not in GT']
-
-        fig, ax = plt.subplots(figsize=(10,5))
-        plt.bar(gtanalysis.columns, gtanalysis.values.flatten(), bottom=1, color=[config.colors[config.methods.index(m)] for m in gtanalysis.columns], width=1)
-        plt.axhline(y=ngt, c='blue', lw='3')
-        trans = transforms.blended_transform_factory(
-            ax.get_yticklabels()[0].get_transform(), ax.transData)
-        ax.text(0, ngt, "{:.0f}".format(ngt), color="blue", transform=trans, ha="right", va="center")
-        for col in initialanalysis.columns:
-            print(col, initialanalysis[col].values[0], gtanalysis[col].values[0])
-            plt.bar(col, initialanalysis[col].values[0], bottom=gtanalysis[col].values[0], label=col, color='grey', alpha=0.5, width=1)
-
-        for pi, p in enumerate(ax.patches):
-            print(pi, p)
-            if pi < (len(ax.patches)/2):
-                width, height = p.get_width(), p.get_height()
-                x, y = p.get_xy()
-                ax.text(x+width/2,
-                        20,
-                        '{:.0f}'.format(height),
-                        horizontalalignment='center')
-            else:
-                width, height = p.get_width(), p.get_height()
-                x, y = p.get_xy()
-                ax.text(x+width/2,
-                        y+height/10,
-                        '{:.0f}'.format(height),
-                        horizontalalignment='center')
-        ax.set_yscale('log')
+            width, height = p.get_width(), p.get_height()
+            x, y = p.get_xy()
+            ax.text(x+width/2,
+                    y+height/10,
+                    '{:.0f}'.format(height),
+                    horizontalalignment='center')
+    ax.set_yscale('log')
+    if muttype == 'snv':
         plt.ylabel('# SNV')
-        ax.grid(axis='y')
-        plt.ylim([1, 5e5])
-        ax = plt.gca()
-        ax.set_xticklabels(labels=gtanalysis.columns,rotation=90)
-        plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_SNV.svg'), bbox_inches='tight')
-        plt.show()
-        """
+    else:
+        plt.ylabel('# INDEL')
+    ax.grid(axis='y')
+    plt.ylim([1, 5e5])
+    ax = plt.gca()
+    ax.set_xticklabels(labels=gtanalysis.columns,rotation=90)
+    plt.savefig(os.path.join(*config.outputpath, 'figure2a', 'gtanalysis_barplot_'+patient+'_INDEL.svg'), bbox_inches='tight')
+    plt.show()
+
+
+

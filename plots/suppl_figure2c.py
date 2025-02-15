@@ -1,27 +1,17 @@
 # Imports
 
-import io
 import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pysam
 import warnings
-from sklearn.metrics import precision_recall_curve, f1_score, average_precision_score
+
 warnings.filterwarnings('ignore')
-from sklearn.metrics import confusion_matrix
 
 # set working directory
 if not os.getcwd().endswith('cfdna_snv_benchmark'):
     os.chdir('../')
 print('Current working directory: {}'.format(os.getcwd()))
 
-from utils.config import Config
-from utils.viz import *
-from utils.table import *
-from utils.metrics import *
-from utils.venn import venn6, get_labels
+from benchmark.table import *
+from benchmark.metrics import *
 
 # Config and Display paramaters
 

@@ -166,7 +166,7 @@ if __name__ == "__main__":
         plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_2000x_exomecalling_'+fixedvar+'_'+mt+'_zoom.svg'), bbox_inches='tight')
         plt.show()
     """
-
+    """
     ####### 150x WGS whole genome calling #######
     for fixedvar in fixedvars:
         if fixedvar == 'coverage':
@@ -219,16 +219,20 @@ if __name__ == "__main__":
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
         plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_'+metric+'_986_150x_wholegenomecalling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
         plt.show()
-
-
     """
+
+
     ############# comp ground truths 150x and 2000x ##############
 
     A = pd.read_csv('figures/figure2b/gt_986_exome_150x_atleast5callersinundilutedsample_snv.csv', index_col=0)
     B = pd.read_csv('figures/figure2b/gt_986_exome_2000x_atleast5callersinundilutedsample_snv.csv', index_col=0)
+    B['chrom'] = B.index.str.split('_').str[0]
+    B = B[~B['chrom'].isin(['1', '2', '8', '20', '21', '22', 'X', 'Y'])]
+    B.drop('chrom', axis=1, inplace=True)
+    B.to_csv('figures/figure2b/gt_986_exome_2000x_atleast5callersinundilutedsample_snv_samechroms.csv')
     print(A.shape[0], B.shape[0])
     ab = list(set(set(list(A.index)) & set(list(B.index))))
-    len(ab)
+    print(len(ab))
     Awithoutab = A.loc[list(set(A.index) - set(ab))]
     Bwithoutab = B.loc[list(set(B.index) - set(ab))]
 
@@ -237,7 +241,9 @@ if __name__ == "__main__":
     calltablesseries = pd.read_csv(os.path.join('data', 'mixtures', 'mixtures_allchr', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T_snv_calls_all.csv'), index_col=0, memory_map=True)
     aux = pd.read_csv(os.path.join('data', 'mixtures_ultradeep', 'mixtures_chrall', 'mixtures_chrall_CRC-986_100215-CW-T_CRC-986_300316-CW-T' , 'calls', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T_tf_cov.csv'), index_col=0)
     ac = pd.DataFrame(calltablesseries.loc[[a for a in list(Bwithoutab.index) if a in calltablesseries.index]][['{:.2f}_{}_vaf'.format(aux['tf'].max(), m) for m in config.methods if ('{:.2f}_{}'.format(aux['tf'].max(), m) in calltablesseries.columns) and (m != 'smurf')]].median(skipna=True, axis=1))
+    print(ac.shape)
     ac = ac[~ac.index.duplicated()]
+    print(ac.shape)
     Bwithoutab = Bwithoutab[~Bwithoutab.index.duplicated()]
     comp = pd.concat([ac, Bwithoutab], axis=1)
     comp.columns = ['vaf 150x', 'vaf 2000x']
@@ -246,21 +252,22 @@ if __name__ == "__main__":
     print(Bwithoutab.shape[0], ac.shape[0])
     sns.histplot(x='vaf 150x', y='vaf 2000x', data=comp, binwidth=0.01, binrange=[0,.5], alpha=1, color='tab:blue', label='2000x only')
 
-    comp = pd.concat([A.loc[ab], B.loc[ab]], axis=1)
-    comp.columns = ['vaf 150x', 'vaf 2000x']
-    comp.fillna(0, inplace=True)
-    list_both = list(comp.index)
-    sns.histplot(x='vaf 150x', y='vaf 2000x', data=comp, binwidth=0.01, binrange=[0,.5], alpha=1, color='tab:red', label='both')
-
     table_ultradeep = pd.read_csv(os.path.join('data', 'mixtures_ultradeep', 'mixtures_chrall', 'mixtures_chrall_CRC-986_100215-CW-T_CRC-986_300316-CW-T' , 'calls', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T_snv_calls_all.csv'), index_col=0, memory_map=True)
+    table_ultradeep = table_ultradeep[~table_ultradeep['chrom'].isin([1, 2, 8, 20, 21, 22])]
     aux_ultradeep = pd.read_csv(os.path.join('data', 'mixtures_ultradeep', 'mixtures_chrall', 'mixtures_chrall_CRC-986_100215-CW-T_CRC-986_300316-CW-T' , 'calls', 'CRC-986_100215-CW-T_CRC-986_300316-CW-T_tf_cov.csv'), index_col=0)
-    ac = calltablesseries.loc[[a for a in list(Awithoutab.index) if a in table_ultradeep.index]][['{:.2f}_{}_vaf'.format(aux_ultradeep['tf'].max(), m) for m in config.methods if ('{:.2f}_{}'.format(aux_ultradeep['tf'].max(), m) in table_ultradeep.columns) and (m != 'smurf')]].median(skipna=True, axis=1)
+    ac = table_ultradeep.loc[[a for a in list(Awithoutab.index) if a in table_ultradeep.index]][['{:.2f}_{}_vaf'.format(aux_ultradeep['tf'].max(), m) for m in config.methods if ('{:.2f}_{}'.format(aux_ultradeep['tf'].max(), m) in table_ultradeep.columns) and (m != 'smurf')]].median(skipna=True, axis=1)
     comp = pd.concat([Awithoutab, ac], axis=1)
     comp.columns = ['vaf 150x', 'vaf 2000x']
     comp.fillna(0, inplace=True)
     list_only150x = list(comp.index)
     print(Awithoutab.shape[0], ac.shape[0])
     sns.histplot(x='vaf 150x', y='vaf 2000x', data=comp, binwidth=0.01, binrange=[0,.5], alpha=1, color='tab:olive', label='150x only')
+
+    comp = pd.concat([A.loc[ab], B.loc[ab]], axis=1)
+    comp.columns = ['vaf 150x', 'vaf 2000x']
+    comp.fillna(0, inplace=True)
+    list_both = list(comp.index)
+    sns.histplot(x='vaf 150x', y='vaf 2000x', data=comp, binwidth=0.01, binrange=[0,.5], alpha=1, color='tab:red', label='both')
 
     from matplotlib.lines import Line2D
     a = Line2D([0], [0], color='tab:red', lw=4)
@@ -269,10 +276,11 @@ if __name__ == "__main__":
 
     plt.legend([a, b,  c], ['both', '2000x only', '150x only'], bbox_to_anchor=(1,1), loc="upper left")
     plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'gt_vaf_150x_vs_2000x.svg'), bbox_inches='tight')
+    plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'gt_vaf_150x_vs_2000x.png'), bbox_inches='tight')
     plt.show()
     
-    """
 
+    """
 
     ############ 150x WGS whole genome calling #############
 
@@ -317,6 +325,7 @@ if __name__ == "__main__":
             os.mkdir(os.path.join(*config.outputpath, 'figure2b'))
         #plt.savefig(os.path.join(*config.outputpath, 'figure2b', 'perf_auprc_986_150x_chr22calling_'+fixedvar+'_'+mt+'.svg'), bbox_inches='tight')
         plt.show()
+    """
 
 
 
